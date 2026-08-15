@@ -82,7 +82,9 @@ export default function LayoutsPage() {
               <article className={`${styles.card} ${styles[`accent_${preset.accent}`]}`} key={preset.id}>
                 <div className={styles.cardPreview}>
                   <GeometryPreview layout={preset.layoutId} shotCount={preset.shotCount} />
-                  <span className={styles.shotBadge}>{preset.shotCount} shots</span>
+                  <span className={styles.shotBadge}>
+                    {preset.shotCount} {preset.shotCount === 1 ? "shot" : "shots"}
+                  </span>
                 </div>
                 <div className={styles.cardBody}>
                   <div className={styles.cardTitleRow}>
