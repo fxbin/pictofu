@@ -61,6 +61,16 @@ export const PRESETS: BoothPreset[] = [
     accent: "cream",
   },
   {
+    id: "polaroid-moment",
+    name: "Polaroid Moment",
+    description: "One photo in a roomy instant-film-style frame.",
+    layoutId: "polaroid",
+    filterId: "original",
+    frameId: "cream",
+    shotCount: 1,
+    accent: "cream",
+  },
+  {
     id: "best-friends",
     name: "Best Friends",
     description: "Capture all the laughs with your besties.",

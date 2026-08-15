@@ -1,0 +1,29 @@
+issue: 20
+mode: soft_orchestration_only
+objective: >
+  Integrate the pre-camera layout/preset chooser onto the latest dev baseline and make it the default
+  path for generic Start Booth CTAs while preserving direct preset links from template-specific surfaces.
+scope:
+  - add indexable /layouts page using lib/presets.ts as the single source of truth
+  - explain layout geometry vs preset styling and show shot counts
+  - route each preset card to /booth?preset=<stable-id>
+  - route generic Home Start Booth CTAs to /layouts
+  - keep template-specific links direct to their preset booth
+  - add Layouts to shared footer and sitemap
+  - render shared footer on /layouts
+  - preserve About/Privacy/metadata/analytics changes already integrated on dev
+non_goals:
+  - new Canvas algorithms
+  - camera session changes
+  - upload/crop/stickers
+  - unverified human demo assets from #16
+acceptance:
+  - /layouts has unique absolute title, description and canonical
+  - all current presets are represented from lib/presets.ts
+  - each card exposes shot count, geometry, filter and frame
+  - generic Start Booth from Home lands on /layouts without camera permission
+  - preset-specific links preserve preset id into /booth
+  - /layouts is discoverable from footer and sitemap
+  - mobile tap targets remain at least 44px
+  - Node 24 lint/typecheck/build pass
+  - Vercel Preview route/navigation smoke passes
