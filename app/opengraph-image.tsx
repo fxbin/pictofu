@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "PicTofu — Your cute online photobooth";
+export const alt = "PicTofu - Your cute online photobooth";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -33,9 +33,10 @@ export default function OpenGraphImage() {
                 borderRadius: "20px",
                 background: "#fffdf9",
                 fontSize: "22px",
+                fontWeight: 900,
               }}
             >
-              •‿•
+              PT
             </div>
             PicTofu
           </div>
@@ -61,7 +62,7 @@ export default function OpenGraphImage() {
             transform: "rotate(4deg)",
           }}
         >
-          {["✌", "♡", "✦", "☺"].map((mark) => (
+          {["01", "02", "03", "04"].map((mark) => (
             <div
               key={mark}
               style={{
@@ -72,14 +73,16 @@ export default function OpenGraphImage() {
                 borderRadius: "15px",
                 background: "linear-gradient(145deg,#d6b4aa,#f6ddd3)",
                 color: "#68484a",
-                fontSize: "42px",
+                fontSize: "34px",
+                fontWeight: 800,
+                letterSpacing: "2px",
               }}
             >
               {mark}
             </div>
           ))}
           <div style={{ display: "flex", justifyContent: "center", fontSize: "20px", fontWeight: 800, color: "#845665" }}>
-            ✦ PicTofu ♡
+            PicTofu
           </div>
         </div>
       </div>
