@@ -30,10 +30,13 @@ type LayoutId = BoothPreset["layoutId"];
 type FilterId = BoothPreset["filterId"];
 type FrameId = BoothPreset["frameId"];
 
-type CapturedPhoto = {
-  id: string;
+type CaptureSlot = {
+  slotId: string;
+  source: "camera" | "upload";
   blob: Blob;
   url: string;
+  crop?: { x: number; y: number; zoom: number };
+  transform?: { rotation: number; mirrorX: boolean };
 };
 
 const FILTERS: { id: FilterId; label: string }[] = [
@@ -98,6 +101,10 @@ function isWeChatBrowser() {
   return /MicroMessenger/i.test(navigator.userAgent);
 }
 
+function emptyCaptureSlots(count: number): Array<CaptureSlot | null> {
+  return Array.from({ length: count }, () => null);
+}
+
 export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const supportState = useSyncExternalStore(subscribeToBrowserCapability, getCameraSupportSnapshot, getServerCameraSupportSnapshot);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -115,16 +122,20 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const [facingMode, setFacingMode] = useState<FacingMode>("user");
   const [cameraError, setCameraError] = useState<CameraErrorClass | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
-  const [capturedPhotos, setCapturedPhotos] = useState<CapturedPhoto[]>([]);
+  const [captureSlots, setCaptureSlots] = useState<Array<CaptureSlot | null>>([]);
+  const [activeRetakeIndex, setActiveRetakeIndex] = useState<number | null>(null);
+  const [reviewMessage, setReviewMessage] = useState<string | null>(null);
   const [exportStatus, setExportStatus] = useState<ExportStatus>("idle");
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [savePreviewUrl, setSavePreviewUrl] = useState<string | null>(null);
   const [savePreviewReason, setSavePreviewReason] = useState<SavePreviewReason | null>(null);
 
   const captureBusy = cameraStatus === "requesting" || cameraStatus === "countdown" || cameraStatus === "capturing";
+  const capturedCount = captureSlots.reduce((total, slot) => total + (slot ? 1 : 0), 0);
   const canFlip = cameraStatus === "ready" && !captureBusy;
   const selectedLayoutTarget = shotTargetForLayout(layoutId);
-  const exportReady = capturedPhotos.length >= selectedLayoutTarget && !captureBusy && exportStatus !== "working";
+  const exportSlots = captureSlots.slice(0, selectedLayoutTarget);
+  const exportReady = exportSlots.length === selectedLayoutTarget && exportSlots.every((slot) => slot !== null) && !captureBusy && exportStatus !== "working";
 
   useEffect(() => {
     const streamHolder = streamRef;
@@ -160,11 +171,19 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     );
   }
 
-  function clearCapturedPhotos() {
+  function revokePhotoUrl(url: string) {
+    const index = photoUrlsRef.current.indexOf(url);
+    if (index >= 0) photoUrlsRef.current.splice(index, 1);
+    URL.revokeObjectURL(url);
+  }
+
+  function clearCaptureSlots() {
     closeSavePreview();
     photoUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     photoUrlsRef.current = [];
-    setCapturedPhotos([]);
+    setCaptureSlots([]);
+    setActiveRetakeIndex(null);
+    setReviewMessage(null);
     setExportStatus("idle");
     setExportMessage(null);
     editStartedRef.current = false;
@@ -180,7 +199,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     if (captureBusy) return;
     const next = PRESETS.find((item) => item.id === nextId);
     if (!next) return;
-    clearCapturedPhotos();
+    clearCaptureSlots();
     setPresetId(next.id);
     setLayoutId(next.layoutId);
     setFilterId(next.filterId);
@@ -190,7 +209,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
 
   function markStyleChange(styleType: "layout" | "filter" | "frame", styleId: string) {
     closeSavePreview();
-    if (capturedPhotos.length > 0 && !editStartedRef.current) {
+    if (capturedCount > 0 && !editStartedRef.current) {
       editStartedRef.current = true;
       emitProductEvent("edit_started", { entry_preset: preset.id });
     }
@@ -261,7 +280,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     await startCamera(facingMode === "user" ? "environment" : "user");
   }
 
-  async function captureFrame(): Promise<CapturedPhoto> {
+  async function captureFrame(slotId: string): Promise<CaptureSlot> {
     const video = videoRef.current;
     if (!video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) throw new Error("Camera frame is not ready");
     const { width, height } = boundedCaptureSize(video.videoWidth, video.videoHeight);
@@ -282,7 +301,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     });
     const url = URL.createObjectURL(blob);
     photoUrlsRef.current.push(url);
-    return { id: url, blob, url };
+    return { slotId, source: "camera", blob, url };
   }
 
   async function runCountdown() {
@@ -296,18 +315,24 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
 
   async function captureSequence() {
     if (cameraStatus !== "ready") return;
-    clearCapturedPhotos();
+    clearCaptureSlots();
+    setCaptureSlots(emptyCaptureSlots(preset.shotCount));
     emitProductEvent("capture_started", { layout_id: layoutId, shot_target: preset.shotCount });
     try {
       for (let shotIndex = 0; shotIndex < preset.shotCount; shotIndex += 1) {
         await runCountdown();
         setCameraStatus("capturing");
-        const photo = await captureFrame();
-        setCapturedPhotos((current) => [...current, photo]);
+        const slot = await captureFrame(`slot-${shotIndex + 1}`);
+        setCaptureSlots((current) => {
+          const next = current.length === preset.shotCount ? [...current] : emptyCaptureSlots(preset.shotCount);
+          next[shotIndex] = slot;
+          return next;
+        });
         emitProductEvent("photo_captured", { shot_index: shotIndex + 1, shot_target: preset.shotCount });
         if (shotIndex < preset.shotCount - 1) await sleep(420);
       }
       setCameraStatus("review");
+      setReviewMessage("Tap any photo to retake only that shot, or keep them all and style your strip.");
       emitProductEvent("capture_completed", { shot_count: preset.shotCount, layout_id: layoutId });
     } catch {
       setCountdown(null);
@@ -317,8 +342,45 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     }
   }
 
+  async function retakeSlot(slotIndex: number) {
+    if (cameraStatus !== "review" || captureBusy) return;
+    const existingSlot = captureSlots[slotIndex];
+    if (!existingSlot || !streamRef.current) {
+      setReviewMessage("Camera is not ready for a retake. Try Retake all to restart the session.");
+      return;
+    }
+
+    closeSavePreview();
+    setExportStatus("idle");
+    setExportMessage(null);
+    setCameraError(null);
+    setActiveRetakeIndex(slotIndex);
+    setReviewMessage(`Retaking photo ${slotIndex + 1}…`);
+
+    try {
+      await runCountdown();
+      setCameraStatus("capturing");
+      const replacement = await captureFrame(existingSlot.slotId);
+      setCaptureSlots((current) => {
+        const next = [...current];
+        next[slotIndex] = replacement;
+        return next;
+      });
+      window.setTimeout(() => revokePhotoUrl(existingSlot.url), 0);
+      emitProductEvent("retake_single", { shot_index: slotIndex + 1, shot_count: preset.shotCount });
+      setReviewMessage(`Photo ${slotIndex + 1} replaced. Review the set or continue styling.`);
+    } catch {
+      setReviewMessage(`Photo ${slotIndex + 1} could not be retaken. Your previous shot is still safe.`);
+      emitProductEvent("camera_error", { error_class: "retake_failed" });
+    } finally {
+      setCountdown(null);
+      setActiveRetakeIndex(null);
+      setCameraStatus("review");
+    }
+  }
+
   function restartCapture() {
-    clearCapturedPhotos();
+    clearCaptureSlots();
     setCameraError(null);
     setCountdown(null);
     setCameraStatus(streamRef.current ? "ready" : "idle");
@@ -344,8 +406,9 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     setExportMessage(null);
     emitProductEvent("export_started", { format: "png", layout_id: layoutId });
     try {
+      const photoUrls = exportSlots.map((slot) => slot?.url).filter((url): url is string => Boolean(url));
       const result = await composePhotoStrip({
-        photoUrls: capturedPhotos.map((photo) => photo.url),
+        photoUrls,
         layoutId,
         filterId,
         frameId,
@@ -426,10 +489,14 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const statusCopy = cameraError
     ? cameraErrorMessage(cameraError)
     : cameraStatus === "review"
-      ? `${capturedPhotos.length} photos captured. Style the strip, then download or share it.`
+      ? `${capturedCount} photos captured. Retake only the shots you want to improve, then style and share.`
       : cameraStatus === "ready"
         ? `Camera ready. PicTofu will take ${preset.shotCount} photos with a 3-second countdown.`
         : "Enable your camera when you’re ready. Photos stay on this device.";
+
+  const progressLabel = activeRetakeIndex !== null
+    ? `Retake ${activeRetakeIndex + 1}/${preset.shotCount}`
+    : `${Math.min(capturedCount + 1, preset.shotCount)}/${preset.shotCount}`;
 
   return (
     <main className="booth-page">
@@ -445,7 +512,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
           <div className="booth-camera-card__status">
             <span className={`live-dot ${cameraStatus === "ready" ? "is-live" : ""}`} aria-hidden="true" />
             {cameraStatus === "ready" || cameraStatus === "countdown" || cameraStatus === "capturing" ? `Camera · ${facingMode === "user" ? "Front" : "Rear"}` : cameraStatus === "review" ? "Review" : "Camera off"}
-            {(cameraStatus === "countdown" || cameraStatus === "capturing") && <span className="shot-progress">{capturedPhotos.length + 1}/{preset.shotCount}</span>}
+            {(cameraStatus === "countdown" || cameraStatus === "capturing") && <span className="shot-progress">{progressLabel}</span>}
           </div>
 
           <div className={`booth-camera-placeholder booth-camera-placeholder--${frameId} camera-surface`}>
@@ -465,14 +532,14 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
           <div className="capture-tray">
             <button type="button" aria-label="Photo ratio is 3 by 4" disabled={captureBusy}><span>3:4</span><small>Ratio</small></button>
             <button type="button" aria-label="Countdown is 3 seconds" disabled={captureBusy}><span>3</span><small>Timer</small></button>
-            <button className="shutter-button" type="button" onClick={handlePrimaryAction} disabled={captureBusy || supportState === "checking"} aria-label={primaryActionLabel(cameraStatus, capturedPhotos.length)}><span /></button>
+            <button className="shutter-button" type="button" onClick={handlePrimaryAction} disabled={captureBusy || supportState === "checking"} aria-label={primaryActionLabel(cameraStatus, capturedCount)}><span /></button>
             <button type="button" aria-label="Flip camera" onClick={flipCamera} disabled={!canFlip}><span>↻</span><small>Flip</small></button>
             <button type="button" aria-label="Flash is not available in this browser experience" disabled><span>ϟ</span><small>Flash</small></button>
           </div>
 
           <div className={`capture-status ${cameraStatus === "error" ? "is-error" : ""}`} id="capture-status" aria-live="polite">
-            <div><strong>{primaryActionLabel(cameraStatus, capturedPhotos.length)}</strong><p>{supportState === "unsupported" ? "Camera access is unavailable in this browser. Try a current Safari or Chrome browser." : statusCopy}</p></div>
-            <button type="button" onClick={handlePrimaryAction} disabled={captureBusy || supportState !== "supported"}>{primaryActionLabel(cameraStatus, capturedPhotos.length)}</button>
+            <div><strong>{primaryActionLabel(cameraStatus, capturedCount)}</strong><p>{supportState === "unsupported" ? "Camera access is unavailable in this browser. Try a current Safari or Chrome browser." : statusCopy}</p></div>
+            <button type="button" onClick={handlePrimaryAction} disabled={captureBusy || supportState !== "supported"}>{primaryActionLabel(cameraStatus, capturedCount)}</button>
           </div>
         </div>
 
@@ -484,21 +551,50 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
             </select>
           </div>
 
-          <div className="editor-heading"><span>{capturedPhotos.length ? "Your strip" : "Current look"}</span><strong>{preset.name}</strong></div>
+          <div className="editor-heading"><span>{capturedCount ? "Your strip" : "Current look"}</span><strong>{preset.name}</strong></div>
 
           <div className={`result-strip result-strip--${frameId} result-strip--layout-${layoutId}`} aria-label="Photo strip preview">
             {Array.from({ length: Math.min(preset.shotCount, selectedLayoutTarget) }).map((_, index) => {
-              const photo = capturedPhotos[index];
+              const slot = captureSlots[index];
               return (
-                <div className={`result-strip__photo result-strip__photo--${filterId} ${photo ? "has-photo" : ""}`} key={photo?.id ?? index}>
-                  {photo ? <img src={photo.url} alt={`Captured photo ${index + 1}`} /> : <span aria-hidden="true">{index + 1}</span>}
+                <div className={`result-strip__photo result-strip__photo--${filterId} ${slot ? "has-photo" : ""}`} key={slot?.slotId ?? `slot-${index + 1}`}>
+                  {slot ? <img src={slot.url} alt={`Captured photo ${index + 1}`} /> : <span aria-hidden="true">{index + 1}</span>}
                 </div>
               );
             })}
             <div className="result-strip__brand">✦ PicTofu ♡</div>
           </div>
 
-          {capturedPhotos.length > 0 && <div className="captured-summary"><strong>{capturedPhotos.length} captured</strong><span>Stored only in this browser session.</span></div>}
+          {capturedCount > 0 && (
+            <section className="capture-review" aria-labelledby="capture-review-title">
+              <div className="capture-review__heading">
+                <div>
+                  <span>Review</span>
+                  <h2 id="capture-review-title">Keep the good ones</h2>
+                </div>
+                <button type="button" className="capture-review__retake-all" onClick={restartCapture} disabled={captureBusy}>Retake all</button>
+              </div>
+              <div className="capture-review__grid">
+                {captureSlots.map((slot, index) => slot ? (
+                  <button
+                    type="button"
+                    className={`capture-review__shot ${activeRetakeIndex === index ? "is-active" : ""}`}
+                    key={slot.slotId}
+                    onClick={() => retakeSlot(index)}
+                    disabled={captureBusy || cameraStatus !== "review"}
+                    aria-label={`Retake photo ${index + 1}`}
+                  >
+                    <span className="capture-review__thumb"><img src={slot.url} alt={`Review photo ${index + 1}`} /></span>
+                    <span className="capture-review__shot-label"><strong>Photo {index + 1}</strong><span>{activeRetakeIndex === index ? "Retaking…" : "Retake"}</span></span>
+                  </button>
+                ) : null)}
+              </div>
+              {reviewMessage && <p className="capture-review__message" aria-live="polite">{reviewMessage}</p>}
+              <p className="capture-review__privacy">Only the selected slot is replaced. The other photos stay untouched on this device.</p>
+            </section>
+          )}
+
+          {capturedCount > 0 && <div className="captured-summary"><strong>{capturedCount} captured</strong><span>Stored only in this browser session.</span></div>}
 
           <div className="editor-control-group">
             <h2>Layouts</h2>
@@ -532,7 +628,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
             <button className="download-shell-button" type="button" disabled={!exportReady} onClick={downloadStrip}>{exportStatus === "working" ? "Creating strip…" : "↓ Download PNG"}</button>
             <button className="share-strip-button" type="button" disabled={!exportReady} onClick={shareStrip}>Share ✦</button>
           </div>
-          {capturedPhotos.length > 0 && !exportReady && <p className="export-hint">Choose a layout that fits the captured set.</p>}
+          {capturedCount > 0 && !exportReady && <p className="export-hint">Choose a layout that fits the captured set.</p>}
           {exportMessage && <p className={`export-message ${exportStatus === "error" ? "is-error" : ""}`} aria-live="polite">{exportMessage}</p>}
           <p className="editor-footnote">PNG is composed locally. No account. No cloud gallery.</p>
         </aside>
