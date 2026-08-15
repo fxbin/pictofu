@@ -1,0 +1,53 @@
+work_order:
+  task_id: pictofu-camera-capture
+  issue: 2
+  pull_request: 8
+  workflow_bundle: quick-slice-deliver
+  objective: "Implement the real client-side camera lifecycle, countdown multi-shot capture, flip/retry/restart paths, and privacy-safe capture analytics for PicTofu."
+  lead_role: Technical Trinity
+  worker_role: Frontend camera implementation lens
+  verifier_role: Git Workflow Guardian + independent verification lens
+  input_artifacts:
+    - "Issue #2"
+    - "AGENTS.md"
+    - ".vidt/harness/engineering-constraints.md"
+    - "existing /booth shell from Issue #1"
+  output_artifacts:
+    - "real getUserMedia camera preview"
+    - "3-2-1 countdown and preset shot-count sequence"
+    - "in-memory captured Blob/object URL frames"
+    - "flip camera, retry and restart paths"
+    - "camera resource cleanup"
+    - "camera/capture analytics events"
+  acceptance_gates:
+    - "Captured image bytes never leave the browser in this slice."
+    - "Camera permission is requested only after an explicit user action."
+    - "Front camera is preferred; flip requests the opposite facing mode and stops the prior stream first."
+    - "Permission denied/unavailable/start failure states provide a retry/recovery action."
+    - "Capture sequence emits capture_started, photo_captured, and capture_completed with no photo content."
+    - "Tracks and generated object URLs are cleaned up when the session is reset or unmounted."
+    - "Lint, typecheck and production build pass."
+    - "Production-ready camera claim remains gated on real desktop + mobile browser evidence."
+  dependency_ids:
+    - 1
+  max_cycles: 2
+  tool_boundary: "GitHub connector; browser/physical-device execution not available; no production cloud mutation."
+  context_boundary: "Issue #2 only; no strip composition/export or SEO route expansion."
+  backend_binding: soft_orchestration_only
+  permissions:
+    repository: write
+    production: none
+  resume_anchor: ".vidt/work-orders/camera-capture.yaml"
+
+status:
+  state: passed
+  cycle_count: 1
+  verifier_verdict: pass
+  team_engine_closure_verdict: pass_with_watch
+  evidence:
+    - "GitHub Actions run 31875944540: dependency install/lint/typecheck/build all success"
+    - "Static verifier review of privacy, lifecycle, capture and recovery gates"
+  residual_risk:
+    - "Real desktop/mobile camera hardware evidence is pending; do not claim production-ready camera behavior."
+    - "Facing-mode switching must be checked on iOS Safari and Android Chrome."
+    - "package-lock.json pending."

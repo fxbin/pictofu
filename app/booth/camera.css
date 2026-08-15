@@ -1,0 +1,220 @@
+.camera-surface {
+  isolation: isolate;
+}
+
+.booth-video {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  object-fit: cover;
+  background: #352a28;
+}
+
+.booth-video.is-mirrored {
+  transform: scaleX(-1);
+}
+
+.camera-empty-state {
+  width: min(390px, calc(100% - 36px));
+  min-height: 210px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 7;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  padding: 26px;
+  border: 1px solid rgba(255,255,255,.55);
+  border-radius: 24px;
+  background: rgba(255, 250, 246, .88);
+  box-shadow: 0 18px 55px rgba(75, 47, 43, .18);
+  text-align: center;
+  backdrop-filter: blur(16px);
+}
+
+.camera-empty-state__icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 17px;
+  background: #ffe4eb;
+  color: #c55a73;
+  font-size: 24px;
+}
+
+.camera-empty-state strong {
+  font-size: 18px;
+}
+
+.camera-empty-state p {
+  margin: 0;
+  color: #766865;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.camera-countdown {
+  z-index: 9;
+  animation: pictofu-countdown-pop .3s ease both;
+}
+
+.capture-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  background: white;
+  opacity: 0;
+  animation: pictofu-camera-flash .28s ease;
+}
+
+.live-dot.is-live {
+  background: #5fbd9a;
+  box-shadow: 0 0 0 4px #e0f6ee;
+}
+
+.shot-progress {
+  margin-left: auto;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #fff0f4;
+  color: #bd5e73;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.capture-tray button:disabled {
+  cursor: not-allowed;
+  opacity: .42;
+}
+
+.capture-tray .shutter-button:disabled {
+  opacity: .68;
+}
+
+.capture-status {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.capture-status.is-error {
+  border-color: #f0c4ca;
+  background: #fff0f2;
+}
+
+.capture-status button {
+  min-width: 132px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ff748f, #ff617f);
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.capture-status button:disabled {
+  cursor: not-allowed;
+  opacity: .48;
+}
+
+.result-strip__photo.has-photo {
+  background: #332b29;
+}
+
+.result-strip__photo img {
+  width: 100%;
+  height: 100%;
+  min-height: 88px;
+  display: block;
+  object-fit: cover;
+}
+
+.result-strip__photo--bw img {
+  filter: grayscale(1);
+}
+
+.result-strip__photo--warm img {
+  filter: sepia(.18) saturate(1.18);
+}
+
+.result-strip__photo--vintage img {
+  filter: sepia(.38) contrast(.9);
+}
+
+.result-strip__photo--y2k img {
+  filter: saturate(1.3) contrast(1.08) hue-rotate(324deg);
+}
+
+.captured-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -8px 0 8px;
+  padding: 10px 12px;
+  border-radius: 13px;
+  background: #eff9f6;
+  color: #55786f;
+  font-size: 11px;
+}
+
+.captured-summary strong {
+  color: #3f655c;
+}
+
+@keyframes pictofu-countdown-pop {
+  from { transform: translate(-50%, -50%) scale(.72); opacity: .35; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+@keyframes pictofu-camera-flash {
+  0% { opacity: 0; }
+  35% { opacity: .92; }
+  100% { opacity: 0; }
+}
+
+@media (max-width: 720px) {
+  .booth-camera-placeholder.camera-surface {
+    min-height: min(67dvh, 620px);
+  }
+
+  .camera-empty-state {
+    width: min(330px, calc(100% - 24px));
+    min-height: 190px;
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .capture-status {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .capture-status button {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .captured-summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .camera-countdown,
+  .capture-flash {
+    animation: none;
+  }
+}

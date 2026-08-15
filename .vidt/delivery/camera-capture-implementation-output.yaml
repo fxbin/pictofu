@@ -1,0 +1,32 @@
+implementation_output:
+  task_id: pictofu-camera-capture
+  cycle_id: 1
+  worker_role: Frontend camera implementation lens
+  produced_artifacts:
+    - "getUserMedia camera lifecycle after explicit user action"
+    - "front-camera preference and opposite-facing-mode flip request"
+    - "3-2-1 countdown with preset-driven 3/4 shot sequence"
+    - "client-side JPEG Blob/object URL capture at bounded dimensions"
+    - "mirrored selfie preview and matching mirrored capture"
+    - "permission/unavailable/start/capture recovery UI"
+    - "retake-all path"
+    - "MediaStream track and object URL cleanup"
+    - "privacy-safe camera/capture analytics metadata"
+  artifact_delta:
+    - "Replaced the visual-only booth camera shell with an actual browser camera session."
+    - "Kept composition/export out of scope for Issue #3."
+  commands_run:
+    - "GitHub Actions: npm install --no-audit --no-fund"
+    - "GitHub Actions: npm run lint"
+    - "GitHub Actions: npm run typecheck"
+    - "GitHub Actions: npm run build"
+  tests_run:
+    - "CI run 31875944540 / job 94991577002 — all gates passed"
+  assumptions:
+    - "A facingMode ideal request is sufficient for the initial portable flip implementation; physical-device behavior remains a browser evidence gate."
+    - "Retake-all is the smallest acceptable retake behavior for MVP-02; per-shot replacement can be added only if later evidence requires it."
+  known_risks:
+    - "No physical camera/device execution is available in this delivery runtime."
+    - "Facing-mode switching behavior varies across mobile browsers and must be checked on a real device."
+    - "No package-lock.json is committed yet."
+  self_reported_done: true

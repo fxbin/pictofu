@@ -4,6 +4,7 @@ export type ProductEventName =
   | "camera_permission_requested"
   | "camera_permission_granted"
   | "camera_permission_denied"
+  | "camera_error"
   | "capture_started"
   | "photo_captured"
   | "capture_completed"

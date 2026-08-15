@@ -1,0 +1,54 @@
+verification_report:
+  task_id: pictofu-camera-capture
+  cycle_id: 1
+  verifier_role: Git Workflow Guardian + independent verification lens
+  verdict: pass
+  checked_gates:
+    - gate_id: explicit_permission_intent
+      passed: true
+      evidence: "getUserMedia is only called from the explicit booth camera action / flip action; no camera request occurs on page load."
+    - gate_id: privacy_boundary
+      passed: true
+      evidence: "Captured frames are encoded with an in-memory canvas to Blob/object URL; no fetch/upload/storage API is introduced and analytics receives scalar metadata only."
+    - gate_id: camera_lifecycle
+      passed: true
+      evidence: "Prior stream is stopped before replacement; unmount cleanup stops tracks; retry and flip reuse the bounded startCamera path."
+    - gate_id: capture_sequence
+      passed: true
+      evidence: "Preset shotCount drives 3/4-shot loop, each shot has a 3-2-1 countdown, capture progress, photo_captured event, and capture_completed event."
+    - gate_id: recovery
+      passed: true
+      evidence: "NotAllowed/Security, unavailable/readability, start/capture failure states normalize into user-visible recovery copy and retry action."
+    - gate_id: memory_cleanup
+      passed: true
+      evidence: "Generated object URLs are revoked on reset/preset change/unmount; streams are stopped on replacement/unmount."
+    - gate_id: mobile_interaction
+      passed: true
+      evidence: "Existing dvh/safe-area layout remains; camera-specific mobile CSS maintains large shutter/recovery controls and camera-first layout."
+    - gate_id: lint
+      passed: true
+      evidence: "GitHub Actions run 31875944540 / job 94991577002: lint success."
+    - gate_id: typecheck
+      passed: true
+      evidence: "GitHub Actions run 31875944540 / job 94991577002: typecheck success."
+    - gate_id: build
+      passed: true
+      evidence: "GitHub Actions run 31875944540 / job 94991577002: production build success."
+  confirmed_issues:
+    - issue_id: real-device-camera-evidence
+      severity: medium
+      evidence: "GitHub delivery runtime cannot grant physical desktop/mobile camera permissions or validate Safari/Chrome hardware behavior."
+      fix_priority: "Must be completed before claiming production-ready camera behavior; keep Issue #2 validation gate open or satisfy during preview/launch hardening."
+    - issue_id: facing-mode-browser-variance
+      severity: low
+      evidence: "The implementation requests the opposite facingMode with an ideal constraint; some devices may choose the same camera or expose different switching behavior."
+      fix_priority: "Verify on iOS Safari and Android Chrome; harden with deviceId/exact constraints only if evidence shows a failure."
+    - issue_id: dependency-lock
+      severity: low
+      evidence: "No package-lock.json is committed yet."
+      fix_priority: "Generate a reproducible lockfile before production release."
+  remediation_patch: null
+  evidence_refs:
+    - "https://github.com/fxbin/pictofu/pull/8"
+    - "https://github.com/fxbin/pictofu/actions/runs/31875944540"
+  false_positive_risk: "Medium: code/CI/privacy/lifecycle gates are objective; physical camera behavior remains unverified."
