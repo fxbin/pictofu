@@ -1,0 +1,59 @@
+verification_report:
+  task_id: pictofu-seo-presets
+  cycle_id: 1
+  verifier_role: Git Workflow Guardian + independent SEO/product verification lens
+  verdict: pass
+  checked_gates:
+    - gate_id: exact_route_set
+      passed: true
+      evidence: "SEO_EXPERIENCES contains exactly eight launch slugs: online-photobooth, photo-strip-maker, korean-photobooth, y2k-photobooth, vintage-photobooth, couple-photobooth, best-friend-photobooth, graduation-photobooth."
+    - gate_id: static_unknown_slug_boundary
+      passed: true
+      evidence: "app/[slug]/page.tsx exports dynamicParams=false, generates static params from SEO_EXPERIENCES and calls notFound for missing experience data."
+    - gate_id: unique_useful_content
+      passed: true
+      evidence: "Each config has intent-specific title, description, H1, eyebrow, intro, highlights, three-step instructions and FAQ; Korean, Y2K, vintage, couple, friend and graduation copy are not keyword substitutions."
+    - gate_id: real_preset_contract
+      passed: true
+      evidence: "Every SEO experience names a preset id resolved by getPreset; style/occasion routes use distinct real layout/filter/frame/shot-count defaults where meaningful."
+    - gate_id: indexable_server_content
+      passed: true
+      evidence: "SeoExperiencePage is a server component using static config and Next Links; primary copy and navigation render without camera permission/client state."
+    - gate_id: canonical_metadata
+      passed: true
+      evidence: "generateMetadata returns route-specific title, description, canonical and Open Graph URL using pictofu.com."
+    - gate_id: structured_faq_truth
+      passed: true
+      evidence: "Visible FAQ details and FAQPage JSON-LD are both generated from the same experience.faq array."
+    - gate_id: crawlable_internal_links
+      passed: true
+      evidence: "Home nav links flagship search pages and each experience renders related routes as Next Link anchors."
+    - gate_id: sitemap_contract
+      passed: true
+      evidence: "sitemap contains home plus SEO_EXPERIENCES only; /booth remains excluded and keeps its noindex metadata."
+    - gate_id: anti_thin_page_scope
+      passed: true
+      evidence: "Expansion is deliberately capped at eight intent pages; no bulk keyword permutation generator is introduced."
+    - gate_id: lint
+      passed: true
+      evidence: "GitHub Actions run 31876643103 / job 94993258310: lint success."
+    - gate_id: typecheck
+      passed: true
+      evidence: "GitHub Actions run 31876643103 / job 94993258310: typecheck success."
+    - gate_id: build
+      passed: true
+      evidence: "GitHub Actions run 31876643103 / job 94993258310: production build success."
+  confirmed_issues:
+    - issue_id: live_indexing_evidence
+      severity: low
+      evidence: "This slice proves technical indexability, not that Google has crawled/indexed/ranked the pages."
+      fix_priority: "Issue #5 and Day 7/14 Search Console checkpoints."
+    - issue_id: package_lock
+      severity: low
+      evidence: "Repository still lacks a committed package-lock.json, so CI installation is not fully lockfile-deterministic."
+      fix_priority: "Resolve before production release."
+  remediation_patch: null
+  evidence_refs:
+    - "https://github.com/fxbin/pictofu/pull/10"
+    - "https://github.com/fxbin/pictofu/actions/runs/31876643103"
+  false_positive_risk: "Low for route/product/static SEO contracts; ranking/indexing outcomes remain external post-deploy evidence."

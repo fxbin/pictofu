@@ -1,0 +1,31 @@
+implementation_output:
+  task_id: pictofu-seo-presets
+  cycle_id: 1
+  worker_role: Technical Trinity
+  produced_artifacts:
+    - "typed SEO_EXPERIENCES contract with eight launch routes"
+    - "real PicTofu presets for classic, Korean, couple, Y2K, vintage, best-friend and graduation intents"
+    - "server-rendered search experience component"
+    - "statically generated /[slug] route constrained by dynamicParams=false"
+    - "unique metadata, H1/intro/highlights/how-it-works/FAQ per route"
+    - "FAQPage JSON-LD generated from visible FAQ source"
+    - "crawlable related-experience internal links"
+    - "sitemap entries for home plus eight public landing pages"
+    - "home-page internal links to flagship search pages"
+  artifact_delta:
+    - "Changed SEO from a future page map into eight buildable, product-backed entry routes."
+    - "Kept /booth as a transient noindex app state rather than adding it to the public sitemap."
+  commands_run:
+    - "GitHub Actions: npm install --no-audit --no-fund"
+    - "GitHub Actions: npm run lint"
+    - "GitHub Actions: npm run typecheck"
+    - "GitHub Actions: npm run build"
+  tests_run:
+    - "CI run 31876643103 / job 94993258310 — install, lint, typecheck and production build passed"
+  assumptions:
+    - "Eight evidence-seeking routes are sufficient for the first indexing experiment; mass programmatic expansion is intentionally deferred."
+    - "The same classic-booth product preset can serve online-photobooth and photo-strip-maker because those pages have materially different task intent and unique content."
+  known_risks:
+    - "No live Search Console/indexing evidence exists yet; that belongs to Issue #5/post-launch checkpoints."
+    - "No production deployment occurs in this WorkOrder."
+  self_reported_done: true
