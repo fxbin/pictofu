@@ -25,6 +25,7 @@ type SupportState = "checking" | "supported" | "unsupported";
 type CameraStatus = "idle" | "requesting" | "ready" | "countdown" | "capturing" | "review" | "error";
 type ExportStatus = "idle" | "working" | "done" | "error";
 type FacingMode = "user" | "environment";
+type SavePreviewReason = "download" | "share";
 type LayoutId = BoothPreset["layoutId"];
 type FilterId = BoothPreset["filterId"];
 type FrameId = BoothPreset["frameId"];
@@ -93,11 +94,16 @@ function downloadBlob(blob: Blob, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
+function isWeChatBrowser() {
+  return /MicroMessenger/i.test(navigator.userAgent);
+}
+
 export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const supportState = useSyncExternalStore(subscribeToBrowserCapability, getCameraSupportSnapshot, getServerCameraSupportSnapshot);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const photoUrlsRef = useRef<string[]>([]);
+  const savePreviewUrlRef = useRef<string | null>(null);
   const editStartedRef = useRef(false);
 
   const [presetId, setPresetId] = useState(initialPreset.id);
@@ -112,6 +118,8 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const [capturedPhotos, setCapturedPhotos] = useState<CapturedPhoto[]>([]);
   const [exportStatus, setExportStatus] = useState<ExportStatus>("idle");
   const [exportMessage, setExportMessage] = useState<string | null>(null);
+  const [savePreviewUrl, setSavePreviewUrl] = useState<string | null>(null);
+  const [savePreviewReason, setSavePreviewReason] = useState<SavePreviewReason | null>(null);
 
   const captureBusy = cameraStatus === "requesting" || cameraStatus === "countdown" || cameraStatus === "capturing";
   const canFlip = cameraStatus === "ready" && !captureBusy;
@@ -121,14 +129,39 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   useEffect(() => {
     const streamHolder = streamRef;
     const urlHolder = photoUrlsRef;
+    const saveUrlHolder = savePreviewUrlRef;
     return () => {
       stopMediaStream(streamHolder.current);
       urlHolder.current.forEach((url) => URL.revokeObjectURL(url));
       urlHolder.current = [];
+      if (saveUrlHolder.current) URL.revokeObjectURL(saveUrlHolder.current);
+      saveUrlHolder.current = null;
     };
   }, []);
 
+  function closeSavePreview() {
+    if (savePreviewUrlRef.current) URL.revokeObjectURL(savePreviewUrlRef.current);
+    savePreviewUrlRef.current = null;
+    setSavePreviewUrl(null);
+    setSavePreviewReason(null);
+  }
+
+  function openSavePreview(blob: Blob, reason: SavePreviewReason) {
+    closeSavePreview();
+    const url = URL.createObjectURL(blob);
+    savePreviewUrlRef.current = url;
+    setSavePreviewUrl(url);
+    setSavePreviewReason(reason);
+    setExportStatus("done");
+    setExportMessage(
+      reason === "share"
+        ? "This browser can’t share the PNG directly. Press and hold the image to save or send it."
+        : "Press and hold the generated image to save it to your device.",
+    );
+  }
+
   function clearCapturedPhotos() {
+    closeSavePreview();
     photoUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     photoUrlsRef.current = [];
     setCapturedPhotos([]);
@@ -156,6 +189,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   }
 
   function markStyleChange(styleType: "layout" | "filter" | "frame", styleId: string) {
+    closeSavePreview();
     if (capturedPhotos.length > 0 && !editStartedRef.current) {
       editStartedRef.current = true;
       emitProductEvent("edit_started", { entry_preset: preset.id });
@@ -335,8 +369,21 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   async function downloadStrip() {
     try {
       const result = await createStrip();
+      if (isWeChatBrowser()) {
+        openSavePreview(result.blob, "download");
+        emitProductEvent("download_clicked", {
+          layout_id: layoutId,
+          delivery_mode: "save_preview",
+          browser_context: "wechat",
+        });
+        return;
+      }
       downloadBlob(result.blob, `pictofu-${preset.id}.png`);
-      emitProductEvent("download_clicked", { layout_id: layoutId });
+      emitProductEvent("download_clicked", {
+        layout_id: layoutId,
+        delivery_mode: "direct_download",
+        browser_context: "browser",
+      });
       setExportMessage("Your PicTofu strip was downloaded ✨");
     } catch {
       // createStrip owns the user-visible failure state.
@@ -344,16 +391,23 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   }
 
   async function shareStrip() {
-    emitProductEvent("share_clicked", { share_supported: typeof navigator.share === "function" });
     try {
       const result = await createStrip();
       const file = new File([result.blob], `pictofu-${preset.id}.png`, { type: "image/png" });
       const canShareFile = typeof navigator.share === "function" && (!navigator.canShare || navigator.canShare({ files: [file] }));
+      const browserContext = isWeChatBrowser() ? "wechat" : "browser";
+
+      emitProductEvent("share_clicked", {
+        share_supported: canShareFile,
+        delivery_mode: canShareFile ? "native_share" : "save_preview",
+        browser_context: browserContext,
+      });
+
       if (!canShareFile) {
-        downloadBlob(result.blob, file.name);
-        setExportMessage("Sharing isn’t supported here, so PicTofu downloaded the strip instead.");
+        openSavePreview(result.blob, "share");
         return;
       }
+
       await navigator.share({ files: [file], title: "My PicTofu photo strip", text: "Made with PicTofu ✨" });
       setExportMessage("Share sheet opened for your PicTofu strip ✨");
     } catch (error) {
@@ -364,7 +418,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       }
       if (exportStatus !== "error") {
         setExportStatus("error");
-        setExportMessage("Sharing failed. You can still download the strip.");
+        setExportMessage("Sharing failed. Try Share again or use Download PNG.");
       }
     }
   }
@@ -483,6 +537,28 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
           <p className="editor-footnote">PNG is composed locally. No account. No cloud gallery.</p>
         </aside>
       </section>
+
+      {savePreviewUrl && (
+        <div className="save-preview-overlay" role="presentation">
+          <section className="save-preview-card" role="dialog" aria-modal="true" aria-labelledby="save-preview-title">
+            <button className="save-preview-card__close" type="button" onClick={closeSavePreview} aria-label="Close save preview">×</button>
+            <p className="save-preview-card__eyebrow">Your PicTofu strip is ready</p>
+            <h2 id="save-preview-title">Press and hold the image</h2>
+            <p className="save-preview-card__copy">
+              {isWeChatBrowser()
+                ? "In WeChat, press and hold the image, then choose Save Image / 保存图片 or send it to a friend."
+                : savePreviewReason === "share"
+                  ? "This browser can’t share image files directly. Press and hold the strip to save or share it from your device."
+                  : "Press and hold the strip to save it to your device."}
+            </p>
+            <div className="save-preview-image-wrap">
+              <img className="save-preview-image" src={savePreviewUrl} alt="Generated PicTofu photo strip ready to save" />
+            </div>
+            <p className="save-preview-card__tip">Tip: the image above is the full generated PNG, not a screenshot preview.</p>
+            <button className="save-preview-card__done" type="button" onClick={closeSavePreview}>Done</button>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
