@@ -8,6 +8,7 @@ export type ProductEventName =
   | "capture_started"
   | "photo_captured"
   | "capture_completed"
+  | "retake_single"
   | "edit_started"
   | "style_changed"
   | "export_started"
