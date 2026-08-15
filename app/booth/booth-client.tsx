@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { emitProductEvent } from "@/lib/analytics";
 import type { BoothPreset } from "@/lib/presets";
 import { PRESETS } from "@/lib/presets";
 import { TofuMark } from "@/components/brand";
 
 type SupportState = "checking" | "supported" | "unsupported";
-
 type LayoutId = BoothPreset["layoutId"];
 type FilterId = BoothPreset["filterId"];
 
@@ -27,8 +26,26 @@ const LAYOUTS: { id: LayoutId; label: string }[] = [
   { id: "polaroid", label: "Polaroid" },
 ];
 
+function subscribeToBrowserCapability() {
+  return () => undefined;
+}
+
+function getCameraSupportSnapshot(): SupportState {
+  return navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function"
+    ? "supported"
+    : "unsupported";
+}
+
+function getServerCameraSupportSnapshot(): SupportState {
+  return "checking";
+}
+
 export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
-  const [supportState, setSupportState] = useState<SupportState>("checking");
+  const supportState = useSyncExternalStore(
+    subscribeToBrowserCapability,
+    getCameraSupportSnapshot,
+    getServerCameraSupportSnapshot,
+  );
   const [presetId, setPresetId] = useState(initialPreset.id);
   const preset = useMemo(
     () => PRESETS.find((item) => item.id === presetId) ?? initialPreset,
@@ -36,15 +53,6 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   );
   const [layoutId, setLayoutId] = useState<LayoutId>(initialPreset.layoutId);
   const [filterId, setFilterId] = useState<FilterId>(initialPreset.filterId);
-
-  useEffect(() => {
-    const supported = Boolean(
-      typeof navigator !== "undefined" &&
-      navigator.mediaDevices &&
-      typeof navigator.mediaDevices.getUserMedia === "function",
-    );
-    setSupportState(supported ? "supported" : "unsupported");
-  }, []);
 
   function selectPreset(nextId: string) {
     const next = PRESETS.find((item) => item.id === nextId);
