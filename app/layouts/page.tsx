@@ -1,0 +1,134 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { BrandLink } from "@/components/brand";
+import { PRESETS } from "@/lib/presets";
+import styles from "./layouts.module.css";
+
+export const metadata: Metadata = {
+  title: "Choose a Photo Booth Layout | PicTofu",
+  description: "Compare PicTofu photo strip, grid and three-cut looks before opening the camera. Pick a style, see the shot count, then start that preset instantly.",
+  alternates: { canonical: "https://pictofu.com/layouts" },
+};
+
+type Geometry = "strip-4" | "strip-3" | "grid-4" | "polaroid";
+
+const GEOMETRY_COPY: Record<Geometry, { label: string; short: string }> = {
+  "strip-4": { label: "1 × 4 photo strip", short: "Four stacked moments" },
+  "strip-3": { label: "1 × 3 photo strip", short: "A shorter keepsake" },
+  "grid-4": { label: "2 × 2 photo grid", short: "Four equal frames" },
+  polaroid: { label: "Polaroid-style card", short: "One framed memory" },
+};
+
+const EXPERIENCE_LINKS = [
+  ["Korean", "/korean-photobooth"],
+  ["Y2K", "/y2k-photobooth"],
+  ["Vintage", "/vintage-photobooth"],
+  ["Couple", "/couple-photobooth"],
+  ["Best Friends", "/best-friend-photobooth"],
+  ["Graduation", "/graduation-photobooth"],
+] as const;
+
+function GeometryPreview({ layout, shotCount }: { layout: Geometry; shotCount: number }) {
+  const cells = layout === "polaroid" ? 1 : shotCount;
+  return (
+    <div className={`${styles.preview} ${styles[`preview_${layout}`]}`} aria-hidden="true">
+      {Array.from({ length: cells }).map((_, index) => <span key={index}>{index + 1}</span>)}
+      <small>✦ PicTofu</small>
+    </div>
+  );
+}
+
+export default function LayoutsPage() {
+  return (
+    <main className={styles.page}>
+      <header className={styles.header}>
+        <BrandLink />
+        <nav className={styles.nav} aria-label="Layout page navigation">
+          <Link href="/">Home</Link>
+          <Link href="/online-photobooth">Photobooth</Link>
+          <Link href="/photo-strip-maker">Photo Strip</Link>
+        </nav>
+        <Link className={styles.headerCta} href="/booth">Start Booth ✦</Link>
+      </header>
+
+      <section className={styles.hero}>
+        <p className={styles.eyebrow}>✦ Pick the outcome first</p>
+        <h1>Choose your photo booth look</h1>
+        <p>
+          Layout is the geometry. A preset adds the filter, frame and mood. Pick the finished shape you want before PicTofu asks for camera access.
+        </p>
+        <div className={styles.heroChips} aria-label="Available layout geometries">
+          <span>1 × 4 Strip</span><span>1 × 3 Strip</span><span>2 × 2 Grid</span><span>Polaroid</span>
+        </div>
+      </section>
+
+      <section className={styles.chooser} aria-labelledby="choose-look-title">
+        <div className={styles.sectionHeading}>
+          <div>
+            <p>Current presets</p>
+            <h2 id="choose-look-title">Start with a look you already understand</h2>
+          </div>
+          <span>{PRESETS.length} looks · no camera permission yet</span>
+        </div>
+
+        <div className={styles.grid}>
+          {PRESETS.map((preset) => {
+            const geometry = GEOMETRY_COPY[preset.layoutId];
+            return (
+              <article className={`${styles.card} ${styles[`accent_${preset.accent}`]}`} key={preset.id}>
+                <div className={styles.cardPreview}>
+                  <GeometryPreview layout={preset.layoutId} shotCount={preset.shotCount} />
+                  <span className={styles.shotBadge}>{preset.shotCount} shots</span>
+                </div>
+                <div className={styles.cardBody}>
+                  <div className={styles.cardTitleRow}>
+                    <div>
+                      <p>{geometry.short}</p>
+                      <h3>{preset.name}</h3>
+                    </div>
+                    <span>{preset.filterId}</span>
+                  </div>
+                  <p className={styles.description}>{preset.description}</p>
+                  <dl className={styles.meta}>
+                    <div><dt>Layout</dt><dd>{geometry.label}</dd></div>
+                    <div><dt>Frame</dt><dd>{preset.frameId}</dd></div>
+                  </dl>
+                  <Link className={styles.chooseButton} href={`/booth?preset=${preset.id}`}>
+                    Choose this look <span aria-hidden="true">→</span>
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className={styles.explainer} aria-labelledby="layout-vs-look-title">
+        <div>
+          <p className={styles.eyebrow}>Layout ≠ preset</p>
+          <h2 id="layout-vs-look-title">One shape can have many moods</h2>
+        </div>
+        <div className={styles.explainerCopy}>
+          <p><strong>Layout</strong> decides how your photos are arranged: a vertical strip, grid, or Polaroid-like card.</p>
+          <p><strong>Preset</strong> starts that layout with a filter and frame, such as Korean Date, Y2K Summer or Vintage Film. You can still adjust compatible styling after capture.</p>
+        </div>
+      </section>
+
+      <section className={styles.intentLinks} aria-labelledby="explore-styles-title">
+        <div>
+          <p className={styles.eyebrow}>Explore by mood</p>
+          <h2 id="explore-styles-title">Not sure which look fits?</h2>
+        </div>
+        <div className={styles.linkGrid}>
+          {EXPERIENCE_LINKS.map(([label, href]) => <Link key={href} href={href}>{label}<span>→</span></Link>)}
+        </div>
+      </section>
+
+      <section className={styles.finalCta}>
+        <p>Already know what you want?</p>
+        <h2>Open the camera and make the strip.</h2>
+        <Link href="/booth">Start PicTofu ✦</Link>
+      </section>
+    </main>
+  );
+}
