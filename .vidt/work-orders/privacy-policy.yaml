@@ -1,0 +1,27 @@
+issue: 19
+mode: soft_orchestration_only
+objective: >
+  Publish an accurate, indexable PicTofu privacy policy that reflects browser-local photo processing,
+  current analytics posture, third-party infrastructure, and future-change guardrails without overstating legal coverage.
+scope:
+  - add /privacy with unique metadata and canonical URL
+  - explain camera permission and browser-local photo processing
+  - disclose Vercel hosting and privacy-focused Web Analytics behavior when enabled
+  - disclose GA4 as optional and consent-gated before production activation
+  - cover retention, international processing, general privacy-rights language, minors, policy updates, and contact-status disclosure
+  - add /privacy to sitemap
+  - add a reusable site footer linking to Privacy on public content surfaces
+non_goals:
+  - jurisdiction-specific legal advice
+  - CMP / consent-banner implementation (Issue #31)
+  - advertising or remarketing setup
+  - accounts, cloud photo storage, or backend image persistence
+  - changing the analytics bridge owned by Issue #27 / PR #24
+acceptance:
+  - /privacy is indexable and has canonical metadata
+  - policy states captured photos and composed strips stay browser-local in v0.1
+  - policy matches current analytics configuration and distinguishes Vercel Analytics from optional GA4
+  - no claim that PicTofu stores user photos or maintains user accounts
+  - /privacy is present in sitemap and linked from public-site footer
+  - Node 24 lint/typecheck/build pass
+  - responsive public-page smoke is documented; production promotion waits for dev acceptance

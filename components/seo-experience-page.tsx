@@ -1,8 +1,17 @@
 import Link from "next/link";
 import { BrandLink } from "@/components/brand";
+import { SiteFooter } from "@/components/site-footer";
 import type { SeoExperience } from "@/lib/seo-pages";
 import { getSeoExperience } from "@/lib/seo-pages";
+import type { BoothPreset } from "@/lib/presets";
 import { getPreset } from "@/lib/presets";
+
+const LAYOUT_LABELS: Record<BoothPreset["layoutId"], string> = {
+  "strip-4": "1 × 4 strip",
+  "strip-3": "1 × 3 strip",
+  "grid-4": "2 × 2 grid",
+  polaroid: "Polaroid",
+};
 
 export function SeoExperiencePage({ experience }: { experience: SeoExperience }) {
   const preset = getPreset(experience.presetId);
@@ -54,7 +63,7 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
             <small>✦ PicTofu ♡</small>
           </div>
           <div className="seo-preset-meta">
-            <span>{preset.layoutId.replace("-", " × ")}</span>
+            <span>{LAYOUT_LABELS[preset.layoutId]}</span>
             <span>{preset.filterId}</span>
             <span>{preset.frameId} frame</span>
           </div>
@@ -118,6 +127,7 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
         <Link className="seo-primary" href={`/booth?preset=${preset.id}`}>{experience.cta}</Link>
       </section>
 
+      <SiteFooter />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
     </main>
   );

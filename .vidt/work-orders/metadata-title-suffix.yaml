@@ -1,0 +1,19 @@
+issue: 40
+mode: soft_orchestration_only
+objective: >
+  Remove duplicate PicTofu suffixes from About and Privacy browser titles while preserving current
+  canonical URLs, Open Graph titles, and root metadata template behavior for other routes.
+scope:
+  - make /about title absolute as `About PicTofu | Cute Online Photobooth`
+  - make /privacy title absolute as `Privacy Policy | PicTofu`
+  - verify representative SEO route still composes through the root title template
+non_goals:
+  - change visible page copy
+  - change canonical URLs or Open Graph descriptions
+  - change Booth behavior or analytics
+acceptance:
+  - About browser title contains one PicTofu brand occurrence
+  - Privacy browser title contains one PicTofu brand occurrence
+  - representative SEO route title remains correctly templated
+  - Node 24 lint/typecheck/build pass
+  - Vercel Preview metadata smoke passes

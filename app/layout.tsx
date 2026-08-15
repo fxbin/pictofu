@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Script from "next/script";
-import { AnalyticsBridge } from "@/components/analytics-bridge";
+import { Analytics } from "@vercel/analytics/next";
+import { AnalyticsConsentGate } from "@/components/analytics-consent-gate";
 import "./globals.css";
 
 const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "";
-const analyticsEnabled =
+const analyticsConfigured =
   process.env.NEXT_PUBLIC_ANALYTICS_ENABLED === "true" && /^G-[A-Z0-9]+$/.test(measurementId);
 
 export const metadata: Metadata = {
@@ -31,19 +31,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body>
-        {analyticsEnabled && (
-          <>
-            <Script id="pictofu-ga4-bootstrap" strategy="beforeInteractive">
-              {`window.dataLayer=window.dataLayer||[];window.gtag=function(){window.dataLayer.push(arguments);};window.gtag('js',new Date());window.gtag('config','${measurementId}',{send_page_view:false});`}
-            </Script>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
-              strategy="afterInteractive"
-            />
-          </>
-        )}
         {children}
-        <AnalyticsBridge enabled={analyticsEnabled} />
+        <AnalyticsConsentGate configured={analyticsConfigured} measurementId={measurementId} />
+        <Analytics />
       </body>
     </html>
   );

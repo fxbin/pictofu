@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandLink } from "@/components/brand";
+import { SiteFooter } from "@/components/site-footer";
 import { FEATURED_PRESETS } from "@/lib/presets";
 
 function Sparkle({ className = "" }: { className?: string }) {
@@ -31,7 +32,7 @@ function BoothPreview() {
         <div className="preview-tools" aria-hidden="true">
           <span><b>3:4</b><small>Ratio</small></span>
           <span><b>◷</b><small>Timer</small></span>
-          <span><b>ϟ</b><small>Flash</small></span>
+          <span><b>●</b><small>Camera</small></span>
           <span><b>↻</b><small>Flip</small></span>
         </div>
         <div className="camera-stage" aria-hidden="true">
@@ -49,7 +50,7 @@ function BoothPreview() {
       <div className="booth-preview__bottom">
         <div className="editor-preview">
           <div className="editor-tabs" aria-hidden="true">
-            <span>▦ Layouts</span><span className="is-active">◉ Filters</span><span>▢ Frames</span><span>♡ Stickers</span>
+            <span>▦ Layouts</span><span className="is-active">◉ Filters</span><span>▢ Frames</span><span>↺ Retake</span>
           </div>
           <div className="filter-row" aria-hidden="true">
             {["Original", "B&W", "Warm", "Vintage", "Y2K"].map((filter, index) => (
@@ -88,11 +89,12 @@ export default function Home() {
         <BrandLink />
         <nav className="desktop-nav" aria-label="Primary navigation">
           <a href="#templates">Templates</a>
+          <Link href="/layouts">Layouts</Link>
           <Link href="/online-photobooth">Booth</Link>
           <Link href="/photo-strip-maker">Photo Strip</Link>
           <Link href="/korean-photobooth">Korean Booth</Link>
         </nav>
-        <Link className="header-cta" href="/booth">Start Booth ✦</Link>
+        <Link className="header-cta" href="/layouts">Start Booth ✦</Link>
         <a className="menu-button" href="#templates" aria-label="Jump to templates">☰</a>
       </header>
 
@@ -105,7 +107,7 @@ export default function Home() {
             Snap photo strips instantly in your browser. Add filters and frames, then download or share with your favorite people. <span aria-hidden="true">♡</span>
           </p>
           <div className="hero-actions">
-            <Link className="primary-button" href="/booth">Start Booth ✦</Link>
+            <Link className="primary-button" href="/layouts">Start Booth ✦</Link>
             <a className="secondary-button" href="#templates">Try Templates</a>
           </div>
           <div className="benefit-row" aria-label="PicTofu benefits">
@@ -120,7 +122,7 @@ export default function Home() {
       <section className="templates-section" id="templates" aria-labelledby="popular-templates-title">
         <div className="section-heading">
           <h2 id="popular-templates-title"><span aria-hidden="true">✦</span> Popular Templates</h2>
-          <Link href="/photo-strip-maker">Explore photo strips →</Link>
+          <Link href="/layouts">Explore all layouts →</Link>
         </div>
         <div className="template-scroller">
           {FEATURED_PRESETS.map((preset, index) => <TemplateCard key={preset.id} preset={preset} index={index} />)}
@@ -133,8 +135,10 @@ export default function Home() {
           <h2>Your photos stay with you.</h2>
           <p>PicTofu’s MVP processes camera frames and photo strips in your browser. No account required.</p>
         </div>
-        <Link href="/online-photobooth">Learn how the booth works →</Link>
+        <Link href="/privacy">Read our privacy policy →</Link>
       </section>
+
+      <SiteFooter />
     </main>
   );
 }

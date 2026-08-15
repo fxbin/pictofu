@@ -1,0 +1,21 @@
+issue: 57
+mode: soft_orchestration_only
+objective: >
+  Produce a traceable dev acceptance checkpoint and force a real tree change through the normal
+  dev PR/CI flow so Vercel's stable dev Preview can be verified against the current Git state.
+scope:
+  - add a dev acceptance evidence checkpoint under .vidt/delivery
+  - record the final automated gates already observed and the remaining owner-only gates
+  - merge only after Node 24 CI passes
+  - use the resulting dev push to verify Vercel creates a fresh READY deployment
+non_goals:
+  - product behavior changes
+  - production promotion
+  - weakening or bypassing CI
+  - claiming camera/retake/consent-click hardware evidence that was not observed
+acceptance:
+  - evidence file is accurate to the current acceptance state
+  - PR Node 24 npm ci/lint/typecheck/build passes
+  - post-merge dev Push CI passes
+  - Vercel creates a fresh dev deployment and stable dev alias advances
+  - final route/runtime smoke is executed against that fresh Preview

@@ -1,0 +1,20 @@
+issue: 54
+mode: soft_orchestration_only
+objective: >
+  Replace internal layout-id formatting on SEO preset cards with stable human-readable geometry labels
+  without changing preset behavior, FAQ JSON-LD, or SEO routing.
+scope:
+  - map strip-4 to 1 × 4 strip
+  - map strip-3 to 1 × 3 strip
+  - map grid-4 to 2 × 2 grid
+  - map polaroid to Polaroid
+  - use the label in the shared SEO experience preset metadata
+non_goals:
+  - change compositor/layout behavior
+  - rewrite SEO page copy or FAQs
+  - change preset IDs
+acceptance:
+  - representative strip/grid/three-cut routes render human geometry labels
+  - no `strip × 4` or `grid × 4` visible copy remains
+  - Node 24 npm ci/lint/typecheck/build pass
+  - Vercel representative SEO Preview smoke passes

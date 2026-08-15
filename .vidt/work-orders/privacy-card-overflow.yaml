@@ -1,0 +1,21 @@
+issue: 35
+mode: soft_orchestration_only
+objective: >
+  Fix the Privacy summary card spacing regression discovered during dev acceptance without changing privacy copy or analytics behavior.
+scope:
+  - isolate the summary card from generic article section spacing rules
+  - preserve content-driven height and responsive wrapping
+  - retain existing visual language
+non_goals:
+  - privacy copy rewrite
+  - analytics/consent behavior
+  - broad redesign of information pages
+acceptance:
+  - summary card keeps intended horizontal and vertical padding
+  - text stays visually inside the card at desktop and mobile widths
+  - normal policy sections retain their section spacing/dividers
+  - Node 24 lint/typecheck/build pass
+  - Vercel dev Preview visual smoke remains required
+root_cause: >
+  .article section has higher specificity than .summary and overrides summary padding with 30px 0,
+  removing horizontal padding from the summary section.
