@@ -558,7 +558,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
         delivery_mode: "direct_download",
         browser_context: "browser",
       });
-      setExportMessage("Your PicTofu strip was downloaded ✨");
+      setExportMessage("Your PicToFu strip was downloaded ✨");
     } catch {
       // createStrip owns the user-visible failure state.
     }
@@ -582,8 +582,8 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
         return;
       }
 
-      await navigator.share({ files: [file], title: "My PicTofu photo strip", text: "Made with PicTofu ✨" });
-      setExportMessage("Share sheet opened for your PicTofu strip ✨");
+      await navigator.share({ files: [file], title: "My PicToFu photo strip", text: "Made with PicToFu ✨" });
+      setExportMessage("Share sheet opened for your PicToFu strip ✨");
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         setExportStatus("done");
@@ -612,13 +612,13 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   return (
     <main className="booth-page">
       <header className="booth-header">
-        <Link href="/" className="booth-back" aria-label="Back to PicTofu home">←</Link>
+        <Link href="/" className="booth-back" aria-label="Back to PicToFu home">←</Link>
         <TofuMark compact />
         <span className="booth-header__status">✨ Ready when you are!</span>
         <Link className="booth-close" href="/" aria-label="Close booth">×</Link>
       </header>
 
-      <section className="booth-workspace" aria-label="PicTofu booth workspace">
+      <section className="booth-workspace" aria-label="PicToFu booth workspace">
         <div className="booth-camera-card">
           <div className="booth-camera-card__status">
             <span className={`live-dot ${cameraStatus === "ready" ? "is-live" : ""}`} aria-hidden="true" />

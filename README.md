@@ -1,6 +1,6 @@
-# PicTofu
+# PicToFu
 
-PicTofu is a mobile-first, privacy-first web photobooth for creating cute photo strips directly in the browser.
+PicToFu is a mobile-first, privacy-first web photobooth for creating cute photo strips directly in the browser.
 
 ## Current phase
 

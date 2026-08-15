@@ -2,7 +2,7 @@
 
 ## Product
 
-PicTofu is a mobile-first, privacy-first web photobooth. The MVP must make the path from landing page to a downloadable photo strip feel immediate.
+PicToFu is a mobile-first, privacy-first web photobooth. The MVP must make the path from landing page to a downloadable photo strip feel immediate.
 
 Core promise: **No install. Open. Pose. Download.**
 
@@ -31,6 +31,12 @@ North-star for the first experiment: **completed photo strips / day**.
 - Camera flow must be usable on current iOS Safari and Android Chrome.
 - SEO landing pages must expose indexable server-rendered copy and internal links.
 - A template page must change the actual default booth experience, not only the page title.
+
+## Brand
+
+- Canonical human-facing product name: **PicToFu**.
+- Keep domain, package, repository, filenames, analytics ids, CSS classes, and other technical identifiers lowercase where already defined, for example `pictofu.com` and `pictofu`.
+- Do not rewrite historical `.vidt/delivery` or cycle evidence solely to change brand casing.
 
 ## UX constraints
 

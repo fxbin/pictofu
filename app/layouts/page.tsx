@@ -6,17 +6,17 @@ import { PRESETS } from "@/lib/presets";
 import styles from "./layouts.module.css";
 
 const LAYOUTS_DESCRIPTION =
-  "Compare PicTofu photo strips, grids, three-cut looks and a Polaroid-style card before opening the camera. Pick a style, see the shot count, then start that preset instantly.";
+  "Compare PicToFu photo strips, grids, three-cut looks and a Polaroid-style card before opening the camera. Pick a style, see the shot count, then start that preset instantly.";
 
 export const metadata: Metadata = {
-  title: { absolute: "Choose a Photo Booth Layout | PicTofu" },
+  title: { absolute: "Choose a Photo Booth Layout | PicToFu" },
   description: LAYOUTS_DESCRIPTION,
   alternates: { canonical: "https://pictofu.com/layouts" },
   openGraph: {
-    title: "Choose a Photo Booth Layout | PicTofu",
+    title: "Choose a Photo Booth Layout | PicToFu",
     description: LAYOUTS_DESCRIPTION,
     url: "https://pictofu.com/layouts",
-    siteName: "PicTofu",
+    siteName: "PicToFu",
     type: "website",
   },
 };
@@ -46,7 +46,7 @@ function GeometryPreview({ layout, shotCount }: { layout: Geometry; shotCount: n
   return (
     <div className={[styles.preview, modifierClass].filter(Boolean).join(" ")} aria-hidden="true">
       {Array.from({ length: cells }).map((_, index) => <span key={index}>{index + 1}</span>)}
-      <small>PicTofu</small>
+      <small>PicToFu</small>
     </div>
   );
 }
@@ -68,7 +68,7 @@ export default function LayoutsPage() {
         <p className={styles.eyebrow}>✦ Pick the outcome first</p>
         <h1>Choose your photo booth look</h1>
         <p>
-          Layout is the geometry. A preset adds the filter, frame and mood. Pick the finished shape you want before PicTofu asks for camera access.
+          Layout is the geometry. A preset adds the filter, frame and mood. Pick the finished shape you want before PicToFu asks for camera access.
         </p>
         <div className={styles.heroChips} aria-label="Available layout geometries">
           <span>1 × 4 Strip</span><span>1 × 3 Strip</span><span>2 × 2 Grid</span><span>Polaroid</span>
@@ -142,7 +142,7 @@ export default function LayoutsPage() {
       <section className={styles.finalCta}>
         <p>Already know what you want?</p>
         <h2>Open the camera and make the strip.</h2>
-        <Link href="/booth">Open PicTofu booth ✦</Link>
+        <Link href="/booth">Open PicToFu booth ✦</Link>
       </section>
 
       <SiteFooter />
