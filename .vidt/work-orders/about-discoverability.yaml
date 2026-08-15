@@ -1,0 +1,19 @@
+issue: 37
+mode: soft_orchestration_only
+objective: >
+  Reconcile the already-implemented About page with PicTofu's shared public navigation and sitemap
+  so users and crawlers can discover it without changing About content or Booth behavior.
+scope:
+  - add About to the shared public footer
+  - add /about to sitemap with appropriate metadata cadence/priority
+  - render the shared footer on /about so Privacy and stable public routes remain discoverable
+non_goals:
+  - rewrite About copy or FAQ
+  - change Booth/camera/share behavior
+  - add a new mobile navigation system
+acceptance:
+  - shared footer exposes About
+  - /about is listed in sitemap
+  - /about exposes the shared footer including Privacy
+  - Node 24 lint/typecheck/build pass
+  - Vercel dev Preview navigation smoke passes
