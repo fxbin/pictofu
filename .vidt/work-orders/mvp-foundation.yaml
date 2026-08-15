@@ -1,0 +1,42 @@
+work_order:
+  task_id: pictofu-mvp-foundation
+  workflow_bundle: product-spec-deliver
+  objective: "Establish the implementation-ready PicTofu v0.1 foundation and first responsive landing/booth shell without adding backend photo persistence."
+  lead_role: World-Class Product Architect
+  worker_role: Technical Trinity
+  verifier_role: Git Workflow Guardian + independent verification lens
+  input_artifacts:
+    - approved desktop PicTofu visual direction
+    - approved mobile PicTofu visual direction
+    - conversation product decisions
+  output_artifacts:
+    - AGENTS.md
+    - .vidt/harness/engineering-constraints.md
+    - docs/product/PRD-v0.1.md
+    - docs/product/roadmap-72h.md
+    - docs/design/ui-spec.md
+    - docs/architecture/mvp-architecture.md
+    - docs/growth/seo-page-map.md
+    - docs/analytics/events.md
+    - responsive Next.js foundation
+    - CI workflow
+  acceptance_gates:
+    - "Scope excludes accounts, AI, payment, cloud photo persistence and native app work."
+    - "Mobile and desktop design contracts are explicit and implementable."
+    - "Analytics event contract never carries photo bytes/content."
+    - "Search routes must map to real booth preset behavior."
+    - "Repository has lint/typecheck/build CI gates."
+  dependency_ids: []
+  max_cycles: 2
+  tool_boundary: "GitHub connector; no destructive git operations; no production cloud mutation in this WorkOrder."
+  context_boundary: "PicTofu MVP v0.1 only."
+  backend_binding: soft_orchestration_only
+  permissions:
+    repository: write
+    production: none
+  resume_anchor: ".vidt/work-orders/mvp-foundation.yaml"
+
+status:
+  state: planned
+  cycle_count: 0
+  team_engine_closure_verdict: pending
