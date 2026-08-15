@@ -5,11 +5,20 @@ import { SiteFooter } from "@/components/site-footer";
 import { PRESETS } from "@/lib/presets";
 import styles from "./layouts.module.css";
 
+const LAYOUTS_DESCRIPTION =
+  "Compare PicTofu photo strips, grids, three-cut looks and a Polaroid-style card before opening the camera. Pick a style, see the shot count, then start that preset instantly.";
+
 export const metadata: Metadata = {
   title: { absolute: "Choose a Photo Booth Layout | PicTofu" },
-  description:
-    "Compare PicTofu photo strips, grids, three-cut looks and a Polaroid-style card before opening the camera. Pick a style, see the shot count, then start that preset instantly.",
+  description: LAYOUTS_DESCRIPTION,
   alternates: { canonical: "https://pictofu.com/layouts" },
+  openGraph: {
+    title: "Choose a Photo Booth Layout | PicTofu",
+    description: LAYOUTS_DESCRIPTION,
+    url: "https://pictofu.com/layouts",
+    siteName: "PicTofu",
+    type: "website",
+  },
 };
 
 type Geometry = "strip-4" | "strip-3" | "grid-4" | "polaroid";
