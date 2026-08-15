@@ -32,7 +32,7 @@ function BoothPreview() {
         <div className="preview-tools" aria-hidden="true">
           <span><b>3:4</b><small>Ratio</small></span>
           <span><b>◷</b><small>Timer</small></span>
-          <span><b>ϟ</b><small>Flash</small></span>
+          <span><b>●</b><small>Camera</small></span>
           <span><b>↻</b><small>Flip</small></span>
         </div>
         <div className="camera-stage" aria-hidden="true">
@@ -50,7 +50,7 @@ function BoothPreview() {
       <div className="booth-preview__bottom">
         <div className="editor-preview">
           <div className="editor-tabs" aria-hidden="true">
-            <span>▦ Layouts</span><span className="is-active">◉ Filters</span><span>▢ Frames</span><span>♡ Stickers</span>
+            <span>▦ Layouts</span><span className="is-active">◉ Filters</span><span>▢ Frames</span><span>↺ Retake</span>
           </div>
           <div className="filter-row" aria-hidden="true">
             {["Original", "B&W", "Warm", "Vintage", "Y2K"].map((filter, index) => (
