@@ -16,7 +16,7 @@ work_order:
     - "privacy-guarded analytics provider bridge"
     - "landing/start funnel instrumentation"
     - "web-vitals reporting contract"
-    - "export error taxonomy cleanup"
+    - "export error taxonomy normalization"
     - "launch metadata/icon/OG hardening"
     - "fresh CI evidence"
     - "Vercel external-system preflight"
@@ -25,7 +25,7 @@ work_order:
     - "Analytics provider code is disabled without explicit configuration and never receives captured image content."
     - "landing_view and start_booth represent distinct semantic funnel steps without duplicate camera-start counting."
     - "Web Vitals can be reported with stable scalar metadata."
-    - "Export failures use export_error rather than camera_error."
+    - "Export failures use export_error at the emitted event boundary."
     - "Code-plane CI passes for the release-candidate commit."
     - "Canonical Vercel team/project identity and deploy capability are resolved before remote mutation."
     - "Production-ready claim requires required control-plane deployment/domain proof and data-plane/browser smoke evidence."
@@ -45,6 +45,14 @@ work_order:
   resume_anchor: ".vidt/work-orders/launch-readiness.yaml"
 
 status:
-  state: running
-  cycle_count: 0
-  team_engine_closure_verdict: pending
+  state: passed
+  cycle_count: 1
+  verifier_verdict: pass
+  team_engine_closure_verdict: pass_with_watch
+  release_verdict: hold
+  code_evidence: "GitHub Actions 31877128348 passed install/lint/typecheck/build on pre-verifier head; final head requires fresh CI before merge."
+  production_blockers:
+    - "canonical Vercel PicTofu project/domain read-back"
+    - "desktop + mobile camera physical-browser smoke"
+    - "mobile download/share physical-browser smoke"
+    - "Search Console setup or explicit owner post-ship acceptance"
