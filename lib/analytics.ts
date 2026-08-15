@@ -36,6 +36,8 @@ const SAFE_PROPERTY_KEYS = new Set([
   "output_width",
   "output_height",
   "share_supported",
+  "delivery_mode",
+  "browser_context",
   "referrer_class",
   "device_class",
   "viewport_bucket",
