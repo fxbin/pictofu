@@ -89,11 +89,12 @@ export default function Home() {
         <BrandLink />
         <nav className="desktop-nav" aria-label="Primary navigation">
           <a href="#templates">Templates</a>
+          <Link href="/layouts">Layouts</Link>
           <Link href="/online-photobooth">Booth</Link>
           <Link href="/photo-strip-maker">Photo Strip</Link>
           <Link href="/korean-photobooth">Korean Booth</Link>
         </nav>
-        <Link className="header-cta" href="/booth">Start Booth ✦</Link>
+        <Link className="header-cta" href="/layouts">Start Booth ✦</Link>
         <a className="menu-button" href="#templates" aria-label="Jump to templates">☰</a>
       </header>
 
@@ -106,7 +107,7 @@ export default function Home() {
             Snap photo strips instantly in your browser. Add filters and frames, then download or share with your favorite people. <span aria-hidden="true">♡</span>
           </p>
           <div className="hero-actions">
-            <Link className="primary-button" href="/booth">Start Booth ✦</Link>
+            <Link className="primary-button" href="/layouts">Start Booth ✦</Link>
             <a className="secondary-button" href="#templates">Try Templates</a>
           </div>
           <div className="benefit-row" aria-label="PicTofu benefits">
@@ -121,7 +122,7 @@ export default function Home() {
       <section className="templates-section" id="templates" aria-labelledby="popular-templates-title">
         <div className="section-heading">
           <h2 id="popular-templates-title"><span aria-hidden="true">✦</span> Popular Templates</h2>
-          <Link href="/photo-strip-maker">Explore photo strips →</Link>
+          <Link href="/layouts">Explore all layouts →</Link>
         </div>
         <div className="template-scroller">
           {FEATURED_PRESETS.map((preset, index) => <TemplateCard key={preset.id} preset={preset} index={index} />)}
