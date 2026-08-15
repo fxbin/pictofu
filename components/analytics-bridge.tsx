@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useReportWebVitals } from "next/web-vitals";
+import { track } from "@vercel/analytics";
 import { emitProductEvent } from "@/lib/analytics";
 
 declare global {
@@ -55,6 +56,23 @@ function reportWebVital(metric: {
   });
 }
 
+function forwardToVercel(detail: Record<string, unknown>) {
+  const eventName = detail.event_name;
+  if (typeof eventName !== "string" || eventName === "web_vital") return;
+
+  const {
+    event_name: _eventName,
+    session_id: _sessionId,
+    timestamp: _timestamp,
+    ...safeParameters
+  } = detail;
+  void _eventName;
+  void _sessionId;
+  void _timestamp;
+
+  track(eventName, safeParameters as Record<string, string | number | boolean | null>);
+}
+
 export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
   const pathname = usePathname();
   const lastLandingPath = useRef<string | null>(null);
@@ -62,21 +80,22 @@ export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
   useReportWebVitals(reportWebVital);
 
   useEffect(() => {
-    if (!enabled) return;
-
-    function forwardToProvider(event: Event) {
-      if (!(event instanceof CustomEvent) || !window.gtag) return;
+    function forwardToProviders(event: Event) {
+      if (!(event instanceof CustomEvent)) return;
       const detail = event.detail as Record<string, unknown>;
       const eventName = detail.event_name;
       if (typeof eventName !== "string") return;
 
+      forwardToVercel(detail);
+
+      if (!enabled || !window.gtag) return;
       const { event_name: _eventName, ...parameters } = detail;
       void _eventName;
       window.gtag("event", eventName, parameters);
     }
 
-    window.addEventListener("pictofu:analytics", forwardToProvider);
-    return () => window.removeEventListener("pictofu:analytics", forwardToProvider);
+    window.addEventListener("pictofu:analytics", forwardToProviders);
+    return () => window.removeEventListener("pictofu:analytics", forwardToProviders);
   }, [enabled]);
 
   useEffect(() => {
