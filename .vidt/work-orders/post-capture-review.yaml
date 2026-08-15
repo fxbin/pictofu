@@ -1,0 +1,24 @@
+issue: 22
+mode: soft_orchestration_only
+objective: >
+  Add a post-capture review stage with stable capture slots and selective single-shot retake,
+  preserving all untouched captures and browser-local privacy.
+scope:
+  - migrate captured session state from append-only photos to stable slots
+  - add review affordance for each captured slot
+  - retake exactly one selected slot with existing countdown/camera lifecycle
+  - revoke replaced object URLs safely
+  - keep Retake all
+  - add privacy-safe retake analytics
+non_goals:
+  - gallery upload
+  - crop/pan/zoom
+  - rotate/mirror editor
+  - overcapture/pick-best
+  - per-photo filter overrides
+acceptance:
+  - selective retake works without changing untouched slots
+  - compositor/export consumes slot order
+  - mobile review controls are touch friendly
+  - Node 24 lint/typecheck/build pass
+  - real-device smoke remains a release gate
