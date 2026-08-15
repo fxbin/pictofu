@@ -84,6 +84,14 @@ When camera behavior changes, add manual verification notes for:
 
 Do not merge ordinary features, experiments, SEO changes, or UI work directly into `main`.
 
+### CI efficiency
+
+- CI efficiency must never weaken release evidence: install, lint, typecheck, and production build remain required for the latest PR state.
+- Workflow concurrency cancels superseded runs for the same PR or tracked branch; do not wait for or rely on an outdated run after a newer commit exists.
+- Prefer coherent implementation checkpoints instead of many tiny pushes whose only effect is to trigger additional CI.
+- Do not add path-based CI skips merely to save Actions minutes; content and configuration changes can still break the production build.
+- Once a maintained `package-lock.json` exists on `dev`, prefer deterministic `npm ci` and lockfile-backed npm caching.
+
 ### Hotfix exception
 
 An urgent production repair may use `fix/* → main` only when the task is explicitly classified as a production hotfix. After the hotfix is verified and merged, reconcile the fix back into `dev` before continuing normal development.
