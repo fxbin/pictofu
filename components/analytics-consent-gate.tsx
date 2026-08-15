@@ -3,12 +3,14 @@
 import Link from "next/link";
 import Script from "next/script";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { AnalyticsBridge } from "@/components/analytics-bridge";
 import {
   clearAccessibleGaCookies,
+  getServerAnalyticsConsent,
   persistAnalyticsConsent,
   readAnalyticsConsent,
+  subscribeAnalyticsConsent,
   type AnalyticsConsent,
 } from "@/lib/analytics-consent";
 import styles from "./analytics-consent-gate.module.css";
@@ -40,33 +42,28 @@ function consentLabel(consent: AnalyticsConsent) {
 
 export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsConsentGateProps) {
   const pathname = usePathname();
-  const [consent, setConsent] = useState<AnalyticsConsent>("unknown");
-  const [hydrated, setHydrated] = useState(false);
+  const consent = useSyncExternalStore(
+    subscribeAnalyticsConsent,
+    readAnalyticsConsent,
+    getServerAnalyticsConsent,
+  );
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [runtimeReady, setRuntimeReady] = useState(false);
   const initializedRef = useRef(false);
   const isBooth = pathname === "/booth";
+  const wantsGoogle = configured && consent === "granted";
+  const googleEnabled = wantsGoogle && runtimeReady;
 
-  useEffect(() => {
-    const stored = readAnalyticsConsent();
-    setConsent(stored);
-    setSettingsOpen(stored === "unknown");
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!configured || !hydrated || consent !== "granted") {
-      setGoogleEnabled(false);
-      return;
-    }
+  function initializeGoogleRuntime() {
+    if (!wantsGoogle) return;
 
     if (!initializedRef.current) {
       window.dataLayer = window.dataLayer ?? [];
       window.gtag =
         window.gtag ??
-        function gtag() {
-          window.dataLayer?.push(arguments);
-        };
+        ((...args: unknown[]) => {
+          window.dataLayer?.push(args);
+        });
 
       window.gtag("consent", "default", GRANTED_CONSENT);
       window.gtag("js", new Date());
@@ -74,40 +71,38 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
       initializedRef.current = true;
     }
 
-    setGoogleEnabled(true);
-  }, [configured, consent, hydrated, measurementId]);
+    setRuntimeReady(true);
+  }
 
   function allowAnalytics() {
     persistAnalyticsConsent("granted");
-    setConsent("granted");
     setSettingsOpen(false);
   }
 
   function declineAnalytics() {
-    persistAnalyticsConsent("denied");
-
     if (consent === "granted") {
       window.gtag?.("consent", "update", DENIED_CONSENT);
       clearAccessibleGaCookies();
+      persistAnalyticsConsent("denied");
       window.location.reload();
       return;
     }
 
-    setConsent("denied");
-    setGoogleEnabled(false);
+    persistAnalyticsConsent("denied");
     setSettingsOpen(false);
   }
 
-  const showPanel = configured && hydrated && settingsOpen;
-  const showSettingsButton = configured && hydrated && consent !== "unknown" && !settingsOpen;
+  const showPanel = configured && (consent === "unknown" || settingsOpen);
+  const showSettingsButton = configured && consent !== "unknown" && !settingsOpen;
 
   return (
     <>
-      {googleEnabled && (
+      {wantsGoogle && (
         <Script
           id="pictofu-ga4-loader"
           src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
           strategy="afterInteractive"
+          onReady={initializeGoogleRuntime}
         />
       )}
 
