@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Lint
+        shell: bash
+        run: |
+          set +e
+          npx eslint . --format json --output-file eslint-report.json
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            node <<'NODE'
+          const fs = require('fs');
+          const report = JSON.parse(fs.readFileSync('eslint-report.json', 'utf8'));
+          for (const file of report) {
+            for (const message of file.messages) {
+              if (message.severity < 2) continue;
+              const path = file.filePath.replace(process.cwd() + '/', '');
+              const text = String(message.message).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+              console.log(`::error file=${path},line=${message.line || 1},col=${message.column || 1}::${text} (${message.ruleId || 'eslint'})`);
+            }
+          }
+          NODE
+            exit "$status"
+          fi
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Production build
+        run: npm run build
