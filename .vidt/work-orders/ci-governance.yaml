@@ -1,0 +1,26 @@
+issue: 34
+mode: soft_orchestration_only
+objective: >
+  Reduce redundant GitHub Actions queueing and minute usage without weakening PicTofu's
+  Node 24 quality gates or dev-first release evidence.
+scope:
+  - add workflow-level concurrency for pull requests and tracked branch pushes
+  - cancel superseded runs when a newer run exists in the same concurrency group
+  - preserve the 12-minute job timeout
+  - preserve dependency install, lint, typecheck, and production build checks
+  - document a second optimization phase after package-lock.json is integrated into dev
+non_goals:
+  - skipping CI for documentation or content paths
+  - removing lint, typecheck, or production build
+  - bypassing CI to merge queued pull requests
+  - changing application runtime behavior
+acceptance:
+  - concurrency group is scoped to this workflow and PR number or branch ref
+  - cancel-in-progress is enabled
+  - a newer commit on the same PR supersedes the older CI run
+  - latest CI still runs the complete verification job
+  - Phase B waits for package-lock.json on dev before switching to npm ci/cache
+verification:
+  - inspect workflow syntax against GitHub Actions concurrency documentation
+  - observe workflow run state after pushing the governance commit
+  - require Node 24 CI green before merge

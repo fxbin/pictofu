@@ -65,12 +65,44 @@ When camera behavior changes, add manual verification notes for:
 
 ## Git workflow
 
-- `main` is releasable.
-- Use `feature/*` and `fix/*` branches.
+### Branch roles
+
+- `main` is production-only and must remain releasable. Vercel production tracks `main`.
+- `dev` is the integration and owner-acceptance branch for normal feature development.
+- Create `feature/*`, `fix/*`, and `chore/*` branches from the latest `dev` unless the task is explicitly classified as an urgent production hotfix.
+
+### Normal delivery path
+
+1. GitHub Issue / WorkOrder.
+2. Branch from latest `dev`.
+3. Worker implementation.
+4. Independent Verifier + Node 24 CI.
+5. PR into `dev`.
+6. Owner validates locally and/or on a Vercel Preview, including real-device smoke where browser hardware behavior matters.
+7. Accepted changes are promoted through a dedicated release PR `dev → main`.
+8. Production smoke follows the `main` deployment.
+
+Do not merge ordinary features, experiments, SEO changes, or UI work directly into `main`.
+
+### CI efficiency
+
+- CI efficiency must never weaken release evidence: install, lint, typecheck, and production build remain required for the latest PR state.
+- Workflow concurrency cancels superseded runs for the same PR or tracked branch; do not wait for or rely on an outdated run after a newer commit exists.
+- Prefer coherent implementation checkpoints instead of many tiny pushes whose only effect is to trigger additional CI.
+- Do not add path-based CI skips merely to save Actions minutes; content and configuration changes can still break the production build.
+- Once a maintained `package-lock.json` exists on `dev`, prefer deterministic `npm ci` and lockfile-backed npm caching.
+
+### Hotfix exception
+
+An urgent production repair may use `fix/* → main` only when the task is explicitly classified as a production hotfix. After the hotfix is verified and merged, reconcile the fix back into `dev` before continuing normal development.
+
+### General rules
+
 - Prefer focused semantic commits.
 - Use pull requests for user-visible changes.
 - Do not force-push or use destructive reset/clean operations as part of automated work.
 - Development slices should be tied to a GitHub Issue and close through PR evidence.
+- Never treat CI success alone as proof of camera, Canvas, download/share, or embedded-browser behavior when real-device verification is required.
 
 ## Definition of done
 
