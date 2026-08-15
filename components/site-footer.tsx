@@ -11,6 +11,7 @@ export function SiteFooter() {
       <nav className={styles.links} aria-label="Footer navigation">
         <Link href="/online-photobooth">Photobooth</Link>
         <Link href="/photo-strip-maker">Photo strips</Link>
+        <Link href="/about">About</Link>
         <Link href="/privacy">Privacy</Link>
       </nav>
       <p className={styles.note}>Photos stay on your device in the current PicTofu MVP.</p>
