@@ -319,7 +319,8 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     setCaptureSlots(emptyCaptureSlots(preset.shotCount));
     emitProductEvent("capture_started", { layout_id: layoutId, shot_target: preset.shotCount });
     try {
-      for (let shotIndex = 0; shotIndex < preset.shotCount; shotIndex += 1) {
+      const shotIndexes = Array.from({ length: preset.shotCount }, (_, index) => index);
+      for (const shotIndex of shotIndexes) {
         await runCountdown();
         setCameraStatus("capturing");
         const slot = await captureFrame(`slot-${shotIndex + 1}`);
