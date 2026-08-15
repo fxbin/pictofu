@@ -8,6 +8,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 1,
     },
+    {
+      url: "https://pictofu.com/layouts",
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
     ...SEO_EXPERIENCES.map((experience) => ({
       url: `https://pictofu.com/${experience.slug}`,
       changeFrequency: "weekly" as const,
