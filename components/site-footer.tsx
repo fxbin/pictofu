@@ -9,6 +9,7 @@ export function SiteFooter() {
         <p>No install. Open. Pose. Download.</p>
       </div>
       <nav className={styles.links} aria-label="Footer navigation">
+        <Link href="/layouts">Layouts</Link>
         <Link href="/online-photobooth">Photobooth</Link>
         <Link href="/photo-strip-maker">Photo strips</Link>
         <Link href="/about">About</Link>
