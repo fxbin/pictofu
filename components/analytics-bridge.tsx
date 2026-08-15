@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useReportWebVitals } from "next/web-vitals";
+import { track } from "@vercel/analytics";
 import { emitProductEvent } from "@/lib/analytics";
 
 declare global {
@@ -11,6 +12,9 @@ declare global {
     gtag?: (...args: unknown[]) => void;
   }
 }
+
+const VERCEL_CUSTOM_EVENTS_ENABLED =
+  process.env.NEXT_PUBLIC_VERCEL_CUSTOM_EVENTS_ENABLED === "true";
 
 const LANDING_PRESET_BY_PATH: Record<string, string> = {
   "/": "classic-booth",
@@ -55,6 +59,22 @@ function reportWebVital(metric: {
   });
 }
 
+function forwardToVercel(detail: Record<string, unknown>) {
+  if (!VERCEL_CUSTOM_EVENTS_ENABLED) return;
+
+  const eventName = detail.event_name;
+  if (typeof eventName !== "string" || eventName === "web_vital") return;
+
+  const safeParameters = Object.fromEntries(
+    Object.entries(detail).filter(([key, value]) => {
+      if (key === "event_name" || key === "session_id" || key === "timestamp") return false;
+      return typeof value === "string" || typeof value === "number" || typeof value === "boolean";
+    }),
+  ) as Record<string, string | number | boolean>;
+
+  track(eventName, safeParameters);
+}
+
 export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
   const pathname = usePathname();
   const lastLandingPath = useRef<string | null>(null);
@@ -62,22 +82,33 @@ export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
   useReportWebVitals(reportWebVital);
 
   useEffect(() => {
-    if (!enabled) return;
-
-    function forwardToProvider(event: Event) {
-      if (!(event instanceof CustomEvent) || !window.gtag) return;
+    function forwardToProviders(event: Event) {
+      if (!(event instanceof CustomEvent)) return;
       const detail = event.detail as Record<string, unknown>;
       const eventName = detail.event_name;
       if (typeof eventName !== "string") return;
 
+      forwardToVercel(detail);
+
+      if (!enabled || !window.gtag) return;
       const { event_name: _eventName, ...parameters } = detail;
       void _eventName;
       window.gtag("event", eventName, parameters);
     }
 
-    window.addEventListener("pictofu:analytics", forwardToProvider);
-    return () => window.removeEventListener("pictofu:analytics", forwardToProvider);
+    window.addEventListener("pictofu:analytics", forwardToProviders);
+    return () => window.removeEventListener("pictofu:analytics", forwardToProviders);
   }, [enabled]);
+
+  useEffect(() => {
+    if (!enabled || !window.gtag) return;
+
+    window.gtag("event", "page_view", {
+      page_path: pathname,
+      page_location: window.location.href,
+      page_title: document.title,
+    });
+  }, [enabled, pathname]);
 
   useEffect(() => {
     if (!(pathname in LANDING_PRESET_BY_PATH)) return;

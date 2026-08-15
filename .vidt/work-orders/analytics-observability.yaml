@@ -1,0 +1,39 @@
+issue: 27
+mode: soft_orchestration_only
+lead: Technical Trinity
+governance:
+  - Git Workflow Guardian
+objective: >
+  Add Vercel Web Analytics and mirror existing sanitized PicTofu product events into Vercel Custom Events,
+  while preserving the optional GA4 bridge and keeping production isolated behind the dev integration branch.
+branch_policy:
+  integration: dev
+  production: main
+  release: dev -> main via release PR after owner acceptance
+scope:
+  - install @vercel/analytics
+  - initialize Analytics in the Next.js root layout
+  - mirror business funnel events to Vercel Custom Events
+  - preserve GA4 opt-in forwarding
+  - remove generated build artifacts and unrelated config churn
+  - keep analytics payload scalar-only and image-free
+non_goals:
+  - first-party analytics warehouse
+  - admin dashboard in this slice
+  - advertising/remarketing configuration
+  - changing camera or photo-processing behavior
+acceptance:
+  - page visits appear in Vercel Web Analytics after platform enablement
+  - product funnel events are trackable in Vercel Custom Events
+  - GA4 remains disabled unless explicitly configured
+  - no Blob/base64/photo payload enters analytics
+  - Node 24 install/lint/typecheck/build pass
+  - PR targets dev, not main
+verification:
+  engineering:
+    - inspect changed-file scope
+    - run Node 24 CI
+    - verify Vercel Preview after merge to dev
+  privacy:
+    - event payloads remain allowlisted scalar metadata only
+resume_anchor: .vidt/work-orders/analytics-observability.yaml
