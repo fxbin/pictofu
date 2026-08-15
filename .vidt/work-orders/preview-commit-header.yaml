@@ -1,0 +1,20 @@
+issue: 57
+mode: soft_orchestration_only
+objective: >
+  Make Preview freshness directly observable by emitting the Vercel Git commit SHA as a response
+  header in Preview environments only, then use it to verify the stable dev alias advanced.
+scope:
+  - add X-PicTofu-Commit to Preview responses when VERCEL_GIT_COMMIT_SHA is available
+  - keep existing security headers unchanged
+  - do not emit the diagnostic header in Production or local CI where the Vercel Preview variables are absent
+  - verify a real app-source change triggers a new dev Preview deployment
+non_goals:
+  - expose secrets or environment values beyond the public Git commit SHA
+  - modify product UI or user data handling
+  - promote to main
+acceptance:
+  - Node 24 npm ci/lint/typecheck/build pass
+  - feature Preview response contains X-PicTofu-Commit matching its Git SHA
+  - post-merge dev Push CI passes
+  - stable dev alias response contains X-PicTofu-Commit matching current dev HEAD
+  - stable dev alias reflects all final acceptance fixes
