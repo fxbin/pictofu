@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 import { AnalyticsBridge } from "@/components/analytics-bridge";
 import "./globals.css";
 
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         )}
         {children}
         <AnalyticsBridge enabled={analyticsEnabled} />
+        <Analytics />
       </body>
     </html>
   );
