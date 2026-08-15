@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/site-footer";
 import styles from "./about.module.css";
 
 export const metadata: Metadata = {
-  title: "About PicTofu | Cute Online Photobooth",
+  title: { absolute: "About PicTofu | Cute Online Photobooth" },
   description:
     "Learn how PicTofu works, what layouts and filters it supports, how photos stay in your browser, and how to troubleshoot camera or sharing issues.",
   alternates: { canonical: "/about" },
