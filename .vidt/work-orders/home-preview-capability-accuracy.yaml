@@ -1,0 +1,20 @@
+issue: 52
+mode: soft_orchestration_only
+objective: >
+  Keep the Home hero booth preview visually playful while ensuring every represented capability exists
+  in the current real Booth.
+scope:
+  - replace unsupported Stickers preview tab with the implemented single-shot Retake capability
+  - replace active-looking Flash preview tool with a real Camera status/control concept
+  - preserve Layouts / Filters / Frames / Timer / Flip visual language
+non_goals:
+  - implement stickers
+  - implement hardware flash
+  - change real Booth behavior
+  - redesign the Home hero
+acceptance:
+  - Home preview no longer says Stickers
+  - Home preview no longer implies working Flash
+  - Retake is represented instead
+  - Node 24 npm ci/lint/typecheck/build pass
+  - Vercel Preview HTML/visual smoke passes
