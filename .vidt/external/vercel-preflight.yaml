@@ -1,0 +1,13 @@
+provider: Vercel
+account_or_org: "XiaoYi / fxbin"
+resource_name: PicTofu
+resource_id: null
+resource_id_source: "Vercel list_teams + list_projects read-back on 2026-08-15; current team contains ahaframe, sunny-review-ai, sunny-review-ai-production-secure-deploy and no PicTofu project."
+required_capability: "create/link project, deploy production candidate, bind pictofu.com, read deployment status"
+verified_capability: "Current connector can list teams/projects/deployments and deploy a current project, but exposes no explicit create-project or domain-binding action in the loaded toolset. No canonical PicTofu project currently exists in the resolved team."
+auth_boundary: "Connected Vercel account/tool permissions; team ID team_aa9uWwkGEP2RqX6gXCD7wMe1."
+secret_boundary: "Do not commit or paste Vercel tokens, registrar credentials, GA credentials, DNS credentials or provider secrets into GitHub Issues/PRs/chat."
+fallback_execution: "Operator imports fxbin/pictofu into Vercel under team fxbin and binds pictofu.com through Vercel/dashboard or CLI; automation resumes from provider read-back verification."
+resume_anchor: ".vidt/external/vercel-preflight.yaml and Issue #5"
+mutation_status: blocked
+blocker: "Canonical PicTofu Vercel project/resource identity does not yet exist/resolves to none. Production-bound protocol forbids deploying an ambiguous 'current project'."

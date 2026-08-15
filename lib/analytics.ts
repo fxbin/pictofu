@@ -14,24 +14,99 @@ export type ProductEventName =
   | "export_completed"
   | "export_error"
   | "download_clicked"
-  | "share_clicked";
+  | "share_clicked"
+  | "web_vital";
 
-type SafeEventProperties = Record<string, string | number | boolean | null | undefined>;
+type SafeScalar = string | number | boolean | null | undefined;
+type SafeEventProperties = Record<string, SafeScalar>;
+
+const SAFE_PROPERTY_KEYS = new Set([
+  "landing_type",
+  "entry_preset",
+  "cta_location",
+  "facing_mode",
+  "error_class",
+  "layout_id",
+  "shot_target",
+  "shot_index",
+  "shot_count",
+  "style_type",
+  "style_id",
+  "format",
+  "output_width",
+  "output_height",
+  "share_supported",
+  "referrer_class",
+  "device_class",
+  "viewport_bucket",
+  "metric_name",
+  "metric_value",
+  "metric_delta",
+  "metric_rating",
+  "metric_id",
+]);
+
+function deviceClass(width: number) {
+  if (width < 768) return "mobile";
+  if (width < 1100) return "tablet";
+  return "desktop";
+}
+
+function viewportBucket(width: number) {
+  if (width < 360) return "<360";
+  if (width < 390) return "360-389";
+  if (width < 430) return "390-429";
+  if (width < 768) return "430-767";
+  if (width < 1100) return "768-1099";
+  return "1100+";
+}
+
+function sanitizeProperties(properties: SafeEventProperties) {
+  return Object.fromEntries(
+    Object.entries(properties)
+      .filter(([key, value]) => SAFE_PROPERTY_KEYS.has(key) && value !== undefined)
+      .map(([key, value]) => [
+        key,
+        typeof value === "string" ? value.slice(0, 120) : value,
+      ]),
+  );
+}
+
+function normalizeEvent(name: ProductEventName, properties: SafeEventProperties) {
+  if (name === "camera_error" && properties.error_class === "canvas_export_failed") {
+    return "export_error" as const;
+  }
+  return name;
+}
+
+function shouldEmitStartBooth() {
+  try {
+    if (window.sessionStorage.getItem("pictofu:start_booth") === "1") return false;
+    window.sessionStorage.setItem("pictofu:start_booth", "1");
+  } catch {
+    // Session storage may be unavailable in hardened/private browser contexts.
+  }
+  return true;
+}
 
 export function emitProductEvent(name: ProductEventName, properties: SafeEventProperties = {}) {
   if (typeof window === "undefined") return;
+  if (name === "start_booth" && !shouldEmitStartBooth()) return;
 
+  const normalizedName = normalizeEvent(name, properties);
+  const width = window.innerWidth;
   const detail = {
-    event_name: name,
+    event_name: normalizedName,
     page_path: window.location.pathname,
     timestamp: new Date().toISOString(),
-    ...properties,
+    device_class: deviceClass(width),
+    viewport_bucket: viewportBucket(width),
+    ...sanitizeProperties(properties),
   };
 
   window.dispatchEvent(new CustomEvent("pictofu:analytics", { detail }));
 
   if (process.env.NODE_ENV === "development") {
-    // Never add captured image data to this object.
     console.info("[PicTofu event]", detail);
   }
 }

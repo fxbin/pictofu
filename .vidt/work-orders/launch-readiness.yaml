@@ -1,0 +1,50 @@
+work_order:
+  task_id: pictofu-launch-readiness
+  issue: 5
+  workflow_bundle: ship-hold-remediate
+  objective: "Make PicTofu measurable and release-candidate-ready, then produce a production-bound ship/hold decision using code, control-plane and real-browser evidence."
+  lead_role: Technical Trinity
+  worker_role: Launch readiness implementation lens
+  verifier_role: Git Workflow Guardian + release verification lens
+  input_artifacts:
+    - "Issue #5"
+    - "merged MVP #1/#2/#3/#4 implementation"
+    - "docs/analytics/events.md"
+    - "production-bound-delivery-protocol.md"
+    - "release-gate-playbook.md"
+  output_artifacts:
+    - "privacy-guarded analytics provider bridge"
+    - "landing/start funnel instrumentation"
+    - "web-vitals reporting contract"
+    - "export error taxonomy cleanup"
+    - "launch metadata/icon/OG hardening"
+    - "fresh CI evidence"
+    - "Vercel external-system preflight"
+    - "release evidence matrix and ship/hold decision"
+  acceptance_gates:
+    - "Analytics provider code is disabled without explicit configuration and never receives captured image content."
+    - "landing_view and start_booth represent distinct semantic funnel steps without duplicate camera-start counting."
+    - "Web Vitals can be reported with stable scalar metadata."
+    - "Export failures use export_error rather than camera_error."
+    - "Code-plane CI passes for the release-candidate commit."
+    - "Canonical Vercel team/project identity and deploy capability are resolved before remote mutation."
+    - "Production-ready claim requires required control-plane deployment/domain proof and data-plane/browser smoke evidence."
+    - "Issue #2 and #3 physical-browser gates must be satisfied or release verdict is hold."
+  dependency_ids:
+    - 1
+    - 2
+    - 3
+    - 4
+  max_cycles: 2
+  tool_boundary: "GitHub + verified Vercel connector reads. Remote mutation is blocked until a canonical PicTofu Vercel project/resource is resolved. Search Console connector is unavailable."
+  context_boundary: "Issue #5 launch readiness; no feature expansion beyond measurement/release hardening."
+  backend_binding: soft_orchestration_only
+  permissions:
+    repository: write
+    production: "read-only preflight until resource identity/capability is verified"
+  resume_anchor: ".vidt/work-orders/launch-readiness.yaml"
+
+status:
+  state: running
+  cycle_count: 0
+  team_engine_closure_verdict: pending
