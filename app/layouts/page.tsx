@@ -8,7 +8,7 @@ import styles from "./layouts.module.css";
 export const metadata: Metadata = {
   title: { absolute: "Choose a Photo Booth Layout | PicTofu" },
   description:
-    "Compare PicTofu photo strip, grid and three-cut looks before opening the camera. Pick a style, see the shot count, then start that preset instantly.",
+    "Compare PicTofu photo strips, grids, three-cut looks and a Polaroid-style card before opening the camera. Pick a style, see the shot count, then start that preset instantly.",
   alternates: { canonical: "https://pictofu.com/layouts" },
 };
 
@@ -32,8 +32,10 @@ const EXPERIENCE_LINKS = [
 
 function GeometryPreview({ layout, shotCount }: { layout: Geometry; shotCount: number }) {
   const cells = layout === "polaroid" ? 1 : shotCount;
+  const modifierClass = layout === "strip-4" ? undefined : styles[`preview_${layout}`];
+
   return (
-    <div className={`${styles.preview} ${styles[`preview_${layout}`]}`} aria-hidden="true">
+    <div className={[styles.preview, modifierClass].filter(Boolean).join(" ")} aria-hidden="true">
       {Array.from({ length: cells }).map((_, index) => <span key={index}>{index + 1}</span>)}
       <small>PicTofu</small>
     </div>
