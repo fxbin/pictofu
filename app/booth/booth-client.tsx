@@ -101,7 +101,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
           <div className="capture-tray">
             <button type="button" aria-label="Change photo ratio"><span>3:4</span><small>Ratio</small></button>
             <button type="button" aria-label="Set countdown timer"><span>◷</span><small>Timer</small></button>
-            <button className="shutter-button" type="button" onClick={handleCameraIntent} aria-label="Start camera">
+            <button className="shutter-button" type="button" onClick={handleCameraIntent} aria-label="Check camera readiness">
               <span />
             </button>
             <button type="button" aria-label="Flip camera"><span>↻</span><small>Flip</small></button>

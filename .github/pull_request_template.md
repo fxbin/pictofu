@@ -9,7 +9,7 @@
 
 ## Verification
 
-- [ ] `npm ci`
+- [ ] Dependency install (`npm install` until a maintained lockfile exists; then `npm ci`)
 - [ ] `npm run lint`
 - [ ] `npm run typecheck`
 - [ ] `npm run build`

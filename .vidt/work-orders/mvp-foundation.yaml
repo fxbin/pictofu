@@ -1,5 +1,7 @@
 work_order:
   task_id: pictofu-mvp-foundation
+  issue: 1
+  pull_request: 7
   workflow_bundle: product-spec-deliver
   objective: "Establish the implementation-ready PicTofu v0.1 foundation and first responsive landing/booth shell without adding backend photo persistence."
   lead_role: World-Class Product Architect
@@ -22,10 +24,10 @@ work_order:
     - CI workflow
   acceptance_gates:
     - "Scope excludes accounts, AI, payment, cloud photo persistence and native app work."
-    - "Mobile and desktop design contracts are explicit and implementable."
+    - "Mobile and desktop design contracts are explicit and implemented with responsive CSS."
     - "Analytics event contract never carries photo bytes/content."
     - "Search routes must map to real booth preset behavior."
-    - "Repository has lint/typecheck/build CI gates."
+    - "Repository has dependency-install/lint/typecheck/build CI gates."
   dependency_ids: []
   max_cycles: 2
   tool_boundary: "GitHub connector; no destructive git operations; no production cloud mutation in this WorkOrder."
@@ -37,6 +39,13 @@ work_order:
   resume_anchor: ".vidt/work-orders/mvp-foundation.yaml"
 
 status:
-  state: planned
-  cycle_count: 0
-  team_engine_closure_verdict: pending
+  state: passed
+  cycle_count: 2
+  verifier_verdict: pass
+  team_engine_closure_verdict: pass_with_watch
+  evidence:
+    - "GitHub Actions run 31875600096: install/lint/typecheck/build all success"
+    - "PR #7 static scope/privacy/responsive-layout review"
+  residual_risk:
+    - "Real-device/browser visual rendering is not yet captured; deployment/browser smoke testing remains a launch-hardening gate."
+    - "No package-lock.json yet; dependency installation is less deterministic until a lockfile is committed."
