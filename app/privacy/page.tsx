@@ -87,24 +87,27 @@ export default function PrivacyPage() {
 
           <h3>Google Analytics 4</h3>
           <p>
-            Google Analytics 4 (GA4) is optional and is not required for the photobooth to function. When GA4 is enabled, it can collect usage information such as user and session statistics, approximate geolocation, and browser/device information. Google Analytics can use a first-party identifier such as the <code>_ga</code> cookie when analytics storage is permitted.
+            Google Analytics 4 (GA4) is optional and is not required for the photobooth to function. When GA4 is configured, PicTofu uses a conservative analytics-consent gate: the Google Analytics tag is not loaded until you choose <strong>Allow analytics</strong>. If you decline, the core photobooth remains usable without GA4.
           </p>
           <p>
-            PicTofu&apos;s production analytics plan is to respect the applicable analytics-consent state before enabling GA4 measurement for visitors who require that choice. Advertising and remarketing are not part of the current analytics setup.
+            After analytics consent is granted, GA4 can collect usage information such as user and session statistics, approximate geolocation, browser/device information, page views, and the structured product events described above. Google Analytics can use a first-party identifier such as the <code>_ga</code> cookie when analytics storage is allowed. Advertising storage, ad personalization, and remarketing remain disabled in the current setup.
+          </p>
+          <p>
+            You can reopen PicTofu&apos;s Privacy settings and change the analytics choice. If a previously granted choice is revoked, PicTofu stores the denied state and reloads the page so the next page lifecycle starts without loading the Google Analytics tag.
           </p>
         </section>
 
         <section>
           <h2>5. Cookies and local browser storage</h2>
           <p>
-            The core PicTofu booth does not require an account cookie or a cloud photo-session cookie. If an analytics consent control is enabled, PicTofu may store your consent choice in your browser so it can be remembered on later visits. Optional analytics providers may use browser storage or first-party cookies only according to their enabled configuration and the consent state that applies.
+            The core PicTofu booth does not require an account cookie or a cloud photo-session cookie. When GA4 is configured, PicTofu stores your analytics-consent choice in first-party browser storage under a small preference key so it can be remembered on later visits. Optional analytics providers may use browser storage or first-party cookies only according to their enabled configuration and the consent state that applies.
           </p>
         </section>
 
         <section>
           <h2>6. Third-party infrastructure</h2>
           <p>
-            PicTofu uses third-party infrastructure to deliver the website. Vercel hosts and serves the application and may also provide privacy-focused traffic analytics when enabled. Google Analytics may provide optional product and acquisition measurement when explicitly enabled. Those providers process technical information under their own terms and privacy documentation.
+            PicTofu uses third-party infrastructure to deliver the website. Vercel hosts and serves the application and may also provide privacy-focused traffic analytics when enabled. Google Analytics may provide optional product and acquisition measurement after the analytics-consent gate allows it. Those providers process technical information under their own terms and privacy documentation.
           </p>
           <p>
             PicTofu does not authorize analytics providers to receive captured photo bytes as part of the current MVP analytics contract.
@@ -134,7 +137,7 @@ export default function PrivacyPage() {
             Depending on where you live, privacy law may give you rights concerning personal information, which can include access, correction, deletion, restriction, objection, portability, or withdrawal of consent. PicTofu currently has no user account or cloud photo library, so many requests involving photos can be resolved directly by clearing the browser session or deleting files you saved to your own device.
           </p>
           <p>
-            Where optional analytics consent is offered, you should be able to change or withdraw that choice through the consent controls once that production feature is enabled.
+            Where GA4 is configured, you can reopen the visible Privacy settings control to allow, decline, or withdraw analytics consent. The preference is stored in your browser rather than in a PicTofu user account.
           </p>
         </section>
 
