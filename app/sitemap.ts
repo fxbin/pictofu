@@ -9,6 +9,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
+      url: "https://pictofu.com/layouts",
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
       url: "https://pictofu.com/about",
       changeFrequency: "monthly",
       priority: 0.5,
