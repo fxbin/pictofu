@@ -139,6 +139,10 @@ function photoNoun(count: number) {
   return count === 1 ? "photo" : "photos";
 }
 
+function presetPreviewCellCount(preset: BoothPreset) {
+  return preset.layoutId === "polaroid" ? 1 : preset.shotCount;
+}
+
 export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const supportState = useSyncExternalStore(subscribeToBrowserCapability, getCameraSupportSnapshot, getServerCameraSupportSnapshot);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -147,6 +151,8 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const savePreviewUrlRef = useRef<string | null>(null);
   const editStartedRef = useRef(false);
   const adjustDragRef = useRef<AdjustDrag | null>(null);
+  const templateTrackRef = useRef<HTMLDivElement | null>(null);
+  const templateScrollTimerRef = useRef<number | null>(null);
 
   const [presetId, setPresetId] = useState(initialPreset.id);
   const preset = useMemo(() => PRESETS.find((item) => item.id === presetId) ?? initialPreset, [initialPreset, presetId]);
@@ -185,8 +191,19 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       urlHolder.current = [];
       if (saveUrlHolder.current) URL.revokeObjectURL(saveUrlHolder.current);
       saveUrlHolder.current = null;
+      if (templateScrollTimerRef.current !== null) window.clearTimeout(templateScrollTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!window.matchMedia("(max-width: 720px)").matches) return;
+    const track = templateTrackRef.current;
+    const card = track?.querySelector<HTMLElement>(`[data-preset-id="${presetId}"]`);
+    if (!track || !card) return;
+    const targetLeft = card.offsetLeft - (track.clientWidth - card.clientWidth) / 2;
+    if (Math.abs(track.scrollLeft - targetLeft) < 4) return;
+    track.scrollTo({ left: Math.max(0, targetLeft), behavior: "smooth" });
+  }, [presetId]);
 
   function closeSavePreview() {
     if (savePreviewUrlRef.current) URL.revokeObjectURL(savePreviewUrlRef.current);
@@ -236,7 +253,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   }
 
   function selectPreset(nextId: string) {
-    if (captureBusy) return;
+    if (captureBusy || nextId === presetId) return;
     const next = PRESETS.find((item) => item.id === nextId);
     if (!next) return;
 
@@ -263,6 +280,29 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     }
 
     setCameraStatus(streamRef.current ? "ready" : "idle");
+  }
+
+  function handleTemplateCarouselScroll() {
+    if (templateScrollTimerRef.current !== null) window.clearTimeout(templateScrollTimerRef.current);
+    templateScrollTimerRef.current = window.setTimeout(() => {
+      templateScrollTimerRef.current = null;
+      const track = templateTrackRef.current;
+      if (!track || captureBusy) return;
+      const trackCenter = track.scrollLeft + track.clientWidth / 2;
+      let closestId: string | null = null;
+      let closestDistance = Number.POSITIVE_INFINITY;
+
+      track.querySelectorAll<HTMLElement>("[data-preset-id]").forEach((card) => {
+        const cardCenter = card.offsetLeft + card.clientWidth / 2;
+        const distance = Math.abs(cardCenter - trackCenter);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestId = card.dataset.presetId ?? null;
+        }
+      });
+
+      if (closestId && closestId !== presetId) selectPreset(closestId);
+    }, 140);
   }
 
   function beginEditIfNeeded() {
@@ -678,6 +718,47 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
             <select id="preset" value={presetId} onChange={(event) => selectPreset(event.target.value)} disabled={captureBusy}>
               {PRESETS.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
             </select>
+
+            <div className="template-carousel" aria-label="Swipe to change template">
+              <div className="template-carousel__meta">
+                <span>{preset.name}</span>
+                <small>Swipe to explore · {PRESETS.findIndex((item) => item.id === presetId) + 1}/{PRESETS.length}</small>
+              </div>
+              <div className="template-carousel__track" ref={templateTrackRef} onScroll={handleTemplateCarouselScroll}>
+                {PRESETS.map((item) => (
+                  <button
+                    type="button"
+                    className={`template-carousel__card ${item.id === presetId ? "is-selected" : ""}`}
+                    data-preset-id={item.id}
+                    key={item.id}
+                    onClick={() => selectPreset(item.id)}
+                    disabled={captureBusy}
+                    aria-pressed={item.id === presetId}
+                  >
+                    <span className={`template-carousel__preview template-carousel__preview--${item.layoutId} template-carousel__preview--${item.frameId}`} aria-hidden="true">
+                      {Array.from({ length: presetPreviewCellCount(item) }).map((_, index) => <i key={index} />)}
+                    </span>
+                    <span className="template-carousel__copy">
+                      <strong>{item.name}</strong>
+                      <small>{item.shotCount} {item.shotCount === 1 ? "shot" : "shots"} · {item.filterId}</small>
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <div className="template-carousel__dots" aria-label="Choose template">
+                {PRESETS.map((item) => (
+                  <button
+                    type="button"
+                    className={item.id === presetId ? "is-selected" : ""}
+                    key={item.id}
+                    onClick={() => selectPreset(item.id)}
+                    disabled={captureBusy}
+                    aria-label={`Choose ${item.name}`}
+                    aria-pressed={item.id === presetId}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="editor-heading"><span>{capturedCount ? "Your strip" : "Current look"}</span><strong>{preset.name}</strong></div>
