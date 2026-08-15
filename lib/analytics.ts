@@ -72,19 +72,38 @@ function sanitizeProperties(properties: SafeEventProperties) {
   );
 }
 
-function normalizeEvent(name: ProductEventName, properties: SafeEventProperties) {
+function normalizeEvent(name: ProductEventName, properties: SafeEventProperties): ProductEventName {
   if (name === "camera_error" && properties.error_class === "canvas_export_failed") {
-    return "export_error" as const;
+    return "export_error";
   }
   return name;
 }
 
-function shouldEmitStartBooth() {
+function getSessionId() {
+  const key = "pictofu:analytics_session";
   try {
-    if (window.sessionStorage.getItem("pictofu:start_booth") === "1") return false;
-    window.sessionStorage.setItem("pictofu:start_booth", "1");
+    const existing = window.sessionStorage.getItem(key);
+    if (existing) return existing;
+    const value =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    window.sessionStorage.setItem(key, value);
+    return value;
   } catch {
-    // Session storage may be unavailable in hardened/private browser contexts.
+    return "session-storage-unavailable";
+  }
+}
+
+function shouldEmitStartBooth() {
+  const key = "pictofu:last_start_booth_at";
+  const now = Date.now();
+  try {
+    const last = Number(window.sessionStorage.getItem(key) ?? "0");
+    if (Number.isFinite(last) && now - last < 3000) return false;
+    window.sessionStorage.setItem(key, String(now));
+  } catch {
+    // If session storage is unavailable, prefer a possible duplicate over losing the event.
   }
   return true;
 }
@@ -97,6 +116,7 @@ export function emitProductEvent(name: ProductEventName, properties: SafeEventPr
   const width = window.innerWidth;
   const detail = {
     event_name: normalizedName,
+    session_id: getSessionId(),
     page_path: window.location.pathname,
     timestamp: new Date().toISOString(),
     device_class: deviceClass(width),
@@ -107,6 +127,7 @@ export function emitProductEvent(name: ProductEventName, properties: SafeEventPr
   window.dispatchEvent(new CustomEvent("pictofu:analytics", { detail }));
 
   if (process.env.NODE_ENV === "development") {
+    // Never add captured photo data, Blob URLs, base64 or camera frame content here.
     console.info("[PicTofu event]", detail);
   }
 }
