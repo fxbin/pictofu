@@ -96,6 +96,16 @@ export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
   }, [enabled]);
 
   useEffect(() => {
+    if (!enabled || !window.gtag) return;
+
+    window.gtag("event", "page_view", {
+      page_path: pathname,
+      page_location: window.location.href,
+      page_title: document.title,
+    });
+  }, [enabled, pathname]);
+
+  useEffect(() => {
     if (!(pathname in LANDING_PRESET_BY_PATH)) return;
     if (lastLandingPath.current === pathname) return;
     lastLandingPath.current = pathname;
