@@ -22,6 +22,7 @@ export type DemoAsset = {
  * - published styling must be reproducible by the real PicTofu preset system
  * - global representation is evaluated across the whole set, not by binding
  *   one ethnicity to one visual style
+ * - only status=approved may render on public pages
  */
 export const DEMO_ASSETS: DemoAsset[] = [
   {
@@ -100,4 +101,13 @@ export const DEMO_ASSET_MAP = new Map(DEMO_ASSETS.map((asset) => [asset.presetId
 
 export function getDemoAsset(presetId: string) {
   return DEMO_ASSET_MAP.get(presetId);
+}
+
+export function getApprovedDemoAsset(presetId: string) {
+  const asset = getDemoAsset(presetId);
+  return asset?.status === "approved" ? asset : undefined;
+}
+
+export function hasApprovedDemoAsset(presetId: string) {
+  return Boolean(getApprovedDemoAsset(presetId));
 }
