@@ -1,6 +1,7 @@
 work_order:
   task_id: pictofu-camera-capture
   issue: 2
+  pull_request: 8
   workflow_bundle: quick-slice-deliver
   objective: "Implement the real client-side camera lifecycle, countdown multi-shot capture, flip/retry/restart paths, and privacy-safe capture analytics for PicTofu."
   lead_role: Technical Trinity
@@ -39,6 +40,14 @@ work_order:
   resume_anchor: ".vidt/work-orders/camera-capture.yaml"
 
 status:
-  state: running
-  cycle_count: 0
-  team_engine_closure_verdict: pending
+  state: passed
+  cycle_count: 1
+  verifier_verdict: pass
+  team_engine_closure_verdict: pass_with_watch
+  evidence:
+    - "GitHub Actions run 31875944540: dependency install/lint/typecheck/build all success"
+    - "Static verifier review of privacy, lifecycle, capture and recovery gates"
+  residual_risk:
+    - "Real desktop/mobile camera hardware evidence is pending; do not claim production-ready camera behavior."
+    - "Facing-mode switching must be checked on iOS Safari and Android Chrome."
+    - "package-lock.json pending."
