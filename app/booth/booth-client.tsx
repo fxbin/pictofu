@@ -239,11 +239,29 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     if (captureBusy) return;
     const next = PRESETS.find((item) => item.id === nextId);
     if (!next) return;
-    clearCaptureSlots();
+
+    closeSavePreview();
+    if (capturedCount > 0) beginEditIfNeeded();
     setPresetId(next.id);
     setLayoutId(next.layoutId);
     setFilterId(next.filterId);
     setFrameId(next.frameId);
+    setActiveRetakeIndex(null);
+    adjustDragRef.current = null;
+    setExportStatus("idle");
+    setExportMessage(null);
+
+    if (capturedCount > 0) {
+      const required = shotTargetForLayout(next.layoutId);
+      setCameraStatus("review");
+      setReviewMessage(
+        capturedCount >= required
+          ? `${next.name} applied. Your ${capturedCount} captured ${photoNoun(capturedCount)} and framing stayed intact.`
+          : `${next.name} applied. Your ${capturedCount} captured ${photoNoun(capturedCount)} stayed intact, but this layout needs ${required}. Retake all to capture a full set.`,
+      );
+      return;
+    }
+
     setCameraStatus(streamRef.current ? "ready" : "idle");
   }
 
