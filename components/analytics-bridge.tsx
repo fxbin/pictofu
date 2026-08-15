@@ -13,6 +13,9 @@ declare global {
   }
 }
 
+const VERCEL_CUSTOM_EVENTS_ENABLED =
+  process.env.NEXT_PUBLIC_VERCEL_CUSTOM_EVENTS_ENABLED === "true";
+
 const LANDING_PRESET_BY_PATH: Record<string, string> = {
   "/": "classic-booth",
   "/online-photobooth": "classic-booth",
@@ -57,6 +60,8 @@ function reportWebVital(metric: {
 }
 
 function forwardToVercel(detail: Record<string, unknown>) {
+  if (!VERCEL_CUSTOM_EVENTS_ENABLED) return;
+
   const eventName = detail.event_name;
   if (typeof eventName !== "string" || eventName === "web_vital") return;
 
