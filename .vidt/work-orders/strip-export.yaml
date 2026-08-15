@@ -1,0 +1,53 @@
+work_order:
+  task_id: pictofu-strip-export
+  issue: 3
+  pull_request: 9
+  workflow_bundle: quick-slice-deliver
+  objective: "Turn captured browser-local frames into styled PicTofu strips with client-side Canvas composition, PNG download and Web Share fallback."
+  lead_role: Technical Trinity
+  worker_role: Frontend compositor/export implementation lens
+  verifier_role: Git Workflow Guardian + independent verification lens
+  input_artifacts:
+    - "Issue #3"
+    - "merged camera capture contract from PR #8"
+    - "docs/analytics/events.md"
+    - ".vidt/harness/engineering-constraints.md"
+  output_artifacts:
+    - "client-side strip compositor"
+    - "layout/filter/frame styling"
+    - "PNG export/download"
+    - "Web Share file path with download fallback"
+    - "export/share analytics"
+  acceptance_gates:
+    - "At least 1x4, 1x3, 2x2 and Polaroid-like layouts are composable client-side."
+    - "Original, B&W, Warm, Vintage and Y2K filters affect exported pixels, not only preview CSS."
+    - "Frame theme affects exported canvas background/branding."
+    - "PNG export is generated without uploading captured images."
+    - "Web Share uses feature detection; unsupported sharing falls back to download."
+    - "export_completed defines a completed photo strip and records dimensions without photo content."
+    - "Export failure preserves captured session for retry."
+    - "Lint, typecheck and production build pass."
+    - "Real iOS/Android download/share behavior remains a browser validation gate before production-ready claim."
+  dependency_ids:
+    - 2
+  max_cycles: 2
+  tool_boundary: "GitHub connector; no physical mobile share-sheet execution; no production cloud mutation."
+  context_boundary: "Issue #3 only; no SEO route expansion or analytics provider integration."
+  backend_binding: soft_orchestration_only
+  permissions:
+    repository: write
+    production: none
+  resume_anchor: ".vidt/work-orders/strip-export.yaml"
+
+status:
+  state: passed
+  cycle_count: 1
+  verifier_verdict: pass
+  team_engine_closure_verdict: pass_with_watch
+  evidence:
+    - "GitHub Actions run 31876255080: dependency install/lint/typecheck/build all success"
+    - "Static verifier review of composition, exported filters, privacy, download/share fallback and analytics semantics"
+  residual_risk:
+    - "Real iOS/Android share/download evidence pending."
+    - "Low-memory mobile Canvas behavior not yet measured."
+    - "Export error event taxonomy should be normalized during Issue #5 analytics-provider wiring."

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { BoothClient } from "./booth-client";
 import "./camera.css";
+import "./export.css";
 import { getPreset } from "@/lib/presets";
 
 export const metadata: Metadata = {
