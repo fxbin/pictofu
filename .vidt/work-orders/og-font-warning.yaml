@@ -1,0 +1,17 @@
+issue: 41
+mode: soft_orchestration_only
+objective: >
+  Remove nondeterministic dynamic emoji-font fetching from the generated Open Graph image while
+  preserving PicTofu's pastel 1200x630 brand card.
+scope:
+  - replace emoji/symbol glyphs in app/opengraph-image.tsx with ASCII-safe labels / CSS-only shapes
+  - keep ImageResponse dimensions and overall composition
+  - verify Vercel build no longer logs dynamic font download warnings
+non_goals:
+  - redesign public pages
+  - add external font files
+  - change social metadata routing
+acceptance:
+  - no `Failed to load dynamic font` warning in build logs
+  - /opengraph-image remains generated at 1200x630
+  - Node 24 lint/typecheck/build pass
