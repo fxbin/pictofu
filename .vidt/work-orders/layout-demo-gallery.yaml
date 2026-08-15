@@ -1,0 +1,35 @@
+issue: 16
+related_issue: 71
+mode: soft_orchestration_only
+objective: >
+  Replace abstract layout-only examples with lightweight, globally representative human
+  photobooth samples for every current output geometry, and expose them through a mobile-first
+  horizontal preview gallery on /layouts.
+scope:
+  - produce one approved example for strip-4, strip-3, grid-4, and polaroid
+  - recompose generated source photos using PicTofu's current compositor geometry
+  - compress production derivatives to WebP at 300px intrinsic width
+  - keep the combined four-image payload around 50 KB
+  - add a typed asset manifest with accurate alt text and intrinsic dimensions
+  - add a CSS scroll-snap gallery to /layouts without a carousel dependency
+  - preserve actual aspect ratios and make the next card discoverable on narrow screens
+non_goals:
+  - claiming each geometry example represents every preset/filter sharing that layout
+  - replacing all preset-specific SEO/home marketing assets in this slice
+  - adding AI beauty, stickers, background replacement, or other unavailable product features
+  - loading original generation-resolution assets in production
+acceptance:
+  - all four current layout geometries have approved real-photo examples
+  - examples include natural global human diversity without using ethnicity as a style selector
+  - same-session photos maintain subject, wardrobe, lighting, and background continuity
+  - WebP derivatives are browser-friendly and total about 50 KB
+  - /layouts gallery uses native horizontal scrolling and scroll snap
+  - image aspect ratios are not stretched
+  - gallery copy distinguishes geometry examples from preset-specific styling
+  - 375, 390, and 430px layouts retain a visible next-card affordance
+  - Node 24 lint, typecheck, and production build pass
+verification:
+  - visual review of the four optimized derivatives before approval
+  - inspect intrinsic dimensions and byte sizes in the asset manifest
+  - inspect rendered /layouts HTML and image requests after integration
+  - require Node 24 PR CI green before merge to dev
