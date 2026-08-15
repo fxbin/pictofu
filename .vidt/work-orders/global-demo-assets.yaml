@@ -1,0 +1,24 @@
+issue: 16
+mode: soft_orchestration_only
+objective: >
+  Replace placeholder-heavy product previews with original, globally representative human photobooth samples
+  that accurately reflect PicTofu's real layouts, filters and frames.
+scope:
+  - define global production demo asset matrix
+  - create original photostrip sessions with consistent people/lighting across each strip
+  - avoid demographic/style stereotyping
+  - optimize approved assets for web delivery
+  - integrate into home hero, template cards and representative SEO routes
+  - add descriptive SEO alt text
+non_goals:
+  - copying competitor photos or stickers
+  - celebrity/public-person likenesses
+  - building AI generation into the product runtime
+  - cloud photo storage
+acceptance:
+  - production set visibly represents a global audience
+  - every published strip is a complete session, not unrelated portraits
+  - examples remain achievable by the actual PicTofu preset system
+  - mobile first screen contains at least one real-looking outcome preview
+  - image weight is bounded and does not materially regress LCP
+  - Node 24 lint/typecheck/build pass
