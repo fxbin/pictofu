@@ -1,0 +1,36 @@
+issue: 20
+mode: soft_orchestration_only
+lead: World-Class Product Architect
+assistants:
+  - Technical Trinity
+governance:
+  - Git Workflow Guardian
+objective: >
+  Add an indexable, mobile-first pre-camera chooser that explains layout geometry and style presets,
+  then preserves the selected preset into /booth without asking the user to choose again.
+scope:
+  - add /layouts page
+  - separate layout geometry language from preset styling in copy and data presentation
+  - show explicit shot counts and output geometry
+  - route every card to /booth?preset=<stable-id>
+  - add internal links to relevant SEO experiences
+  - keep the page useful before #16 approved human assets are available
+  - allow #16 approved previews to be integrated later without changing the preset contract
+non_goals:
+  - creating new Canvas layout algorithms
+  - duplicating SEO landing pages
+  - adding gallery upload/crop/stickers
+  - changing camera session state
+acceptance:
+  - /layouts is indexable with unique title/description/canonical
+  - all current presets are represented
+  - each card exposes shot count and geometry
+  - CTA preserves preset id into booth
+  - mobile tap targets are at least 44px
+  - useful links to Korean/Y2K/Vintage/Couple/Friends/Graduation SEO routes
+  - Node 24 lint/typecheck/build green
+verification:
+  - no camera permission request on /layouts
+  - no duplicated hard-coded booth configuration; source remains lib/presets.ts
+  - no broken image dependency before #16 assets are approved
+resume_anchor: .vidt/delivery/choose-layout-page-verifier.md
