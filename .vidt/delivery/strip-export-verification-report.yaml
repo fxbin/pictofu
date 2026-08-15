@@ -1,0 +1,60 @@
+verification_report:
+  task_id: pictofu-strip-export
+  cycle_id: 1
+  verifier_role: Git Workflow Guardian + independent verification lens
+  verdict: pass
+  checked_gates:
+    - gate_id: layout_composition
+      passed: true
+      evidence: "Compositor defines explicit output geometry for strip-4, strip-3, grid-4 and polaroid and cover-crops local captured images into the target cells."
+    - gate_id: exported_pixel_filters
+      passed: true
+      evidence: "B&W/Warm/Vintage/Y2K are applied through CanvasRenderingContext2D.filter before drawImage, so the filter affects exported PNG pixels rather than preview CSS only."
+    - gate_id: frame_export
+      passed: true
+      evidence: "Frame palette selects canvas background/cell/ink colors and exported PicTofu footer branding."
+    - gate_id: privacy_boundary
+      passed: true
+      evidence: "Composer loads browser object URLs, draws to an in-memory canvas and returns a Blob; no network/storage API is introduced."
+    - gate_id: download
+      passed: true
+      evidence: "PNG Blob is downloaded using a temporary object URL that is revoked after the anchor click."
+    - gate_id: share_fallback
+      passed: true
+      evidence: "File share is feature-detected via navigator.share/canShare; unsupported sharing downloads the same local Blob instead."
+    - gate_id: no_fake_share_success
+      passed: true
+      evidence: "No share_completed event is emitted; opening/completing the share sheet is not claimed as reliable success."
+    - gate_id: retry_preserves_session
+      passed: true
+      evidence: "Export errors update only export status/message; capturedPhotos/object URLs remain intact for retry."
+    - gate_id: completed_strip_metric
+      passed: true
+      evidence: "export_completed emits format/layout/output dimensions after Blob composition and contains no image content."
+    - gate_id: lint
+      passed: true
+      evidence: "GitHub Actions run 31876255080 / job 94992325256: lint success."
+    - gate_id: typecheck
+      passed: true
+      evidence: "GitHub Actions run 31876255080 / job 94992325256: typecheck success."
+    - gate_id: build
+      passed: true
+      evidence: "GitHub Actions run 31876255080 / job 94992325256: production build success."
+  confirmed_issues:
+    - issue_id: mobile-share-download-evidence
+      severity: medium
+      evidence: "Physical iOS/Android share sheet and browser download behavior cannot be executed in this GitHub runtime."
+      fix_priority: "Must be smoke-tested before production-ready export/share claim."
+    - issue_id: mobile-canvas-memory
+      severity: low
+      evidence: "Output sizes are bounded and captured source edges are capped, but low-memory mobile runtime behavior is not measured yet."
+      fix_priority: "Check during mobile smoke / launch hardening."
+    - issue_id: error-event-taxonomy
+      severity: low
+      evidence: "canvas_export_failed currently travels through the existing generic camera_error channel while the happy-path export metrics use their dedicated events."
+      fix_priority: "Normalize when Issue #5 wires the analytics provider; does not affect completed-strip metric."
+  remediation_patch: null
+  evidence_refs:
+    - "https://github.com/fxbin/pictofu/pull/9"
+    - "https://github.com/fxbin/pictofu/actions/runs/31876255080"
+  false_positive_risk: "Medium-low for composition/privacy/static behavior; physical mobile share/download behavior remains unverified."
