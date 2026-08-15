@@ -282,7 +282,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     });
     const url = URL.createObjectURL(blob);
     photoUrlsRef.current.push(url);
-    return { id: `${Date.now()}-${crypto.randomUUID()}`, blob, url };
+    return { id: url, blob, url };
   }
 
   async function runCountdown() {
