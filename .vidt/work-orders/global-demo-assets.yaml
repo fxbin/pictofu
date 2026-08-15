@@ -1,24 +1,52 @@
 issue: 16
 mode: soft_orchestration_only
+lead: World-Class Product Architect
+assistants:
+  - Technical Trinity
+governance:
+  - Git Workflow Guardian
 objective: >
   Replace placeholder-heavy product previews with original, globally representative human photobooth samples
   that accurately reflect PicTofu's real layouts, filters and frames.
 scope:
   - define global production demo asset matrix
+  - centralize static demo asset mapping in lib/demo-assets.ts
   - create original photostrip sessions with consistent people/lighting across each strip
   - avoid demographic/style stereotyping
   - optimize approved assets for web delivery
   - integrate into home hero, template cards and representative SEO routes
   - add descriptive SEO alt text
+  - make asset registry reusable by issue #20 choose-layout
+first_batch:
+  - classic-booth: Black woman solo, four natural poses, Original + Cream
+  - korean-date: mixed-ethnicity couple, four connected poses, Warm + Blush
+  - y2k-summer: globally mixed two-person friends session, Y2K + Lilac
+  - best-friends: three diverse friends, 2x2 grid, playful gestures
+second_batch:
+  - couple-date
+  - vintage-film
+  - graduation
 non_goals:
   - copying competitor photos or stickers
   - celebrity/public-person likenesses
   - building AI generation into the product runtime
   - cloud photo storage
+  - fake AR/beauty/AI-background features in marketing samples
 acceptance:
   - production set visibly represents a global audience
   - every published strip is a complete session, not unrelated portraits
   - examples remain achievable by the actual PicTofu preset system
   - mobile first screen contains at least one real-looking outcome preview
+  - demo asset paths have one source of truth
   - image weight is bounded and does not materially regress LCP
   - Node 24 lint/typecheck/build pass
+verification:
+  visual:
+    - same people, wardrobe, lighting and background across each strip
+    - no obvious face/hand continuity failures at product display size
+    - no demographic/style stereotype coupling
+  engineering:
+    - static marketing assets remain isolated from browser-local user photos
+    - alt text is descriptive and not keyword stuffed
+    - no layout shift regression in mobile hero
+resume_anchor: .vidt/delivery/global-demo-assets-spec.md
