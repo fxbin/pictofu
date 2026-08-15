@@ -1,6 +1,9 @@
 export type AnalyticsConsent = "unknown" | "granted" | "denied";
 
 export const ANALYTICS_CONSENT_STORAGE_KEY = "pictofu.analytics-consent.v1";
+const ANALYTICS_CONSENT_CHANGE_EVENT = "pictofu:analytics-consent-change";
+
+let volatileConsent: AnalyticsConsent = "unknown";
 
 export function parseAnalyticsConsent(value: string | null): AnalyticsConsent {
   return value === "granted" || value === "denied" ? value : "unknown";
@@ -11,17 +14,40 @@ export function readAnalyticsConsent(): AnalyticsConsent {
   try {
     return parseAnalyticsConsent(window.localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY));
   } catch {
-    return "unknown";
+    return volatileConsent;
   }
+}
+
+export function getServerAnalyticsConsent(): AnalyticsConsent {
+  return "unknown";
+}
+
+export function subscribeAnalyticsConsent(onStoreChange: () => void) {
+  if (typeof window === "undefined") return () => undefined;
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === null || event.key === ANALYTICS_CONSENT_STORAGE_KEY) onStoreChange();
+  };
+  const handleLocalChange = () => onStoreChange();
+
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(ANALYTICS_CONSENT_CHANGE_EVENT, handleLocalChange);
+
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(ANALYTICS_CONSENT_CHANGE_EVENT, handleLocalChange);
+  };
 }
 
 export function persistAnalyticsConsent(value: Exclude<AnalyticsConsent, "unknown">) {
   if (typeof window === "undefined") return;
+  volatileConsent = value;
   try {
     window.localStorage.setItem(ANALYTICS_CONSENT_STORAGE_KEY, value);
   } catch {
-    // Consent still applies for the current page lifecycle even if storage is unavailable.
+    // Keep the choice for the current page lifecycle if persistent storage is unavailable.
   }
+  window.dispatchEvent(new Event(ANALYTICS_CONSENT_CHANGE_EVENT));
 }
 
 export function clearAccessibleGaCookies() {
