@@ -1,0 +1,56 @@
+issue: 64
+release_epic: 65
+version: v0.2
+mode: soft_orchestration_only
+objective: >
+  Turn the existing selective-retake Review stage into a lightweight Review / Adjust workspace
+  where each capture slot can be independently reframed with non-destructive pan and restrained zoom,
+  and the final Canvas export reproduces that crop while preserving browser-local privacy.
+hypothesis: >
+  Per-photo correction and framing control will increase capture_completed -> export_completed conversion
+  by preventing one awkwardly framed shot from making the whole strip feel unusable.
+scope:
+  - preserve the stable CaptureSlot session model introduced by issue 22
+  - define normalized per-slot crop state with safe defaults
+  - select one captured slot for adjustment without affecting any other slot
+  - support touch/mouse pan plus restrained zoom and Reset
+  - keep selective Retake as a distinct action
+  - make compositor consume each slot crop non-destructively
+  - keep preview and exported PNG visually aligned
+  - support one-shot Polaroid, three-shot strip and four-shot strip/grid flows
+  - keep all photo bytes and crop state browser-local
+analytics:
+  - preserve existing funnel events
+  - if adjust-specific telemetry is introduced, emit scalar metadata only
+  - never emit photo URLs, blobs, base64, pixel data or free-form image-derived content
+non_goals:
+  - gallery upload or replacement
+  - arbitrary aspect-ratio crop
+  - free rotation or perspective correction
+  - per-photo beauty or AI editing
+  - cloud persistence, account history or backend image processing
+  - stickers, captions or a general-purpose image editor
+architecture:
+  - store crop as normalized metadata on CaptureSlot rather than rewriting JPEG blobs
+  - clamp crop transforms so no empty canvas can be exposed
+  - compositor remains the single authority for final exported pixels
+  - layout switches must deterministically preserve or reset crop metadata where geometry is incompatible
+acceptance:
+  - Review / Adjust appears after capture and before final style/export
+  - user can select every populated slot independently
+  - pan and restrained zoom operate on only the active slot
+  - Reset restores the active slot default crop
+  - Retake active slot still preserves all other slots and their crop state
+  - final Canvas export reflects each slot crop
+  - one-shot, three-shot and four-shot sessions remain usable
+  - no server/network photo processing is introduced
+  - mobile controls remain >=44px where essential
+  - Node 24 npm ci, lint, typecheck and production build pass
+  - responsive smoke at 375, 390, 430 and desktop
+  - iOS Safari and Android Chrome real-device smoke before production-ready claim
+release_gate:
+  - PR targets dev only
+  - owner/device acceptance on dev
+  - dedicated dev -> main release PR for v0.2
+  - Production smoke after deployment
+  - record Release+24h, Day 7 and Day 14 observations in issue 65
