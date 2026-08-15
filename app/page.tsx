@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BrandLink } from "@/components/brand";
-import { PRESETS } from "@/lib/presets";
+import { FEATURED_PRESETS } from "@/lib/presets";
 
 function Sparkle({ className = "" }: { className?: string }) {
   return <span className={`sparkle ${className}`} aria-hidden="true">✦</span>;
@@ -66,7 +66,7 @@ function BoothPreview() {
   );
 }
 
-function TemplateCard({ preset, index }: { preset: (typeof PRESETS)[number]; index: number }) {
+function TemplateCard({ preset, index }: { preset: (typeof FEATURED_PRESETS)[number]; index: number }) {
   return (
     <Link className={`template-card template-card--${preset.accent}`} href={`/booth?preset=${preset.id}`}>
       <div className="template-card__copy">
@@ -88,9 +88,9 @@ export default function Home() {
         <BrandLink />
         <nav className="desktop-nav" aria-label="Primary navigation">
           <a href="#templates">Templates</a>
-          <Link href="/booth">Booth</Link>
-          <Link href="/booth?preset=korean-date">Photo Strip</Link>
-          <Link href="/booth?preset=korean-date">Korean Booth</Link>
+          <Link href="/online-photobooth">Booth</Link>
+          <Link href="/photo-strip-maker">Photo Strip</Link>
+          <Link href="/korean-photobooth">Korean Booth</Link>
         </nav>
         <Link className="header-cta" href="/booth">Start Booth ✦</Link>
         <a className="menu-button" href="#templates" aria-label="Jump to templates">☰</a>
@@ -120,10 +120,10 @@ export default function Home() {
       <section className="templates-section" id="templates" aria-labelledby="popular-templates-title">
         <div className="section-heading">
           <h2 id="popular-templates-title"><span aria-hidden="true">✦</span> Popular Templates</h2>
-          <Link href="/booth">View all templates →</Link>
+          <Link href="/photo-strip-maker">Explore photo strips →</Link>
         </div>
         <div className="template-scroller">
-          {PRESETS.map((preset, index) => <TemplateCard key={preset.id} preset={preset} index={index} />)}
+          {FEATURED_PRESETS.map((preset, index) => <TemplateCard key={preset.id} preset={preset} index={index} />)}
         </div>
       </section>
 
@@ -133,7 +133,7 @@ export default function Home() {
           <h2>Your photos stay with you.</h2>
           <p>PicTofu’s MVP processes camera frames and photo strips in your browser. No account required.</p>
         </div>
-        <Link href="/booth">Open the booth →</Link>
+        <Link href="/online-photobooth">Learn how the booth works →</Link>
       </section>
     </main>
   );

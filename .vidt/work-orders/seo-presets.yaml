@@ -1,0 +1,44 @@
+work_order:
+  task_id: pictofu-seo-presets
+  issue: 4
+  workflow_bundle: product-spec-deliver
+  objective: "Create the first indexable PicTofu search-intent routes where each page has useful unique content and launches a real booth preset."
+  lead_role: World-Class Product Architect
+  worker_role: Technical Trinity
+  verifier_role: Git Workflow Guardian + independent SEO/product verification lens
+  input_artifacts:
+    - "Issue #4"
+    - "docs/growth/seo-page-map.md"
+    - "merged capture-to-export loop from PR #9"
+  output_artifacts:
+    - "typed SEO page/preset contract"
+    - "eight server-rendered search-intent pages"
+    - "unique title/description/H1/body/FAQ per route"
+    - "canonical metadata and internal links"
+    - "sitemap inclusion"
+    - "real preset mapping into /booth"
+  acceptance_gates:
+    - "All eight launch routes render indexable primary copy without camera permission."
+    - "Each route has unique useful copy and a meaningful search intent, not keyword substitution."
+    - "Each primary CTA passes a real preset id to /booth."
+    - "Korean/Y2K/Vintage/Couple/Best-Friend/Graduation intents map to meaningful defaults."
+    - "Canonical URLs and sitemap entries are explicit."
+    - "Related-experience links are crawlable anchors."
+    - "Unknown dynamic slugs return 404 rather than creating infinite indexable pages."
+    - "Lint, typecheck and production build pass."
+  dependency_ids:
+    - 1
+    - 3
+  max_cycles: 2
+  tool_boundary: "GitHub connector; no Search Console mutation or production deployment in this WorkOrder."
+  context_boundary: "Issue #4 only; no analytics-provider integration or production deployment."
+  backend_binding: soft_orchestration_only
+  permissions:
+    repository: write
+    production: none
+  resume_anchor: ".vidt/work-orders/seo-presets.yaml"
+
+status:
+  state: running
+  cycle_count: 0
+  team_engine_closure_verdict: pending

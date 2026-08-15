@@ -11,11 +11,31 @@ export type BoothPreset = {
 
 export const PRESETS: BoothPreset[] = [
   {
+    id: "classic-booth",
+    name: "Classic Booth",
+    description: "A clean four-cut strip that works for any moment.",
+    layoutId: "strip-4",
+    filterId: "original",
+    frameId: "cream",
+    shotCount: 4,
+    accent: "cream",
+  },
+  {
     id: "korean-date",
     name: "Korean Date",
     description: "Soft, romantic, and perfect for two.",
     layoutId: "strip-4",
     filterId: "warm",
+    frameId: "pink",
+    shotCount: 4,
+    accent: "pink",
+  },
+  {
+    id: "couple-date",
+    name: "Couple Date",
+    description: "A blush four-cut strip for dates and anniversaries.",
+    layoutId: "strip-4",
+    filterId: "original",
     frameId: "pink",
     shotCount: 4,
     accent: "pink",
@@ -29,6 +49,16 @@ export const PRESETS: BoothPreset[] = [
     frameId: "lilac",
     shotCount: 4,
     accent: "blue",
+  },
+  {
+    id: "vintage-film",
+    name: "Vintage Film",
+    description: "Warm, faded film tones for a nostalgic photo strip.",
+    layoutId: "strip-4",
+    filterId: "vintage",
+    frameId: "cream",
+    shotCount: 4,
+    accent: "cream",
   },
   {
     id: "best-friends",
@@ -51,6 +81,14 @@ export const PRESETS: BoothPreset[] = [
     accent: "mint",
   },
 ];
+
+export const FEATURED_PRESET_IDS = ["korean-date", "y2k-summer", "best-friends", "graduation"] as const;
+
+export const FEATURED_PRESETS = FEATURED_PRESET_IDS.map((id) => {
+  const preset = PRESETS.find((item) => item.id === id);
+  if (!preset) throw new Error(`Featured preset ${id} is missing`);
+  return preset;
+});
 
 export const DEFAULT_PRESET = PRESETS[0];
 
