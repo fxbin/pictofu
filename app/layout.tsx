@@ -31,18 +31,18 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body>
-        {children}
         {analyticsEnabled && (
           <>
+            <Script id="pictofu-ga4-bootstrap" strategy="beforeInteractive">
+              {`window.dataLayer=window.dataLayer||[];window.gtag=function(){window.dataLayer.push(arguments);};window.gtag('js',new Date());window.gtag('config','${measurementId}',{send_page_view:false});`}
+            </Script>
             <Script
               src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
               strategy="afterInteractive"
             />
-            <Script id="pictofu-ga4" strategy="afterInteractive">
-              {`window.dataLayer=window.dataLayer||[];window.gtag=function(){window.dataLayer.push(arguments);};window.gtag('js',new Date());window.gtag('config','${measurementId}',{send_page_view:false});`}
-            </Script>
           </>
         )}
+        {children}
         <AnalyticsBridge enabled={analyticsEnabled} />
       </body>
     </html>
