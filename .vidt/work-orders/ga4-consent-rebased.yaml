@@ -1,0 +1,30 @@
+issue: 31
+mode: soft_orchestration_only
+objective: >
+  Implement conservative Basic Consent for GA4 on the latest dev baseline so Google tags do not load
+  before an explicit analytics grant, while Vercel Web Analytics and the provider-neutral product-event
+  contract remain independent.
+scope:
+  - store `unknown | granted | denied` in first-party localStorage
+  - render a small mobile-first non-modal consent card when GA4 is configured and choice is unknown
+  - allow grant, decline, reopen, and revoke
+  - do not render/load gtag.js before grant
+  - initialize GA4 only after grant with advertising consent kept denied
+  - keep AnalyticsBridge mounted with GA4 forwarding dynamically enabled/disabled so Vercel custom events and product-event generation remain independent
+  - keep <Analytics /> independent
+  - update Privacy copy to describe actual consent behavior
+non_goals:
+  - targeted advertising, remarketing, Google Ads, or ad personalization
+  - full third-party CMP
+  - server-side consent profiles/accounts
+  - changing product event names or sending photo/blob/base64/camera-frame content
+acceptance:
+  - fresh storage: no Google tag script before choice
+  - decline persists and core booth remains usable
+  - grant initializes GA4 and existing sanitized events can forward
+  - settings can be reopened; revoke persists denied and reloads into no-tag state
+  - Vercel Web Analytics remains independent
+  - consent UI does not block core camera actions at 375/390/430px
+  - Privacy Policy matches implementation
+  - Node 24 npm ci/lint/typecheck/build pass
+  - Vercel Preview smoke before merge to dev
