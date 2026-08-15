@@ -1,12 +1,23 @@
 import Link from "next/link";
 import { BrandLink } from "@/components/brand";
+import { DemoAssetMedia } from "@/components/demo-asset-media";
+import { getApprovedDemoAsset } from "@/lib/demo-assets";
 import { FEATURED_PRESETS } from "@/lib/presets";
 
 function Sparkle({ className = "" }: { className?: string }) {
   return <span className={`sparkle ${className}`} aria-hidden="true">✦</span>;
 }
 
-function DemoStrip() {
+function DemoStrip({ presetId }: { presetId: string }) {
+  const approvedAsset = getApprovedDemoAsset(presetId);
+  if (approvedAsset) {
+    return (
+      <div className="demo-strip demo-strip--approved" aria-label={approvedAsset.alt}>
+        <DemoAssetMedia presetId={presetId} variant="strip" priority sizes="124px" />
+      </div>
+    );
+  }
+
   return (
     <div className="demo-strip" aria-label="Example four-photo strip">
       {["peace", "smile", "wink", "heart"].map((pose, index) => (
@@ -20,6 +31,8 @@ function DemoStrip() {
 }
 
 function BoothPreview() {
+  const heroAsset = getApprovedDemoAsset("korean-date");
+
   return (
     <div className="booth-preview" aria-label="PicTofu booth preview">
       <div className="booth-preview__topbar">
@@ -34,17 +47,23 @@ function BoothPreview() {
           <span><b>ϟ</b><small>Flash</small></span>
           <span><b>↻</b><small>Flip</small></span>
         </div>
-        <div className="camera-stage" aria-hidden="true">
-          <div className="camera-stage__poster">
-            <span className="camera-stage__hair" />
-            <span className="camera-stage__face">◕‿◕</span>
-            <span className="camera-stage__hand">✌</span>
-          </div>
-          <div className="countdown-ring">3</div>
-          <span className="camera-doodle camera-doodle--one">♡</span>
-          <span className="camera-doodle camera-doodle--two">✦</span>
+        <div className={`camera-stage ${heroAsset ? "camera-stage--approved" : ""}`} aria-label={heroAsset?.alt}>
+          {heroAsset ? (
+            <DemoAssetMedia presetId="korean-date" variant="card" priority sizes="(max-width: 760px) 70vw, 520px" />
+          ) : (
+            <>
+              <div className="camera-stage__poster" aria-hidden="true">
+                <span className="camera-stage__hair" />
+                <span className="camera-stage__face">◕‿◕</span>
+                <span className="camera-stage__hand">✌</span>
+              </div>
+              <div className="countdown-ring">3</div>
+              <span className="camera-doodle camera-doodle--one">♡</span>
+              <span className="camera-doodle camera-doodle--two">✦</span>
+            </>
+          )}
         </div>
-        <DemoStrip />
+        <DemoStrip presetId="korean-date" />
       </div>
       <div className="booth-preview__bottom">
         <div className="editor-preview">
@@ -67,6 +86,8 @@ function BoothPreview() {
 }
 
 function TemplateCard({ preset, index }: { preset: (typeof FEATURED_PRESETS)[number]; index: number }) {
+  const approvedAsset = getApprovedDemoAsset(preset.id);
+
   return (
     <Link className={`template-card template-card--${preset.accent}`} href={`/booth?preset=${preset.id}`}>
       <div className="template-card__copy">
@@ -74,9 +95,15 @@ function TemplateCard({ preset, index }: { preset: (typeof FEATURED_PRESETS)[num
         <p>{preset.description}</p>
         <span className="template-card__arrow" aria-hidden="true">→</span>
       </div>
-      <div className={`mini-strip mini-strip--${index + 1}`} aria-hidden="true">
-        <i>◕‿◕</i><i>◕ᴗ◕</i><i>◕‿◕</i>
-      </div>
+      {approvedAsset ? (
+        <div className={`mini-strip mini-strip--${index + 1}`} aria-label={approvedAsset.alt}>
+          <DemoAssetMedia presetId={preset.id} variant="strip" sizes="76px" />
+        </div>
+      ) : (
+        <div className={`mini-strip mini-strip--${index + 1}`} aria-hidden="true">
+          <i>◕‿◕</i><i>◕ᴗ◕</i><i>◕‿◕</i>
+        </div>
+      )}
     </Link>
   );
 }
