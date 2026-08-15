@@ -60,17 +60,14 @@ function forwardToVercel(detail: Record<string, unknown>) {
   const eventName = detail.event_name;
   if (typeof eventName !== "string" || eventName === "web_vital") return;
 
-  const {
-    event_name: _eventName,
-    session_id: _sessionId,
-    timestamp: _timestamp,
-    ...safeParameters
-  } = detail;
-  void _eventName;
-  void _sessionId;
-  void _timestamp;
+  const safeParameters = Object.fromEntries(
+    Object.entries(detail).filter(([key, value]) => {
+      if (key === "event_name" || key === "session_id" || key === "timestamp") return false;
+      return typeof value === "string" || typeof value === "number" || typeof value === "boolean";
+    }),
+  ) as Record<string, string | number | boolean>;
 
-  track(eventName, safeParameters as Record<string, string | number | boolean | null>);
+  track(eventName, safeParameters);
 }
 
 export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
