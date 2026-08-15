@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BrandLink } from "@/components/brand";
+import { SiteFooter } from "@/components/site-footer";
 import styles from "./about.module.css";
 
 export const metadata: Metadata = {
@@ -192,6 +193,7 @@ export default function AboutPage() {
         <Link className={styles.primaryAction} href="/booth">Start Booth ✦</Link>
       </section>
 
+      <SiteFooter />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
     </main>
   );
