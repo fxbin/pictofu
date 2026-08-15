@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandLink } from "@/components/brand";
+import { SiteFooter } from "@/components/site-footer";
 import type { SeoExperience } from "@/lib/seo-pages";
 import { getSeoExperience } from "@/lib/seo-pages";
 import { getPreset } from "@/lib/presets";
@@ -118,6 +119,7 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
         <Link className="seo-primary" href={`/booth?preset=${preset.id}`}>{experience.cta}</Link>
       </section>
 
+      <SiteFooter />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
     </main>
   );
