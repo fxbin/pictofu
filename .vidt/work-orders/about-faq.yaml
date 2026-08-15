@@ -1,0 +1,25 @@
+issue: 18
+mode: soft_orchestration_only
+objective: >
+  Publish an original, indexable About + FAQ page that explains what PicTofu is, how the browser-first booth works,
+  what the current MVP supports, and what users can do when camera or sharing behavior varies by device.
+scope:
+  - add /about with unique metadata and canonical URL
+  - explain Choose → Camera → Pose → Review → Style → Download/Share
+  - explain browser-first/no-install/no-account and local photo processing
+  - document current layouts, filters, frames and selective retake truthfully
+  - provide camera permission and embedded-browser troubleshooting
+  - add semantically appropriate FAQ JSON-LD
+  - keep the page mobile-first with >=44px primary action targets
+non_goals:
+  - adding new booth capabilities
+  - changing camera/export/share implementation
+  - duplicating Privacy Policy content
+  - editing homepage/footer/sitemap while Issue #19 PR owns those shared surfaces
+acceptance:
+  - /about is indexable with unique metadata and canonical URL
+  - copy does not claim capabilities beyond the current product
+  - FAQ covers privacy, mobile/desktop support, permissions, layouts/filters/frames, retake and sharing behavior
+  - FAQ JSON-LD matches visible FAQ content
+  - Node 24 lint/typecheck/build pass
+  - after Issue #19 merges, reconcile About into sitemap/footer before closing Issue #18
