@@ -17,6 +17,7 @@ Scoring uses 1–5 where higher user value / prevalence / SEO is better, while h
 | Selective single-shot retake | 5 | 3 | 2 | 1 | 2 | Missing | P0 | Build now (#22) |
 | Real human result samples | 5 | 5 | 2 | 1 | 5 | In progress | P0 | Build now (#16) |
 | Choose-layout before camera | 4 | 5 | 2 | 1 | 4 | Planned | P0 | Build now (#20) |
+| Privacy page | 5 | 4 | 1 | 1 | 2 | Planned | P0 trust | Build now (#19) |
 | Upload from gallery | 5 | 4 | 2 | 1 | 3 | Missing | P1 | Build after #22 |
 | Replace one slot from gallery | 5 | 3 | 2 | 1 | 2 | Missing | P1 | Build on slot model |
 | Crop / pan / zoom per shot | 4 | 4 | 3 | 1 | 2 | Missing | P1 | Build after upload |
@@ -25,7 +26,6 @@ Scoring uses 1–5 where higher user value / prevalence / SEO is better, while h
 | Draggable / resizable stickers | 4 | 4 | 3 | 1 | 5 | Missing | P1 | Build with layer model |
 | Share Hub / destination UX | 5 | 4 | 3 | 2 | 5 | Planned | P1 | Build (#17) |
 | About + FAQ | 3 | 4 | 1 | 1 | 4 | Planned | P1 | Build (#18) |
-| Privacy page | 5 | 4 | 1 | 1 | 2 | Planned | P0 trust | Build (#19) |
 | Overcapture → choose best N | 5 | 2 | 3 | 1 | 3 | Missing | P2 | Strong follow-up |
 | GIF export | 3 | 3 | 3 | 1 | 4 | Missing | P2 | Validate first |
 | QR cross-device download | 3 | 3 | 4 | 3 | 2 | Missing | P2 | Desktop/event use case only |
