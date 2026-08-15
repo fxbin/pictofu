@@ -114,11 +114,11 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
           aria-label="Analytics privacy settings"
         >
           <div className={styles.titleRow}>
-            <strong>Help improve PicTofu?</strong>
+            <strong>Help improve PicToFu?</strong>
             <span className={styles.status}>{consentLabel(consent)}</span>
           </div>
           <p className={styles.copy}>
-            Analytics helps us understand visits and completed photo strips. Google Analytics only loads after you allow it, and PicTofu never sends your photos in analytics events.
+            Analytics helps us understand visits and completed photo strips. Google Analytics only loads after you allow it, and PicToFu never sends your photos in analytics events.
           </p>
           <div className={styles.actions}>
             <button className={styles.primary} type="button" onClick={allowAnalytics}>

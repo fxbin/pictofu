@@ -46,12 +46,12 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
             <Link className="seo-primary" href={`/booth?preset=${preset.id}`}>{experience.cta}</Link>
             <Link className="seo-secondary" href="/photo-strip-maker">See strip styles</Link>
           </div>
-          <p className="seo-privacy">▣ Photos are processed in your browser in the current PicTofu MVP.</p>
+          <p className="seo-privacy">▣ Photos are processed in your browser in the current PicToFu MVP.</p>
         </div>
 
         <div className={`seo-preset-card seo-preset-card--${preset.frameId}`} aria-label={`${preset.name} preset preview`}>
           <div className="seo-preset-card__top">
-            <span>PicTofu preset</span>
+            <span>PicToFu preset</span>
             <strong>{preset.name}</strong>
           </div>
           <div className={`seo-preset-strip seo-preset-strip--${preset.layoutId}`}>
@@ -60,7 +60,7 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
                 <span>{index % 2 === 0 ? "◕‿◕" : "◕ᴗ◕"}</span>
               </div>
             ))}
-            <small>✦ PicTofu ♡</small>
+            <small>✦ PicToFu ♡</small>
           </div>
           <div className="seo-preset-meta">
             <span>{LAYOUT_LABELS[preset.layoutId]}</span>
@@ -94,7 +94,7 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
       <section className="seo-faq" aria-labelledby="faq-title">
         <div>
           <p className="seo-section-kicker">Quick answers</p>
-          <h2 id="faq-title">About this PicTofu experience</h2>
+          <h2 id="faq-title">About this PicToFu experience</h2>
         </div>
         <div className="seo-faq__items">
           {experience.faq.map((item) => (

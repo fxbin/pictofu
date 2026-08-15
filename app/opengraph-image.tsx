@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "PicTofu - Your cute online photobooth";
+export const alt = "PicToFu - Your cute online photobooth";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -38,7 +38,7 @@ export default function OpenGraphImage() {
             >
               PT
             </div>
-            PicTofu
+            PicToFu
           </div>
           <div style={{ marginTop: "54px", fontSize: "76px", lineHeight: 1.02, fontWeight: 850, letterSpacing: "-3px" }}>
             Your cute online photobooth
@@ -82,7 +82,7 @@ export default function OpenGraphImage() {
             </div>
           ))}
           <div style={{ display: "flex", justifyContent: "center", fontSize: "20px", fontWeight: 800, color: "#845665" }}>
-            PicTofu
+            PicToFu
           </div>
         </div>
       </div>

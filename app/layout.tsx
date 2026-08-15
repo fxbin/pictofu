@@ -10,19 +10,19 @@ const analyticsConfigured =
 export const metadata: Metadata = {
   metadataBase: new URL("https://pictofu.com"),
   title: {
-    default: "PicTofu — Your cute online photobooth",
-    template: "%s | PicTofu",
+    default: "PicToFu — Your cute online photobooth",
+    template: "%s | PicToFu",
   },
   description:
     "Snap cute photo strips in your browser. No app, no account, and your photos stay on your device.",
-  applicationName: "PicTofu",
+  applicationName: "PicToFu",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "PicTofu — Your cute online photobooth",
+    title: "PicToFu — Your cute online photobooth",
     description:
       "Open, pose, style, download. A playful browser photobooth for cute photo strips.",
     url: "https://pictofu.com",
-    siteName: "PicTofu",
+    siteName: "PicToFu",
     type: "website",
   },
 };

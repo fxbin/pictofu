@@ -24,10 +24,10 @@ export async function generateMetadata({ params }: SeoPageProps): Promise<Metada
     description: experience.description,
     alternates: { canonical: `/${experience.slug}` },
     openGraph: {
-      title: `${experience.title} | PicTofu`,
+      title: `${experience.title} | PicToFu`,
       description: experience.description,
       url: `https://pictofu.com/${experience.slug}`,
-      siteName: "PicTofu",
+      siteName: "PicToFu",
       type: "website",
     },
   };

@@ -28,7 +28,7 @@ export function cameraErrorMessage(errorClass: CameraErrorClass): string {
     case "camera_unavailable":
       return "We couldn’t find an available camera. Check that another app is not using it, then try again.";
     default:
-      return "The camera could not start. Try again or reopen PicTofu in a current Safari or Chrome browser.";
+      return "The camera could not start. Try again or reopen PicToFu in a current Safari or Chrome browser.";
   }
 }
 

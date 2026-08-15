@@ -225,7 +225,7 @@ function drawBranding(
   context.fillStyle = palette.ink;
   context.textAlign = "center";
   context.font = `700 ${layoutId === "polaroid" ? 38 : 30}px ui-rounded, system-ui, sans-serif`;
-  context.fillText("✦ PicTofu ♡", width / 2, baseline);
+  context.fillText("✦ PicToFu ♡", width / 2, baseline);
   context.font = "500 21px system-ui, sans-serif";
   context.globalAlpha = 0.68;
   context.fillText("pictofu.com", width / 2, baseline + 35);

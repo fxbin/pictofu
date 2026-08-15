@@ -6,7 +6,7 @@ import { getPreset } from "@/lib/presets";
 
 export const metadata: Metadata = {
   title: "Online Photo Booth",
-  description: "Open PicTofu’s browser photobooth and choose a cute strip preset. Photos stay on your device in the MVP.",
+  description: "Open PicToFu’s browser photobooth and choose a cute strip preset. Photos stay on your device in the MVP.",
   alternates: { canonical: "/booth" },
   robots: { index: false, follow: true },
 };
