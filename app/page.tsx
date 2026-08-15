@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandLink } from "@/components/brand";
+import { SiteFooter } from "@/components/site-footer";
 import { FEATURED_PRESETS } from "@/lib/presets";
 
 function Sparkle({ className = "" }: { className?: string }) {
@@ -133,8 +134,10 @@ export default function Home() {
           <h2>Your photos stay with you.</h2>
           <p>PicTofu’s MVP processes camera frames and photo strips in your browser. No account required.</p>
         </div>
-        <Link href="/online-photobooth">Learn how the booth works →</Link>
+        <Link href="/privacy">Read our privacy policy →</Link>
       </section>
+
+      <SiteFooter />
     </main>
   );
 }
