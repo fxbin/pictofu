@@ -4,8 +4,15 @@ type LayoutId = BoothPreset["layoutId"];
 type FilterId = BoothPreset["filterId"];
 type FrameId = BoothPreset["frameId"];
 
+export type PhotoCrop = {
+  x: number;
+  y: number;
+  zoom: number;
+};
+
 export type ComposeStripInput = {
   photoUrls: string[];
+  photoCrops?: Array<PhotoCrop | undefined>;
   layoutId: LayoutId;
   filterId: FilterId;
   frameId: FrameId;
@@ -18,6 +25,7 @@ export type ComposeStripResult = {
 };
 
 type Rect = { x: number; y: number; width: number; height: number };
+type SourceCrop = { sx: number; sy: number; sw: number; sh: number };
 
 const FRAME_COLORS: Record<FrameId, { background: string; ink: string; cell: string }> = {
   cream: { background: "#fff1df", ink: "#654d47", cell: "#fffaf5" },
@@ -64,7 +72,11 @@ async function loadImage(url: string): Promise<HTMLImageElement> {
   });
 }
 
-function coverCrop(imageWidth: number, imageHeight: number, rect: Rect) {
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function defaultCoverCrop(imageWidth: number, imageHeight: number, rect: Rect): SourceCrop {
   const sourceRatio = imageWidth / imageHeight;
   const targetRatio = rect.width / rect.height;
 
@@ -87,12 +99,48 @@ function coverCrop(imageWidth: number, imageHeight: number, rect: Rect) {
   };
 }
 
+/**
+ * Converts normalized Review controls into a safe source rectangle.
+ *
+ * x/y are normalized to [-1, 1], where 0 is centered and the extremes pan to
+ * the furthest valid source edge. zoom is clamped to [1, 2.5]. Because the
+ * crop always stays inside the original image, the compositor can never expose
+ * an empty canvas area.
+ */
+export function resolvePhotoCrop(
+  imageWidth: number,
+  imageHeight: number,
+  rect: Rect,
+  crop?: PhotoCrop,
+): SourceCrop {
+  const base = defaultCoverCrop(imageWidth, imageHeight, rect);
+  if (!crop) return base;
+
+  const zoom = clamp(Number.isFinite(crop.zoom) ? crop.zoom : 1, 1, 2.5);
+  const panX = clamp(Number.isFinite(crop.x) ? crop.x : 0, -1, 1);
+  const panY = clamp(Number.isFinite(crop.y) ? crop.y : 0, -1, 1);
+  const sw = base.sw / zoom;
+  const sh = base.sh / zoom;
+  const centeredSx = (imageWidth - sw) / 2;
+  const centeredSy = (imageHeight - sh) / 2;
+  const maxOffsetX = Math.max(0, centeredSx);
+  const maxOffsetY = Math.max(0, centeredSy);
+
+  return {
+    sx: clamp(centeredSx + panX * maxOffsetX, 0, imageWidth - sw),
+    sy: clamp(centeredSy + panY * maxOffsetY, 0, imageHeight - sh),
+    sw,
+    sh,
+  };
+}
+
 function drawRoundedPhoto(
   context: CanvasRenderingContext2D,
   image: HTMLImageElement,
   rect: Rect,
   filterId: FilterId,
   cellColor: string,
+  crop?: PhotoCrop,
 ) {
   const radius = Math.min(34, rect.width * 0.035);
   context.save();
@@ -105,13 +153,13 @@ function drawRoundedPhoto(
   context.roundRect(rect.x, rect.y, rect.width, rect.height, radius);
   context.clip();
   context.filter = canvasFilter(filterId);
-  const crop = coverCrop(image.naturalWidth, image.naturalHeight, rect);
+  const source = resolvePhotoCrop(image.naturalWidth, image.naturalHeight, rect, crop);
   context.drawImage(
     image,
-    crop.sx,
-    crop.sy,
-    crop.sw,
-    crop.sh,
+    source.sx,
+    source.sy,
+    source.sw,
+    source.sh,
     rect.x,
     rect.y,
     rect.width,
@@ -208,7 +256,14 @@ export async function composePhotoStrip(input: ComposeStripInput): Promise<Compo
   context.fillRect(0, 0, canvas.width, canvas.height);
 
   images.forEach((image, index) => {
-    drawRoundedPhoto(context, image, geometry.rects[index], input.filterId, palette.cell);
+    drawRoundedPhoto(
+      context,
+      image,
+      geometry.rects[index],
+      input.filterId,
+      palette.cell,
+      input.photoCrops?.[index],
+    );
   });
   drawBranding(context, canvas.width, canvas.height, input.frameId, input.layoutId);
 
