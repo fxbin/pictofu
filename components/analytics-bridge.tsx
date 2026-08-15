@@ -62,6 +62,24 @@ export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
   useReportWebVitals(reportWebVital);
 
   useEffect(() => {
+    if (!enabled) return;
+
+    function forwardToProvider(event: Event) {
+      if (!(event instanceof CustomEvent) || !window.gtag) return;
+      const detail = event.detail as Record<string, unknown>;
+      const eventName = detail.event_name;
+      if (typeof eventName !== "string") return;
+
+      const { event_name: _eventName, ...parameters } = detail;
+      void _eventName;
+      window.gtag("event", eventName, parameters);
+    }
+
+    window.addEventListener("pictofu:analytics", forwardToProvider);
+    return () => window.removeEventListener("pictofu:analytics", forwardToProvider);
+  }, [enabled]);
+
+  useEffect(() => {
     if (!(pathname in LANDING_PRESET_BY_PATH)) return;
     if (lastLandingPath.current === pathname) return;
     lastLandingPath.current = pathname;
@@ -93,24 +111,6 @@ export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
     document.addEventListener("click", handleBoothClick, true);
     return () => document.removeEventListener("click", handleBoothClick, true);
   }, [pathname]);
-
-  useEffect(() => {
-    if (!enabled) return;
-
-    function forwardToProvider(event: Event) {
-      if (!(event instanceof CustomEvent) || !window.gtag) return;
-      const detail = event.detail as Record<string, unknown>;
-      const eventName = detail.event_name;
-      if (typeof eventName !== "string") return;
-
-      const { event_name: _eventName, ...parameters } = detail;
-      void _eventName;
-      window.gtag("event", eventName, parameters);
-    }
-
-    window.addEventListener("pictofu:analytics", forwardToProvider);
-    return () => window.removeEventListener("pictofu:analytics", forwardToProvider);
-  }, [enabled]);
 
   return null;
 }
