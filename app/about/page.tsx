@@ -5,40 +5,40 @@ import { SiteFooter } from "@/components/site-footer";
 import styles from "./about.module.css";
 
 export const metadata: Metadata = {
-  title: { absolute: "About PicTofu | Cute Online Photobooth" },
+  title: { absolute: "About PicToFu | Cute Online Photobooth" },
   description:
-    "Learn how PicTofu works, what layouts and filters it supports, how photos stay in your browser, and how to troubleshoot camera or sharing issues.",
+    "Learn how PicToFu works, what layouts and filters it supports, how photos stay in your browser, and how to troubleshoot camera or sharing issues.",
   alternates: { canonical: "/about" },
   openGraph: {
-    title: "About PicTofu | Cute Online Photobooth",
+    title: "About PicToFu | Cute Online Photobooth",
     description:
       "A browser-first photobooth for quick photo strips, filters, frames, retakes, downloads, and sharing.",
     url: "https://pictofu.com/about",
-    siteName: "PicTofu",
+    siteName: "PicToFu",
     type: "website",
   },
 };
 
 const FAQ = [
   {
-    question: "What is PicTofu?",
+    question: "What is PicToFu?",
     answer:
-      "PicTofu is a browser-based photobooth for making photo strips without installing an app or creating an account. You choose a look, use your camera, review the shots, style the strip, then download or share it.",
+      "PicToFu is a browser-based photobooth for making photo strips without installing an app or creating an account. You choose a look, use your camera, review the shots, style the strip, then download or share it.",
   },
   {
-    question: "Are my photos uploaded to PicTofu?",
+    question: "Are my photos uploaded to PicToFu?",
     answer:
-      "In the current PicTofu MVP, captured camera frames and the composed photo strip are processed in your browser. PicTofu does not maintain a cloud photo gallery or account-based photo history.",
+      "In the current PicToFu MVP, captured camera frames and the composed photo strip are processed in your browser. PicToFu does not maintain a cloud photo gallery or account-based photo history.",
   },
   {
-    question: "Does PicTofu work on iPhone, Android, and desktop?",
+    question: "Does PicToFu work on iPhone, Android, and desktop?",
     answer:
-      "PicTofu is designed for current iPhone Safari, Android Chrome, and modern desktop browsers. Camera, download, and native share behavior can still vary by browser, device, permissions, and embedded in-app browsers.",
+      "PicToFu is designed for current iPhone Safari, Android Chrome, and modern desktop browsers. Camera, download, and native share behavior can still vary by browser, device, permissions, and embedded in-app browsers.",
   },
   {
     question: "Why is my camera not opening?",
     answer:
-      "Check that your browser has camera permission for PicTofu, close another app that may be using the camera, and reload the booth. On mobile, opening PicTofu in Safari or Chrome instead of an embedded browser can also help.",
+      "Check that your browser has camera permission for PicToFu, close another app that may be using the camera, and reload the booth. On mobile, opening PicToFu in Safari or Chrome instead of an embedded browser can also help.",
   },
   {
     question: "Which layouts, filters, and frames are available?",
@@ -48,12 +48,12 @@ const FAQ = [
   {
     question: "Can I retake only one photo?",
     answer:
-      "Yes. After a capture set is complete, PicTofu lets you review the individual slots and retake a selected shot while keeping the other captured photos.",
+      "Yes. After a capture set is complete, PicToFu lets you review the individual slots and retake a selected shot while keeping the other captured photos.",
   },
   {
     question: "How does sharing work?",
     answer:
-      "On supported browsers, PicTofu uses the device's native share sheet for the finished PNG. If file sharing is not supported, the product falls back to saving or showing the finished image so you can continue with the sharing options available on your device.",
+      "On supported browsers, PicToFu uses the device's native share sheet for the finished PNG. If file sharing is not supported, the product falls back to saving or showing the finished image so you can continue with the sharing options available on your device.",
   },
 ];
 
@@ -84,10 +84,10 @@ export default function AboutPage() {
       </header>
 
       <section className={styles.hero}>
-        <p className={styles.eyebrow}>About PicTofu</p>
+        <p className={styles.eyebrow}>About PicToFu</p>
         <h1>A tiny photobooth that lives in your browser.</h1>
         <p className={styles.lede}>
-          PicTofu is built around one simple promise: no install, no account, and no unnecessary steps between opening the site and making a photo strip.
+          PicToFu is built around one simple promise: no install, no account, and no unnecessary steps between opening the site and making a photo strip.
         </p>
         <div className={styles.heroActions}>
           <Link className={styles.primaryAction} href="/booth">Open the booth ✦</Link>
@@ -95,7 +95,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className={styles.trustGrid} aria-label="PicTofu product principles">
+      <section className={styles.trustGrid} aria-label="PicToFu product principles">
         <article>
           <span aria-hidden="true">▣</span>
           <h2>Browser-first</h2>
@@ -104,7 +104,7 @@ export default function AboutPage() {
         <article>
           <span aria-hidden="true">♡</span>
           <h2>Private by design</h2>
-          <p>The current MVP keeps captured photos and the composed strip in your browser rather than a PicTofu cloud gallery.</p>
+          <p>The current MVP keeps captured photos and the composed strip in your browser rather than a PicToFu cloud gallery.</p>
         </article>
         <article>
           <span aria-hidden="true">⇩</span>
@@ -119,7 +119,7 @@ export default function AboutPage() {
           <h2 id="how-title">Choose → Capture → Curate → Style → Share</h2>
         </div>
         <ol>
-          <li><span>01</span><div><strong>Choose a look</strong><p>Start from a PicTofu preset that defines the strip geometry, filter, frame, and number of shots.</p></div></li>
+          <li><span>01</span><div><strong>Choose a look</strong><p>Start from a PicToFu preset that defines the strip geometry, filter, frame, and number of shots.</p></div></li>
           <li><span>02</span><div><strong>Open the camera</strong><p>Grant browser camera permission and use the front camera by default, with a flip path when another camera is available.</p></div></li>
           <li><span>03</span><div><strong>Pose through the countdown</strong><p>Capture the three- or four-shot session using the built-in countdown.</p></div></li>
           <li><span>04</span><div><strong>Review and retake</strong><p>Keep the shots you like and selectively retake a single slot instead of restarting the whole set.</p></div></li>
@@ -159,10 +159,10 @@ export default function AboutPage() {
         </div>
         <div className={styles.supportCopy}>
           <p>
-            PicTofu is designed for current mobile and desktop browsers, with special attention to iPhone Safari and Android Chrome. Camera APIs are still controlled by the browser and operating system, so behavior can vary between devices.
+            PicToFu is designed for current mobile and desktop browsers, with special attention to iPhone Safari and Android Chrome. Camera APIs are still controlled by the browser and operating system, so behavior can vary between devices.
           </p>
           <ul>
-            <li>Confirm camera permission is allowed for PicTofu.</li>
+            <li>Confirm camera permission is allowed for PicToFu.</li>
             <li>Close another app or browser tab that may be holding the camera.</li>
             <li>Reload the booth after changing camera permission.</li>
             <li>If an in-app browser behaves differently, try opening the page directly in Safari or Chrome.</li>
@@ -174,7 +174,7 @@ export default function AboutPage() {
       <section className={styles.faq} aria-labelledby="faq-title">
         <div className={styles.sectionHeading}>
           <p>Quick answers</p>
-          <h2 id="faq-title">PicTofu FAQ</h2>
+          <h2 id="faq-title">PicToFu FAQ</h2>
         </div>
         <div className={styles.faqItems}>
           {FAQ.map((item) => (

@@ -15,14 +15,14 @@ function DemoStrip() {
           <span className="demo-face" aria-hidden="true">◕‿◕</span>
         </div>
       ))}
-      <div className="demo-strip__footer">✦ PicTofu ♡</div>
+      <div className="demo-strip__footer">✦ PicToFu ♡</div>
     </div>
   );
 }
 
 function BoothPreview() {
   return (
-    <div className="booth-preview" aria-label="PicTofu booth preview">
+    <div className="booth-preview" aria-label="PicToFu booth preview">
       <div className="booth-preview__topbar">
         <span className="window-dots" aria-hidden="true"><i /><i /><i /></span>
         <span className="status-pill">✨ Ready when you are!</span>
@@ -110,7 +110,7 @@ export default function Home() {
             <Link className="primary-button" href="/layouts">Start Booth ✦</Link>
             <a className="secondary-button" href="#templates">Try Templates</a>
           </div>
-          <div className="benefit-row" aria-label="PicTofu benefits">
+          <div className="benefit-row" aria-label="PicToFu benefits">
             <span>☁ <b>No app needed</b></span>
             <span>▣ <b>Private by design</b></span>
             <span>⇩ <b>Free download</b></span>
@@ -133,7 +133,7 @@ export default function Home() {
         <span className="privacy-note__icon" aria-hidden="true">▣</span>
         <div>
           <h2>Your photos stay with you.</h2>
-          <p>PicTofu’s MVP processes camera frames and photo strips in your browser. No account required.</p>
+          <p>PicToFu’s MVP processes camera frames and photo strips in your browser. No account required.</p>
         </div>
         <Link href="/privacy">Read our privacy policy →</Link>
       </section>

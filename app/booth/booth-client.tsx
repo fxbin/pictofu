@@ -8,6 +8,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import { emitProductEvent } from "@/lib/analytics";
 import {
   boundedCaptureSize,
@@ -16,7 +17,11 @@ import {
   stopMediaStream,
   type CameraErrorClass,
 } from "@/lib/camera";
-import { composePhotoStrip, shotTargetForLayout } from "@/lib/compositor";
+import {
+  composePhotoStrip,
+  shotTargetForLayout,
+  type PhotoCrop,
+} from "@/lib/compositor";
 import type { BoothPreset } from "@/lib/presets";
 import { PRESETS } from "@/lib/presets";
 import { TofuMark } from "@/components/brand";
@@ -35,9 +40,18 @@ type CaptureSlot = {
   source: "camera" | "upload";
   blob: Blob;
   url: string;
-  crop?: { x: number; y: number; zoom: number };
+  crop?: PhotoCrop;
   transform?: { rotation: number; mirrorX: boolean };
 };
+
+type AdjustDrag = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  startCrop: PhotoCrop;
+};
+
+const DEFAULT_CROP: PhotoCrop = { x: 0, y: 0, zoom: 1 };
 
 const FILTERS: { id: FilterId; label: string }[] = [
   { id: "original", label: "Original" },
@@ -105,6 +119,26 @@ function emptyCaptureSlots(count: number): Array<CaptureSlot | null> {
   return Array.from({ length: count }, () => null);
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function normalizedCrop(crop?: PhotoCrop): PhotoCrop {
+  return crop ?? DEFAULT_CROP;
+}
+
+function cropPreviewStyle(crop?: PhotoCrop) {
+  const next = normalizedCrop(crop);
+  return {
+    objectPosition: `${50 + next.x * 50}% ${50 + next.y * 50}%`,
+    transform: `scale(${next.zoom})`,
+  };
+}
+
+function photoNoun(count: number) {
+  return count === 1 ? "photo" : "photos";
+}
+
 export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const supportState = useSyncExternalStore(subscribeToBrowserCapability, getCameraSupportSnapshot, getServerCameraSupportSnapshot);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -112,6 +146,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const photoUrlsRef = useRef<string[]>([]);
   const savePreviewUrlRef = useRef<string | null>(null);
   const editStartedRef = useRef(false);
+  const adjustDragRef = useRef<AdjustDrag | null>(null);
 
   const [presetId, setPresetId] = useState(initialPreset.id);
   const preset = useMemo(() => PRESETS.find((item) => item.id === presetId) ?? initialPreset, [initialPreset, presetId]);
@@ -124,6 +159,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [captureSlots, setCaptureSlots] = useState<Array<CaptureSlot | null>>([]);
   const [activeRetakeIndex, setActiveRetakeIndex] = useState<number | null>(null);
+  const [activeAdjustIndex, setActiveAdjustIndex] = useState<number | null>(null);
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
   const [exportStatus, setExportStatus] = useState<ExportStatus>("idle");
   const [exportMessage, setExportMessage] = useState<string | null>(null);
@@ -136,6 +172,8 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const selectedLayoutTarget = shotTargetForLayout(layoutId);
   const exportSlots = captureSlots.slice(0, selectedLayoutTarget);
   const exportReady = exportSlots.length === selectedLayoutTarget && exportSlots.every((slot) => slot !== null) && !captureBusy && exportStatus !== "working";
+  const activeAdjustSlot = activeAdjustIndex === null ? null : captureSlots[activeAdjustIndex] ?? null;
+  const activeCrop = normalizedCrop(activeAdjustSlot?.crop);
 
   useEffect(() => {
     const streamHolder = streamRef;
@@ -183,6 +221,8 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     photoUrlsRef.current = [];
     setCaptureSlots([]);
     setActiveRetakeIndex(null);
+    setActiveAdjustIndex(null);
+    adjustDragRef.current = null;
     setReviewMessage(null);
     setExportStatus("idle");
     setExportMessage(null);
@@ -207,12 +247,16 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     setCameraStatus(streamRef.current ? "ready" : "idle");
   }
 
-  function markStyleChange(styleType: "layout" | "filter" | "frame", styleId: string) {
-    closeSavePreview();
+  function beginEditIfNeeded() {
     if (capturedCount > 0 && !editStartedRef.current) {
       editStartedRef.current = true;
       emitProductEvent("edit_started", { entry_preset: preset.id });
     }
+  }
+
+  function markStyleChange(styleType: "layout" | "filter" | "frame", styleId: string) {
+    closeSavePreview();
+    beginEditIfNeeded();
     emitProductEvent("style_changed", { style_type: styleType, style_id: styleId });
     setExportStatus("idle");
     setExportMessage(null);
@@ -232,6 +276,68 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   function chooseFrame(nextFrame: FrameId) {
     setFrameId(nextFrame);
     markStyleChange("frame", nextFrame);
+  }
+
+  function selectAdjustSlot(slotIndex: number) {
+    if (captureBusy || cameraStatus !== "review" || !captureSlots[slotIndex]) return;
+    setActiveAdjustIndex(slotIndex);
+    setReviewMessage(`Photo ${slotIndex + 1} selected. Drag to reframe or use the controls below.`);
+  }
+
+  function updateSlotCrop(slotIndex: number, crop: PhotoCrop) {
+    closeSavePreview();
+    beginEditIfNeeded();
+    setCaptureSlots((current) => current.map((slot, index) => index === slotIndex && slot ? { ...slot, crop } : slot));
+    setExportStatus("idle");
+    setExportMessage(null);
+  }
+
+  function updateActiveCrop(partial: Partial<PhotoCrop>) {
+    if (activeAdjustIndex === null || !activeAdjustSlot) return;
+    const current = normalizedCrop(activeAdjustSlot.crop);
+    updateSlotCrop(activeAdjustIndex, {
+      x: clamp(partial.x ?? current.x, -1, 1),
+      y: clamp(partial.y ?? current.y, -1, 1),
+      zoom: clamp(partial.zoom ?? current.zoom, 1, 2.5),
+    });
+  }
+
+  function resetActiveCrop() {
+    if (activeAdjustIndex === null || !activeAdjustSlot) return;
+    updateSlotCrop(activeAdjustIndex, { ...DEFAULT_CROP });
+    setReviewMessage(`Photo ${activeAdjustIndex + 1} framing reset.`);
+  }
+
+  function handleAdjustPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if (activeAdjustIndex === null || !activeAdjustSlot || captureBusy || cameraStatus !== "review") return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    adjustDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startCrop: normalizedCrop(activeAdjustSlot.crop),
+    };
+  }
+
+  function handleAdjustPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = adjustDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId || activeAdjustIndex === null) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const deltaX = ((event.clientX - drag.startX) / rect.width) * 2;
+    const deltaY = ((event.clientY - drag.startY) / rect.height) * 2;
+    updateSlotCrop(activeAdjustIndex, {
+      ...drag.startCrop,
+      x: clamp(drag.startCrop.x - deltaX, -1, 1),
+      y: clamp(drag.startCrop.y - deltaY, -1, 1),
+    });
+  }
+
+  function handleAdjustPointerEnd(event: ReactPointerEvent<HTMLDivElement>) {
+    if (adjustDragRef.current?.pointerId !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    adjustDragRef.current = null;
+    if (activeAdjustIndex !== null) setReviewMessage(`Photo ${activeAdjustIndex + 1} framing updated.`);
   }
 
   async function startCamera(nextFacingMode: FacingMode = facingMode) {
@@ -333,7 +439,8 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
         if (shotIndex < preset.shotCount - 1) await sleep(420);
       }
       setCameraStatus("review");
-      setReviewMessage("Tap any photo to retake only that shot, or keep them all and style your strip.");
+      setActiveAdjustIndex(0);
+      setReviewMessage("Select a photo to adjust its framing, or retake only the shot that needs another try.");
       emitProductEvent("capture_completed", { shot_count: preset.shotCount, layout_id: layoutId });
     } catch {
       setCountdown(null);
@@ -356,6 +463,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     setExportMessage(null);
     setCameraError(null);
     setActiveRetakeIndex(slotIndex);
+    setActiveAdjustIndex(slotIndex);
     setReviewMessage(`Retaking photo ${slotIndex + 1}…`);
 
     try {
@@ -369,7 +477,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       });
       window.setTimeout(() => revokePhotoUrl(existingSlot.url), 0);
       emitProductEvent("retake_single", { shot_index: slotIndex + 1, shot_count: preset.shotCount });
-      setReviewMessage(`Photo ${slotIndex + 1} replaced. Review the set or continue styling.`);
+      setReviewMessage(`Photo ${slotIndex + 1} replaced. Its framing was reset; the other photos stayed untouched.`);
     } catch {
       setReviewMessage(`Photo ${slotIndex + 1} could not be retaken. Your previous shot is still safe.`);
       emitProductEvent("camera_error", { error_class: "retake_failed" });
@@ -402,14 +510,16 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   }
 
   async function createStrip() {
-    if (!exportReady) throw new Error(`Capture at least ${selectedLayoutTarget} photo${selectedLayoutTarget === 1 ? "" : "s"} for this layout.`);
+    if (!exportReady) throw new Error(`Capture at least ${selectedLayoutTarget} ${photoNoun(selectedLayoutTarget)} for this layout.`);
     setExportStatus("working");
     setExportMessage(null);
     emitProductEvent("export_started", { format: "png", layout_id: layoutId });
     try {
-      const photoUrls = exportSlots.map((slot) => slot?.url).filter((url): url is string => Boolean(url));
+      const readySlots = exportSlots.filter((slot): slot is CaptureSlot => Boolean(slot));
+      if (readySlots.length !== selectedLayoutTarget) throw new Error("One or more captured photos are unavailable.");
       const result = await composePhotoStrip({
-        photoUrls,
+        photoUrls: readySlots.map((slot) => slot.url),
+        photoCrops: readySlots.map((slot) => slot.crop),
         layoutId,
         filterId,
         frameId,
@@ -448,7 +558,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
         delivery_mode: "direct_download",
         browser_context: "browser",
       });
-      setExportMessage("Your PicTofu strip was downloaded ✨");
+      setExportMessage("Your PicToFu strip was downloaded ✨");
     } catch {
       // createStrip owns the user-visible failure state.
     }
@@ -472,8 +582,8 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
         return;
       }
 
-      await navigator.share({ files: [file], title: "My PicTofu photo strip", text: "Made with PicTofu ✨" });
-      setExportMessage("Share sheet opened for your PicTofu strip ✨");
+      await navigator.share({ files: [file], title: "My PicToFu photo strip", text: "Made with PicToFu ✨" });
+      setExportMessage("Share sheet opened for your PicToFu strip ✨");
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         setExportStatus("done");
@@ -490,9 +600,9 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const statusCopy = cameraError
     ? cameraErrorMessage(cameraError)
     : cameraStatus === "review"
-      ? `${capturedCount} photos captured. Retake only the shots you want to improve, then style and share.`
+      ? `${capturedCount} ${photoNoun(capturedCount)} captured. Adjust framing or retake only the shots you want to improve, then style and share.`
       : cameraStatus === "ready"
-        ? `Camera ready. PicTofu will take ${preset.shotCount} photos with a 3-second countdown.`
+        ? `Camera ready. PicToFu will take ${preset.shotCount} ${photoNoun(preset.shotCount)} with a 3-second countdown.`
         : "Enable your camera when you’re ready. Photos stay on this device.";
 
   const progressLabel = activeRetakeIndex !== null
@@ -502,13 +612,13 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   return (
     <main className="booth-page">
       <header className="booth-header">
-        <Link href="/" className="booth-back" aria-label="Back to PicTofu home">←</Link>
+        <Link href="/" className="booth-back" aria-label="Back to PicToFu home">←</Link>
         <TofuMark compact />
         <span className="booth-header__status">✨ Ready when you are!</span>
         <Link className="booth-close" href="/" aria-label="Close booth">×</Link>
       </header>
 
-      <section className="booth-workspace" aria-label="PicTofu booth workspace">
+      <section className="booth-workspace" aria-label="PicToFu booth workspace">
         <div className="booth-camera-card">
           <div className="booth-camera-card__status">
             <span className={`live-dot ${cameraStatus === "ready" ? "is-live" : ""}`} aria-hidden="true" />
@@ -522,7 +632,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
               <div className="camera-empty-state">
                 <span className="camera-empty-state__icon" aria-hidden="true">▣</span>
                 <strong>{cameraStatus === "error" ? "Camera needs attention" : "Your camera stays private"}</strong>
-                <p>{cameraStatus === "error" ? statusCopy : "PicTofu only asks for camera access after you tap the button below."}</p>
+                <p>{cameraStatus === "error" ? statusCopy : "PicToFu only asks for camera access after you tap the button below."}</p>
               </div>
             )}
             {cameraStatus === "requesting" && <div className="camera-empty-state"><strong>Starting your camera…</strong><p>Your browser may ask for permission.</p></div>}
@@ -559,19 +669,19 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
               const slot = captureSlots[index];
               return (
                 <div className={`result-strip__photo result-strip__photo--${filterId} ${slot ? "has-photo" : ""}`} key={slot?.slotId ?? `slot-${index + 1}`}>
-                  {slot ? <img src={slot.url} alt={`Captured photo ${index + 1}`} /> : <span aria-hidden="true">{index + 1}</span>}
+                  {slot ? <img src={slot.url} alt={`Captured photo ${index + 1}`} style={cropPreviewStyle(slot.crop)} /> : <span aria-hidden="true">{index + 1}</span>}
                 </div>
               );
             })}
-            <div className="result-strip__brand">✦ PicTofu ♡</div>
+            <div className="result-strip__brand">✦ PicToFu ♡</div>
           </div>
 
           {capturedCount > 0 && (
             <section className="capture-review" aria-labelledby="capture-review-title">
               <div className="capture-review__heading">
                 <div>
-                  <span>Review</span>
-                  <h2 id="capture-review-title">Keep the good ones</h2>
+                  <span>Review & Adjust</span>
+                  <h2 id="capture-review-title">Fix one frame, keep the rest</h2>
                 </div>
                 <button type="button" className="capture-review__retake-all" onClick={restartCapture} disabled={captureBusy}>Retake all</button>
               </div>
@@ -579,23 +689,64 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
                 {captureSlots.map((slot, index) => slot ? (
                   <button
                     type="button"
-                    className={`capture-review__shot ${activeRetakeIndex === index ? "is-active" : ""}`}
+                    className={`capture-review__shot ${activeAdjustIndex === index ? "is-selected" : ""} ${activeRetakeIndex === index ? "is-active" : ""}`}
                     key={slot.slotId}
-                    onClick={() => retakeSlot(index)}
+                    onClick={() => selectAdjustSlot(index)}
                     disabled={captureBusy || cameraStatus !== "review"}
-                    aria-label={`Retake photo ${index + 1}`}
+                    aria-label={`Adjust photo ${index + 1}`}
+                    aria-pressed={activeAdjustIndex === index}
                   >
-                    <span className="capture-review__thumb"><img src={slot.url} alt={`Review photo ${index + 1}`} /></span>
-                    <span className="capture-review__shot-label"><strong>Photo {index + 1}</strong><span>{activeRetakeIndex === index ? "Retaking…" : "Retake"}</span></span>
+                    <span className="capture-review__thumb"><img src={slot.url} alt={`Review photo ${index + 1}`} style={cropPreviewStyle(slot.crop)} /></span>
+                    <span className="capture-review__shot-label"><strong>Photo {index + 1}</strong><span>{activeRetakeIndex === index ? "Retaking…" : activeAdjustIndex === index ? "Selected" : "Adjust"}</span></span>
                   </button>
                 ) : null)}
               </div>
+
+              {activeAdjustSlot && activeAdjustIndex !== null && (
+                <div className="capture-review__adjust" aria-label={`Adjust photo ${activeAdjustIndex + 1}`}>
+                  <div
+                    className="capture-review__active-photo"
+                    onPointerDown={handleAdjustPointerDown}
+                    onPointerMove={handleAdjustPointerMove}
+                    onPointerUp={handleAdjustPointerEnd}
+                    onPointerCancel={handleAdjustPointerEnd}
+                  >
+                    <img
+                      src={activeAdjustSlot.url}
+                      alt={`Adjust framing for photo ${activeAdjustIndex + 1}`}
+                      style={cropPreviewStyle(activeAdjustSlot.crop)}
+                      draggable={false}
+                    />
+                    <span>Drag to reposition</span>
+                  </div>
+
+                  <div className="capture-review__controls">
+                    <label>
+                      <span>Horizontal</span>
+                      <input type="range" min="-1" max="1" step="0.05" value={activeCrop.x} onChange={(event) => updateActiveCrop({ x: Number(event.target.value) })} disabled={captureBusy} />
+                    </label>
+                    <label>
+                      <span>Vertical</span>
+                      <input type="range" min="-1" max="1" step="0.05" value={activeCrop.y} onChange={(event) => updateActiveCrop({ y: Number(event.target.value) })} disabled={captureBusy} />
+                    </label>
+                    <label>
+                      <span>Zoom <strong>{activeCrop.zoom.toFixed(2)}×</strong></span>
+                      <input type="range" min="1" max="2.5" step="0.05" value={activeCrop.zoom} onChange={(event) => updateActiveCrop({ zoom: Number(event.target.value) })} disabled={captureBusy} />
+                    </label>
+                    <div className="capture-review__adjust-actions">
+                      <button type="button" onClick={resetActiveCrop} disabled={captureBusy}>Reset framing</button>
+                      <button type="button" className="is-primary" onClick={() => retakeSlot(activeAdjustIndex)} disabled={captureBusy || cameraStatus !== "review"}>Retake photo {activeAdjustIndex + 1}</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {reviewMessage && <p className="capture-review__message" aria-live="polite">{reviewMessage}</p>}
-              <p className="capture-review__privacy">Only the selected slot is replaced. The other photos stay untouched on this device.</p>
+              <p className="capture-review__privacy">Framing is non-destructive and local to each photo. Retaking one slot resets only that slot; every other capture stays untouched on this device.</p>
             </section>
           )}
 
-          {capturedCount > 0 && <div className="captured-summary"><strong>{capturedCount} captured</strong><span>Stored only in this browser session.</span></div>}
+          {capturedCount > 0 && <div className="captured-summary"><strong>{capturedCount} {photoNoun(capturedCount)} captured</strong><span>Stored only in this browser session.</span></div>}
 
           <div className="editor-control-group">
             <h2>Layouts</h2>
@@ -603,7 +754,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
               {LAYOUTS.map((layout) => {
                 const unavailable = shotTargetForLayout(layout.id) > preset.shotCount;
                 return (
-                  <button className={layout.id === layoutId ? "is-selected" : ""} type="button" key={layout.id} onClick={() => chooseLayout(layout.id)} disabled={captureBusy || unavailable} title={unavailable ? `This template captures ${preset.shotCount} photos` : undefined}>
+                  <button className={layout.id === layoutId ? "is-selected" : ""} type="button" key={layout.id} onClick={() => chooseLayout(layout.id)} disabled={captureBusy || unavailable} title={unavailable ? `This template captures ${preset.shotCount} ${photoNoun(preset.shotCount)}` : undefined}>
                     <span className={`layout-icon layout-icon--${layout.id}`} aria-hidden="true" />{layout.label}
                   </button>
                 );
@@ -639,7 +790,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
         <div className="save-preview-overlay" role="presentation">
           <section className="save-preview-card" role="dialog" aria-modal="true" aria-labelledby="save-preview-title">
             <button className="save-preview-card__close" type="button" onClick={closeSavePreview} aria-label="Close save preview">×</button>
-            <p className="save-preview-card__eyebrow">Your PicTofu strip is ready</p>
+            <p className="save-preview-card__eyebrow">Your PicToFu strip is ready</p>
             <h2 id="save-preview-title">Press and hold the image</h2>
             <p className="save-preview-card__copy">
               {isWeChatBrowser()
@@ -649,7 +800,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
                   : "Press and hold the strip to save it to your device."}
             </p>
             <div className="save-preview-image-wrap">
-              <img className="save-preview-image" src={savePreviewUrl} alt="Generated PicTofu photo strip ready to save" />
+              <img className="save-preview-image" src={savePreviewUrl} alt="Generated PicToFu photo strip ready to save" />
             </div>
             <p className="save-preview-card__tip">Tip: the image above is the full generated PNG, not a screenshot preview.</p>
             <button className="save-preview-card__done" type="button" onClick={closeSavePreview}>Done</button>

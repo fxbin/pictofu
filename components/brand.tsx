@@ -2,18 +2,18 @@ import Link from "next/link";
 
 export function TofuMark({ compact = false }: { compact?: boolean }) {
   return (
-    <span className={`brand ${compact ? "brand--compact" : ""}`} aria-label="PicTofu">
+    <span className={`brand ${compact ? "brand--compact" : ""}`} aria-label="PicToFu">
       <span className="tofu-mark" aria-hidden="true">
         <span className="tofu-mark__eyes">•‿•</span>
       </span>
-      <span className="brand__word">PicTofu</span>
+      <span className="brand__word">PicToFu</span>
     </span>
   );
 }
 
 export function BrandLink() {
   return (
-    <Link className="brand-link" href="/" aria-label="PicTofu home">
+    <Link className="brand-link" href="/" aria-label="PicToFu home">
       <TofuMark />
     </Link>
   );
