@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/site-footer";
 import styles from "./privacy.module.css";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | PicTofu",
+  title: { absolute: "Privacy Policy | PicTofu" },
   description:
     "Learn how PicTofu handles camera access, browser-local photo processing, analytics, cookies, retention, and privacy choices.",
   alternates: { canonical: "/privacy" },
