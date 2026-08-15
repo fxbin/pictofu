@@ -9,8 +9,10 @@ export type ProductEventName =
   | "photo_captured"
   | "capture_completed"
   | "edit_started"
+  | "style_changed"
   | "export_started"
   | "export_completed"
+  | "export_error"
   | "download_clicked"
   | "share_clicked";
 
