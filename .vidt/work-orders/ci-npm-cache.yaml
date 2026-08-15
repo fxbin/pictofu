@@ -1,0 +1,18 @@
+issue: 34
+mode: soft_orchestration_only
+objective: >
+  Complete CI efficiency Phase B now that package-lock.json is on dev: use deterministic npm ci
+  and setup-node npm cache without weakening lint/typecheck/build gates.
+scope:
+  - switch dependency install from npm install to npm ci
+  - enable actions/setup-node@v6 cache: npm
+  - bind cache key to package-lock.json
+  - retain Node 24, timeout, concurrency, lint, typecheck, and production build
+non_goals:
+  - path-based CI skipping
+  - reducing quality gates
+  - changing package versions
+acceptance:
+  - Node 24 CI succeeds from lockfile with npm ci
+  - setup-node npm cache is enabled against package-lock.json
+  - lint/typecheck/build remain mandatory
