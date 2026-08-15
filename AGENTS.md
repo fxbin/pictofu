@@ -46,12 +46,16 @@ Read `.vidt/harness/engineering-constraints.md` before code-facing changes.
 
 ## Verification commands
 
+Until a lockfile is committed, use:
+
 ```bash
-npm ci
+npm install --no-audit --no-fund
 npm run lint
 npm run typecheck
 npm run build
 ```
+
+Once `package-lock.json` is present and maintained, CI/local verification should switch dependency installation to `npm ci`.
 
 When camera behavior changes, add manual verification notes for:
 
@@ -66,6 +70,7 @@ When camera behavior changes, add manual verification notes for:
 - Prefer focused semantic commits.
 - Use pull requests for user-visible changes.
 - Do not force-push or use destructive reset/clean operations as part of automated work.
+- Development slices should be tied to a GitHub Issue and close through PR evidence.
 
 ## Definition of done
 
