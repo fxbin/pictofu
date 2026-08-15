@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { BrandLink } from "@/components/brand";
+import { DemoAssetMedia } from "@/components/demo-asset-media";
+import { getApprovedDemoAsset } from "@/lib/demo-assets";
 import type { SeoExperience } from "@/lib/seo-pages";
 import { getSeoExperience } from "@/lib/seo-pages";
 import { getPreset } from "@/lib/presets";
 
 export function SeoExperiencePage({ experience }: { experience: SeoExperience }) {
   const preset = getPreset(experience.presetId);
+  const approvedAsset = getApprovedDemoAsset(preset.id);
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -45,14 +48,20 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
             <span>PicTofu preset</span>
             <strong>{preset.name}</strong>
           </div>
-          <div className={`seo-preset-strip seo-preset-strip--${preset.layoutId}`}>
-            {Array.from({ length: preset.shotCount }).map((_, index) => (
-              <div className={`seo-preset-photo seo-preset-photo--${preset.filterId}`} key={index} aria-hidden="true">
-                <span>{index % 2 === 0 ? "◕‿◕" : "◕ᴗ◕"}</span>
-              </div>
-            ))}
-            <small>✦ PicTofu ♡</small>
-          </div>
+          {approvedAsset ? (
+            <div className={`seo-preset-strip seo-preset-strip--${preset.layoutId} seo-preset-strip--approved`}>
+              <DemoAssetMedia presetId={preset.id} variant="strip" sizes="(max-width: 760px) 55vw, 240px" />
+            </div>
+          ) : (
+            <div className={`seo-preset-strip seo-preset-strip--${preset.layoutId}`}>
+              {Array.from({ length: preset.shotCount }).map((_, index) => (
+                <div className={`seo-preset-photo seo-preset-photo--${preset.filterId}`} key={index} aria-hidden="true">
+                  <span>{index % 2 === 0 ? "◕‿◕" : "◕ᴗ◕"}</span>
+                </div>
+              ))}
+              <small>✦ PicTofu ♡</small>
+            </div>
+          )}
           <div className="seo-preset-meta">
             <span>{preset.layoutId.replace("-", " × ")}</span>
             <span>{preset.filterId}</span>
