@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { BrandLink } from "@/components/brand";
 import { SiteFooter } from "@/components/site-footer";
+import { LAYOUT_DEMO_ASSETS, LAYOUT_DEMO_TOTAL_BYTES } from "@/lib/layout-demo-assets";
 import { PRESETS } from "@/lib/presets";
 import styles from "./layouts.module.css";
 
@@ -72,6 +74,42 @@ export default function LayoutsPage() {
         </p>
         <div className={styles.heroChips} aria-label="Available layout geometries">
           <span>1 × 4 Strip</span><span>1 × 3 Strip</span><span>2 × 2 Grid</span><span>Polaroid</span>
+        </div>
+      </section>
+
+      <section className={styles.demoGallery} aria-labelledby="layout-demo-title">
+        <div className={styles.sectionHeading}>
+          <div>
+            <p>Real output examples</p>
+            <h2 id="layout-demo-title">Swipe through every shape</h2>
+          </div>
+          <span>{LAYOUT_DEMO_ASSETS.length} examples · ~{Math.round(LAYOUT_DEMO_TOTAL_BYTES / 1024)} KB total</span>
+        </div>
+
+        <div className={styles.demoTrack} aria-label="Real photo booth layout examples">
+          {LAYOUT_DEMO_ASSETS.map((asset) => (
+            <article className={styles.demoCard} key={asset.layoutId}>
+              <div className={styles.demoStage}>
+                <Image
+                  className={styles.demoImage}
+                  src={asset.src}
+                  width={asset.width}
+                  height={asset.height}
+                  alt={asset.alt}
+                  sizes="(max-width: 680px) 76vw, 260px"
+                  unoptimized
+                />
+              </div>
+              <div className={styles.demoCopy}>
+                <strong>{asset.label}</strong>
+                <span>{asset.note}</span>
+              </div>
+            </article>
+          ))}
+        </div>
+        <div className={styles.demoFootnote}>
+          <p>These examples show the output geometry. Presets below add their own filter and frame mood.</p>
+          <span aria-hidden="true">Swipe or scroll →</span>
         </div>
       </section>
 
