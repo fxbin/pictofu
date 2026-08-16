@@ -8,6 +8,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { AnalyticsBridge } from "@/components/analytics-bridge";
 import {
   clearAccessibleGaCookies,
   getServerAnalyticsConsent,
@@ -23,11 +24,7 @@ type AnalyticsConsentGateProps = {
   measurementId: string;
 };
 
-const LazyAnalyticsBridge = lazy(() =>
-  import("@/components/analytics-bridge").then((module) => ({
-    default: module.AnalyticsBridge,
-  })),
-);
+const LazyAnalyticsWebVitals = lazy(() => import("@/components/analytics-web-vitals"));
 
 const GRANTED_CONSENT = {
   analytics_storage: "granted",
@@ -133,17 +130,16 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
 
   return (
     <>
+      <AnalyticsBridge enabled={googleEnabled} />
+
       {googleEnabled && (
         <Suspense fallback={null}>
-          <LazyAnalyticsBridge enabled />
+          <LazyAnalyticsWebVitals />
         </Suspense>
       )}
 
       {showPanel && (
-        <section
-          className={styles.banner}
-          aria-label="Analytics privacy settings"
-        >
+        <section className={styles.banner} aria-label="Analytics privacy settings">
           <div className={styles.titleRow}>
             <strong>Help improve PicToFu?</strong>
             <span className={styles.status}>{consentLabel(consent)}</span>
