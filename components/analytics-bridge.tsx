@@ -1,15 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
-import { useReportWebVitals } from "next/web-vitals";
-import { track } from "@vercel/analytics";
 import { emitProductEvent } from "@/lib/analytics";
 
 declare global {
   interface Window {
     dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
+    va?: (...args: unknown[]) => void;
   }
 }
 
@@ -43,22 +41,6 @@ function referrerClass() {
   }
 }
 
-function reportWebVital(metric: {
-  id: string;
-  name: string;
-  value: number;
-  delta: number;
-  rating?: string;
-}) {
-  emitProductEvent("web_vital", {
-    metric_id: metric.id,
-    metric_name: metric.name,
-    metric_value: Math.round(metric.value * 1000) / 1000,
-    metric_delta: Math.round(metric.delta * 1000) / 1000,
-    metric_rating: metric.rating ?? "unknown",
-  });
-}
-
 function forwardToVercel(detail: Record<string, unknown>) {
   if (!VERCEL_CUSTOM_EVENTS_ENABLED) return;
 
@@ -72,14 +54,11 @@ function forwardToVercel(detail: Record<string, unknown>) {
     }),
   ) as Record<string, string | number | boolean>;
 
-  track(eventName, safeParameters);
+  window.va?.("event", { name: eventName, data: safeParameters });
 }
 
 export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
-  const pathname = usePathname();
   const lastLandingPath = useRef<string | null>(null);
-
-  useReportWebVitals(reportWebVital);
 
   useEffect(() => {
     function forwardToProviders(event: Event) {
@@ -101,28 +80,25 @@ export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
   }, [enabled]);
 
   useEffect(() => {
-    if (!enabled || !window.gtag) return;
+    const pathname = window.location.pathname;
 
-    window.gtag("event", "page_view", {
-      page_path: pathname,
-      page_location: window.location.href,
-      page_title: document.title,
-    });
-  }, [enabled, pathname]);
+    if (enabled && window.gtag) {
+      window.gtag("event", "page_view", {
+        page_path: pathname,
+        page_location: window.location.href,
+        page_title: document.title,
+      });
+    }
 
-  useEffect(() => {
-    if (!(pathname in LANDING_PRESET_BY_PATH)) return;
-    if (lastLandingPath.current === pathname) return;
-    lastLandingPath.current = pathname;
+    if (pathname in LANDING_PRESET_BY_PATH && lastLandingPath.current !== pathname) {
+      lastLandingPath.current = pathname;
+      emitProductEvent("landing_view", {
+        landing_type: pathname === "/" ? "home" : "seo_intent",
+        entry_preset: LANDING_PRESET_BY_PATH[pathname],
+        referrer_class: referrerClass(),
+      });
+    }
 
-    emitProductEvent("landing_view", {
-      landing_type: pathname === "/" ? "home" : "seo_intent",
-      entry_preset: LANDING_PRESET_BY_PATH[pathname],
-      referrer_class: referrerClass(),
-    });
-  }, [pathname]);
-
-  useEffect(() => {
     function handleBoothClick(event: MouseEvent) {
       if (event.defaultPrevented || event.button !== 0) return;
       const target = event.target;
@@ -141,7 +117,7 @@ export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
 
     document.addEventListener("click", handleBoothClick, true);
     return () => document.removeEventListener("click", handleBoothClick, true);
-  }, [pathname]);
+  }, [enabled]);
 
   return null;
 }
