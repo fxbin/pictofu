@@ -1,13 +1,24 @@
 import Link from "next/link";
 import { BrandLink } from "@/components/brand";
+import { PresetDemoMedia } from "@/components/preset-demo-media";
 import { SiteFooter } from "@/components/site-footer";
+import { getReadyPresetDemoAsset } from "@/lib/demo-assets";
 import { FEATURED_PRESETS } from "@/lib/presets";
 
 function Sparkle({ className = "" }: { className?: string }) {
   return <span className={`sparkle ${className}`} aria-hidden="true">✦</span>;
 }
 
-function DemoStrip() {
+function DemoStrip({ presetId }: { presetId: string }) {
+  const asset = getReadyPresetDemoAsset(presetId);
+  if (asset) {
+    return (
+      <div className="demo-strip" aria-label={asset.alt}>
+        <PresetDemoMedia presetId={presetId} sizes="124px" priority />
+      </div>
+    );
+  }
+
   return (
     <div className="demo-strip" aria-label="Example four-photo strip">
       {["peace", "smile", "wink", "heart"].map((pose, index) => (
@@ -45,7 +56,7 @@ function BoothPreview() {
           <span className="camera-doodle camera-doodle--one">♡</span>
           <span className="camera-doodle camera-doodle--two">✦</span>
         </div>
-        <DemoStrip />
+        <DemoStrip presetId="korean-date" />
       </div>
       <div className="booth-preview__bottom">
         <div className="editor-preview">
@@ -68,6 +79,8 @@ function BoothPreview() {
 }
 
 function TemplateCard({ preset, index }: { preset: (typeof FEATURED_PRESETS)[number]; index: number }) {
+  const asset = getReadyPresetDemoAsset(preset.id);
+
   return (
     <Link className={`template-card template-card--${preset.accent}`} href={`/booth?preset=${preset.id}`} prefetch={false}>
       <div className="template-card__copy">
@@ -75,9 +88,15 @@ function TemplateCard({ preset, index }: { preset: (typeof FEATURED_PRESETS)[num
         <p>{preset.description}</p>
         <span className="template-card__arrow" aria-hidden="true">→</span>
       </div>
-      <div className={`mini-strip mini-strip--${index + 1}`} aria-hidden="true">
-        <i>◕‿◕</i><i>◕ᴗ◕</i><i>◕‿◕</i>
-      </div>
+      {asset ? (
+        <div className={`mini-strip mini-strip--${index + 1}`} aria-label={asset.alt}>
+          <PresetDemoMedia presetId={preset.id} sizes="76px" />
+        </div>
+      ) : (
+        <div className={`mini-strip mini-strip--${index + 1}`} aria-hidden="true">
+          <i>◕‿◕</i><i>◕ᴗ◕</i><i>◕‿◕</i>
+        </div>
+      )}
     </Link>
   );
 }
