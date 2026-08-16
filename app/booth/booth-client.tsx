@@ -65,10 +65,14 @@ const LAYOUTS: { id: LayoutId; label: string }[] = [
 ];
 
 const FRAMES: { id: FrameId; label: string }[] = [
-  { id: "pink", label: "Blush" },
-  { id: "cream", label: "Cream" },
-  { id: "lilac", label: "Lilac" },
-  { id: "mint", label: "Mint" },
+  { id: "white", label: "Clean White" },
+  { id: "cream", label: "Soft Cream" },
+  { id: "black", label: "Black Film" },
+  { id: "pink", label: "Blush Hearts" },
+  { id: "lilac", label: "Lilac Stars" },
+  { id: "mint", label: "Mint Doodle" },
+  { id: "chrome", label: "Chrome Y2K" },
+  { id: "film", label: "Vintage Film" },
 ];
 
 function subscribeToBrowserCapability() {
