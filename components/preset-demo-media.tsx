@@ -24,6 +24,10 @@ export function PresetDemoMedia({
   const asset = getReadyPresetDemoAsset(presetId);
   if (!asset) return null;
 
+  const imageStyle = fit === "cover"
+    ? { width: "100%", height: "100%", objectFit: "cover" as const, display: "block" }
+    : { width: "100%", height: "auto", objectFit: "contain" as const, display: "block" };
+
   return (
     <Image
       src={asset.src}
@@ -33,7 +37,7 @@ export function PresetDemoMedia({
       sizes={sizes}
       priority={priority}
       className={className}
-      style={{ width: "100%", height: "100%", objectFit: fit }}
+      style={imageStyle}
     />
   );
 }
