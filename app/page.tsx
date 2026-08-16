@@ -4,6 +4,7 @@ import { PresetDemoMedia } from "@/components/preset-demo-media";
 import { SiteFooter } from "@/components/site-footer";
 import { getReadyPresetDemoAsset } from "@/lib/demo-assets";
 import { FEATURED_PRESETS } from "@/lib/presets";
+import styles from "./home-preview.module.css";
 
 function Sparkle({ className = "" }: { className?: string }) {
   return <span className={`sparkle ${className}`} aria-hidden="true">✦</span>;
@@ -47,10 +48,14 @@ function BoothPreview() {
           <span><b>↻</b><small>Flip</small></span>
         </div>
         <div className="camera-stage" aria-hidden="true">
-          <div className="camera-stage__poster">
-            <span className="camera-stage__hair" />
-            <span className="camera-stage__face">◕‿◕</span>
-            <span className="camera-stage__hand">✌</span>
+          <div className={styles.homeCameraMedia}>
+            <PresetDemoMedia
+              presetId="korean-date"
+              sizes="(max-width: 780px) 100vw, 560px"
+              priority
+              fit="cover"
+              style={{ objectPosition: "50% 10%" }}
+            />
           </div>
           <div className="countdown-ring">3</div>
           <span className="camera-doodle camera-doodle--one">♡</span>
