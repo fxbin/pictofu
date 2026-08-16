@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Analytics } from "@vercel/analytics/next";
 import { AnalyticsConsentGate } from "@/components/analytics-consent-gate";
 import "./globals.css";
 
@@ -33,7 +32,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         {children}
         <AnalyticsConsentGate configured={analyticsConfigured} measurementId={measurementId} />
-        <Analytics />
+        <script
+          defer
+          src="/_vercel/insights/script.js"
+          data-sdkn="@vercel/analytics"
+          data-sdkv="2.0.1"
+        />
       </body>
     </html>
   );
