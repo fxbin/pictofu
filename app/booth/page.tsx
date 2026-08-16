@@ -4,6 +4,7 @@ import "./booth-foundation.css";
 import "./booth-shell.css";
 import "./camera.css";
 import "./export.css";
+import "./filter-picker.css";
 import "./workspace-modes.css";
 import { getPreset } from "@/lib/presets";
 
