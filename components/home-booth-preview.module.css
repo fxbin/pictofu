@@ -8,15 +8,11 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: 50% 34%;
   display: block;
-  opacity: 0;
   transform: scale(1.002);
-  transition: opacity .38s ease;
+  transition: filter .38s ease;
   pointer-events: none;
-}
-
-.previewImageActive {
-  opacity: 1;
 }
 
 .demoStrip {
@@ -25,8 +21,7 @@
 
 .stripImage {
   width: 100%;
-  height: auto;
-  max-height: 100%;
+  height: 100%;
   object-fit: contain;
   display: block;
   margin: auto;

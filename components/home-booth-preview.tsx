@@ -9,32 +9,27 @@ const FILTERS = [
   {
     id: "original",
     label: "Original",
-    preview: "/demo/hero/preview-original.webp",
-    stripFilter: "none",
+    treatment: "none",
   },
   {
     id: "bw",
     label: "B&W",
-    preview: "/demo/hero/preview-bw.webp",
-    stripFilter: "grayscale(1)",
+    treatment: "grayscale(1)",
   },
   {
     id: "warm",
     label: "Warm",
-    preview: "/demo/hero/preview-warm.webp",
-    stripFilter: "sepia(.16) saturate(1.1) brightness(1.04)",
+    treatment: "sepia(.16) saturate(1.1) brightness(1.04)",
   },
   {
     id: "vintage",
     label: "Vintage",
-    preview: "/demo/hero/preview-vintage.webp",
-    stripFilter: "sepia(.32) saturate(.72) contrast(.92) brightness(1.02)",
+    treatment: "sepia(.32) saturate(.72) contrast(.92) brightness(1.02)",
   },
   {
     id: "y2k",
     label: "Y2K",
-    preview: "/demo/hero/preview-y2k.webp",
-    stripFilter: "saturate(1.18) hue-rotate(315deg) brightness(1.04)",
+    treatment: "saturate(1.18) hue-rotate(315deg) brightness(1.04)",
   },
 ] as const;
 
@@ -95,31 +90,31 @@ export function HomeBoothPreview() {
         </div>
 
         <div className={`camera-stage ${styles.cameraStage}`} aria-live="polite">
-          {FILTERS.map((filter, index) => (
-            <Image
-              key={filter.id}
-              src={filter.preview}
-              alt={`PicToFu ${filter.label} filter photo preview`}
-              width={420}
-              height={301}
-              sizes="(max-width: 780px) 100vw, 560px"
-              priority={index === 0}
-              className={`${styles.previewImage} ${index === activeIndex ? styles.previewImageActive : ""}`}
-              aria-hidden={index !== activeIndex}
-            />
-          ))}
+          <Image
+            src="/demo/hero/main-original.webp"
+            alt={`PicToFu ${activeFilter.label} filter photo preview`}
+            width={480}
+            height={640}
+            sizes="(max-width: 780px) 100vw, 560px"
+            priority
+            className={styles.previewImage}
+            style={{ filter: activeFilter.treatment }}
+          />
+          <div className="countdown-ring">3</div>
+          <span className="camera-doodle camera-doodle--one">♡</span>
+          <span className="camera-doodle camera-doodle--two">✦</span>
         </div>
 
         <div className={`demo-strip ${styles.demoStrip}`} aria-label={`${activeFilter.label} four-photo strip preview`}>
           <Image
             src="/demo/hero/strip-original.webp"
             alt="Four-pose PicToFu photo strip preview"
-            width={62}
-            height={297}
+            width={180}
+            height={540}
             sizes="124px"
             priority
             className={styles.stripImage}
-            style={{ filter: activeFilter.stripFilter }}
+            style={{ filter: activeFilter.treatment }}
           />
         </div>
       </div>
