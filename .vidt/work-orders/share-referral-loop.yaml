@@ -1,0 +1,42 @@
+id: share-referral-loop
+issue: 117
+parent_issues:
+  - 17
+  - 116
+  - 65
+branch: feature/share-referral-loop
+release_target: dev
+hypothesis: >-
+  A preset-aware Make yours referral link attached to the existing native photo-share flow
+  will create a measurable share-to-new-landing loop without introducing user-photo hosting.
+scope:
+  - keep native PNG Web Share as the preferred photo-sharing path
+  - append a preset-aware Make yours URL to native share copy
+  - add Copy Make yours link beside Share photo and Download PNG
+  - carry UTM acquisition context through product funnel events
+  - preserve browser-local photo handling and save-preview fallback
+out_of_scope:
+  - destination shortcut row
+  - TikTok or Instagram direct-post APIs
+  - cloud-hosted user photos
+  - alternate social compositor ratios
+verification:
+  automated:
+    - npm ci
+    - npm run lint
+    - npm run typecheck
+    - npm run build
+  production_candidate:
+    - 375px visual smoke
+    - 390px visual smoke
+    - 430px visual smoke
+    - desktop visual smoke
+    - iOS Safari native file share
+    - Android Chrome native file share
+    - unsupported-share save-preview fallback
+    - copied referral URL lands on matching SEO page
+    - referral UTM persists into start_booth and export events
+guardrails:
+  - never place photo, blob URL, base64, session id, or camera payload in analytics or URLs
+  - no fake direct-social-posting capability
+  - main remains production-only
