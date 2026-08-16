@@ -5,6 +5,7 @@ import { BrandLink } from "@/components/brand";
 import { PresetDemoMedia } from "@/components/preset-demo-media";
 import { SiteFooter } from "@/components/site-footer";
 import { getReadyPresetDemoAsset } from "@/lib/demo-assets";
+import { getFrameStyle } from "@/lib/frame-styles";
 import { LAYOUT_DEMO_ASSETS, LAYOUT_DEMO_TOTAL_BYTES } from "@/lib/layout-demo-assets";
 import { PRESETS } from "@/lib/presets";
 import styles from "./layouts.module.css";
@@ -128,6 +129,7 @@ export default function LayoutsPage() {
           {PRESETS.map((preset) => {
             const geometry = GEOMETRY_COPY[preset.layoutId];
             const demoAsset = getReadyPresetDemoAsset(preset.id);
+            const frame = getFrameStyle(preset.frameId);
 
             return (
               <article className={`${styles.card} ${styles[`accent_${preset.accent}`]}`} key={preset.id}>
@@ -157,7 +159,7 @@ export default function LayoutsPage() {
                   <p className={styles.description}>{preset.description}</p>
                   <dl className={styles.meta}>
                     <div><dt>Layout</dt><dd>{geometry.label}</dd></div>
-                    <div><dt>Frame</dt><dd>{preset.frameId}</dd></div>
+                    <div><dt>Frame</dt><dd>{frame.label}</dd></div>
                   </dl>
                   <Link className={styles.chooseButton} href={`/booth?preset=${preset.id}`}>
                     Choose this look <span aria-hidden="true">→</span>
