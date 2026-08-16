@@ -1,8 +1,8 @@
 import { filterCssValue, type FilterId } from "@/lib/filter-styles";
+import { getFrameStyle, type FrameId } from "@/lib/frame-styles";
 import type { BoothPreset } from "@/lib/presets";
 
 type LayoutId = BoothPreset["layoutId"];
-type FrameId = BoothPreset["frameId"];
 
 export type PhotoCrop = {
   x: number;
@@ -26,13 +26,6 @@ export type ComposeStripResult = {
 
 type Rect = { x: number; y: number; width: number; height: number };
 type SourceCrop = { sx: number; sy: number; sw: number; sh: number };
-
-const FRAME_COLORS: Record<FrameId, { background: string; ink: string; cell: string }> = {
-  cream: { background: "#fff1df", ink: "#654d47", cell: "#fffaf5" },
-  pink: { background: "#ffdce6", ink: "#805564", cell: "#fff8fa" },
-  lilac: { background: "#eadfff", ink: "#655278", cell: "#fbf8ff" },
-  mint: { background: "#dff3ed", ink: "#466d64", cell: "#f8fffc" },
-};
 
 export function shotTargetForLayout(layoutId: LayoutId): number {
   switch (layoutId) {
@@ -196,6 +189,187 @@ function layoutGeometry(layoutId: LayoutId, photoCount: number) {
   return { width, height, rects, footer };
 }
 
+function drawHeart(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string,
+  alpha = 0.5,
+) {
+  context.save();
+  context.translate(x, y);
+  context.scale(size / 24, size / 24);
+  context.beginPath();
+  context.moveTo(0, 7);
+  context.bezierCurveTo(-12, -1, -13, -12, -5, -13);
+  context.bezierCurveTo(-1, -13, 0, -9, 0, -7);
+  context.bezierCurveTo(0, -9, 1, -13, 5, -13);
+  context.bezierCurveTo(13, -12, 12, -1, 0, 7);
+  context.closePath();
+  context.globalAlpha = alpha;
+  context.fillStyle = color;
+  context.fill();
+  context.restore();
+}
+
+function drawSparkle(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  color: string,
+  alpha = 0.55,
+) {
+  context.save();
+  context.translate(x, y);
+  context.globalAlpha = alpha;
+  context.strokeStyle = color;
+  context.lineWidth = Math.max(2, radius * 0.12);
+  context.lineCap = "round";
+  context.beginPath();
+  context.moveTo(0, -radius);
+  context.lineTo(0, radius);
+  context.moveTo(-radius, 0);
+  context.lineTo(radius, 0);
+  context.moveTo(-radius * 0.55, -radius * 0.55);
+  context.lineTo(radius * 0.55, radius * 0.55);
+  context.moveTo(radius * 0.55, -radius * 0.55);
+  context.lineTo(-radius * 0.55, radius * 0.55);
+  context.stroke();
+  context.restore();
+}
+
+function drawFilmPerforations(
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  color: string,
+  alpha: number,
+) {
+  context.save();
+  context.fillStyle = color;
+  context.globalAlpha = alpha;
+  const holeWidth = Math.max(12, Math.round(width * 0.012));
+  const holeHeight = holeWidth * 1.55;
+  const xInset = Math.max(9, Math.round(width * 0.012));
+  const gap = holeHeight * 1.05;
+  for (let y = 22; y < height - 72; y += holeHeight + gap) {
+    context.beginPath();
+    context.roundRect(xInset, y, holeWidth, holeHeight, holeWidth * 0.25);
+    context.roundRect(width - xInset - holeWidth, y, holeWidth, holeHeight, holeWidth * 0.25);
+    context.fill();
+  }
+  context.restore();
+}
+
+function paintFrameSurface(
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  frameId: FrameId,
+) {
+  const frame = getFrameStyle(frameId);
+  if (frameId === "chrome") {
+    const gradient = context.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, "#f6f8ff");
+    gradient.addColorStop(0.2, "#cfd6ea");
+    gradient.addColorStop(0.42, "#f4d8ef");
+    gradient.addColorStop(0.62, "#c8e7e8");
+    gradient.addColorStop(0.82, "#d8d1ee");
+    gradient.addColorStop(1, "#ffffff");
+    context.fillStyle = gradient;
+  } else {
+    context.fillStyle = frame.background;
+  }
+  context.fillRect(0, 0, width, height);
+}
+
+function drawFrameDecorations(
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  frameId: FrameId,
+) {
+  const frame = getFrameStyle(frameId);
+
+  if (frameId === "white") {
+    context.save();
+    context.strokeStyle = frame.ink;
+    context.globalAlpha = 0.13;
+    context.lineWidth = Math.max(2, width * 0.002);
+    context.strokeRect(18, 18, width - 36, height - 36);
+    context.restore();
+    return;
+  }
+
+  if (frameId === "pink") {
+    drawHeart(context, 25, 26, 22, frame.ink, 0.38);
+    drawHeart(context, width - 25, 48, 17, frame.ink, 0.28);
+    drawHeart(context, 25, height - 86, 16, frame.ink, 0.26);
+    return;
+  }
+
+  if (frameId === "lilac") {
+    drawSparkle(context, 25, 25, 11, frame.ink, 0.42);
+    drawSparkle(context, width - 26, 54, 9, frame.ink, 0.34);
+    drawSparkle(context, 25, height - 88, 8, frame.ink, 0.28);
+    return;
+  }
+
+  if (frameId === "mint") {
+    context.save();
+    context.strokeStyle = frame.ink;
+    context.globalAlpha = 0.28;
+    context.lineWidth = Math.max(2, width * 0.0025);
+    context.beginPath();
+    context.arc(24, 30, 10, 0.1, Math.PI * 1.65);
+    context.arc(width - 25, 62, 8, Math.PI * 0.3, Math.PI * 1.9);
+    context.arc(27, height - 86, 7, Math.PI * 0.05, Math.PI * 1.45);
+    context.stroke();
+    context.restore();
+    return;
+  }
+
+  if (frameId === "black") {
+    drawFilmPerforations(context, width, height, "#f5efe6", 0.62);
+    return;
+  }
+
+  if (frameId === "film") {
+    drawFilmPerforations(context, width, height, "#51392a", 0.42);
+    context.save();
+    context.strokeStyle = "#5d402c";
+    context.globalAlpha = 0.13;
+    context.lineWidth = 2;
+    for (let y = 35; y < height - 80; y += 83) {
+      context.beginPath();
+      context.moveTo(31, y);
+      context.lineTo(width - 31, y + 5);
+      context.stroke();
+    }
+    context.restore();
+    return;
+  }
+
+  if (frameId === "chrome") {
+    context.save();
+    context.globalAlpha = 0.2;
+    const band = context.createLinearGradient(0, 0, width, 0);
+    band.addColorStop(0, "rgba(255,255,255,0)");
+    band.addColorStop(0.5, "#ffffff");
+    band.addColorStop(1, "rgba(255,255,255,0)");
+    context.fillStyle = band;
+    context.translate(width * 0.12, 0);
+    context.rotate(-0.16);
+    context.fillRect(0, -height * 0.1, width * 0.13, height * 1.3);
+    context.fillRect(width * 0.57, -height * 0.1, width * 0.08, height * 1.3);
+    context.restore();
+    drawSparkle(context, 26, 27, 12, frame.ink, 0.42);
+    drawSparkle(context, width - 27, 55, 9, frame.ink, 0.34);
+  }
+}
+
 function drawBranding(
   context: CanvasRenderingContext2D,
   width: number,
@@ -203,10 +377,10 @@ function drawBranding(
   frameId: FrameId,
   layoutId: LayoutId,
 ) {
-  const palette = FRAME_COLORS[frameId];
+  const frame = getFrameStyle(frameId);
   const baseline = height - (layoutId === "polaroid" ? 105 : 55);
   context.save();
-  context.fillStyle = palette.ink;
+  context.fillStyle = frame.ink;
   context.textAlign = "center";
   context.font = `700 ${layoutId === "polaroid" ? 38 : 30}px ui-rounded, system-ui, sans-serif`;
   context.fillText("✦ PicToFu ♡", width / 2, baseline);
@@ -235,9 +409,9 @@ export async function composePhotoStrip(input: ComposeStripInput): Promise<Compo
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Canvas export is unavailable in this browser.");
 
-  const palette = FRAME_COLORS[input.frameId];
-  context.fillStyle = palette.background;
-  context.fillRect(0, 0, canvas.width, canvas.height);
+  const frame = getFrameStyle(input.frameId);
+  paintFrameSurface(context, canvas.width, canvas.height, input.frameId);
+  drawFrameDecorations(context, canvas.width, canvas.height, input.frameId);
 
   images.forEach((image, index) => {
     drawRoundedPhoto(
@@ -245,7 +419,7 @@ export async function composePhotoStrip(input: ComposeStripInput): Promise<Compo
       image,
       geometry.rects[index],
       input.filterId,
-      palette.cell,
+      frame.cell,
       input.photoCrops?.[index],
     );
   });
@@ -253,7 +427,7 @@ export async function composePhotoStrip(input: ComposeStripInput): Promise<Compo
 
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
-      (nextBlob) => (nextBlob ? resolve(nextBlob) : reject(new Error("PNG export failed."))),
+      (nextBlob) => (nextBlob ? resolve(nextBlob) : reject(new Error("PNG export failed.")),
       "image/png",
     );
   });
