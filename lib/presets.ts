@@ -1,9 +1,11 @@
+import type { FilterId } from "@/lib/filter-styles";
+
 export type BoothPreset = {
   id: string;
   name: string;
   description: string;
   layoutId: "strip-4" | "strip-3" | "grid-4" | "polaroid";
-  filterId: "original" | "bw" | "warm" | "vintage" | "y2k";
+  filterId: FilterId;
   frameId: "cream" | "pink" | "lilac" | "mint";
   shotCount: number;
   accent: string;

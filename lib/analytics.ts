@@ -21,8 +21,11 @@ export type ProductEventName =
 type SafeScalar = string | number | boolean | null | undefined;
 type SafeEventProperties = Record<string, SafeScalar>;
 
+const ACQUISITION_CONTEXT_KEY = "pictofu:acquisition_context";
+
 const SAFE_PROPERTY_KEYS = new Set([
   "landing_type",
+  "entry_path",
   "entry_preset",
   "cta_location",
   "facing_mode",
@@ -75,6 +78,34 @@ function sanitizeProperties(properties: SafeEventProperties) {
   );
 }
 
+function storeAcquisitionContext(name: ProductEventName, properties: SafeEventProperties) {
+  if (name !== "landing_view") return;
+
+  try {
+    if (window.sessionStorage.getItem(ACQUISITION_CONTEXT_KEY)) return;
+    const context = sanitizeProperties({
+      entry_path: window.location.pathname,
+      entry_preset: properties.entry_preset,
+      referrer_class: properties.referrer_class,
+    });
+    window.sessionStorage.setItem(ACQUISITION_CONTEXT_KEY, JSON.stringify(context));
+  } catch {
+    // Acquisition context is optional; never block product analytics if storage is unavailable.
+  }
+}
+
+function readAcquisitionContext(): SafeEventProperties {
+  try {
+    const raw = window.sessionStorage.getItem(ACQUISITION_CONTEXT_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return sanitizeProperties(parsed as SafeEventProperties);
+  } catch {
+    return {};
+  }
+}
+
 function normalizeEvent(name: ProductEventName, properties: SafeEventProperties): ProductEventName {
   if (name === "camera_error" && properties.error_class === "canvas_export_failed") {
     return "export_error";
@@ -115,6 +146,7 @@ export function emitProductEvent(name: ProductEventName, properties: SafeEventPr
   if (typeof window === "undefined") return;
   if (name === "start_booth" && !shouldEmitStartBooth()) return;
 
+  storeAcquisitionContext(name, properties);
   const normalizedName = normalizeEvent(name, properties);
   const width = window.innerWidth;
   const detail = {
@@ -124,6 +156,7 @@ export function emitProductEvent(name: ProductEventName, properties: SafeEventPr
     timestamp: new Date().toISOString(),
     device_class: deviceClass(width),
     viewport_bucket: viewportBucket(width),
+    ...readAcquisitionContext(),
     ...sanitizeProperties(properties),
   };
 
@@ -131,6 +164,6 @@ export function emitProductEvent(name: ProductEventName, properties: SafeEventPr
 
   if (process.env.NODE_ENV === "development") {
     // Never add captured photo data, Blob URLs, base64 or camera frame content here.
-    console.info("[PicTofu event]", detail);
+    console.info("[PicToFu event]", detail);
   }
 }
