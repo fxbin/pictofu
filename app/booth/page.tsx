@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { BoothClient } from "./booth-client";
+import "./booth-foundation.css";
+import "./booth-shell.css";
 import "./camera.css";
 import "./export.css";
 import "./workspace-modes.css";
