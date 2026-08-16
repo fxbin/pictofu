@@ -1,86 +1,13 @@
 import Link from "next/link";
 import { BrandLink } from "@/components/brand";
+import { HomeBoothPreview } from "@/components/home-booth-preview";
 import { PresetDemoMedia } from "@/components/preset-demo-media";
 import { SiteFooter } from "@/components/site-footer";
 import { getReadyPresetDemoAsset } from "@/lib/demo-assets";
 import { FEATURED_PRESETS } from "@/lib/presets";
-import styles from "./home-preview.module.css";
 
 function Sparkle({ className = "" }: { className?: string }) {
   return <span className={`sparkle ${className}`} aria-hidden="true">✦</span>;
-}
-
-function DemoStrip({ presetId }: { presetId: string }) {
-  const asset = getReadyPresetDemoAsset(presetId);
-  if (asset) {
-    return (
-      <div className="demo-strip" aria-label={asset.alt}>
-        <PresetDemoMedia presetId={presetId} sizes="124px" priority />
-      </div>
-    );
-  }
-
-  return (
-    <div className="demo-strip" aria-label="Example four-photo strip">
-      {["peace", "smile", "wink", "heart"].map((pose, index) => (
-        <div className={`demo-strip__photo demo-strip__photo--${index + 1}`} key={pose}>
-          <span className="demo-face" aria-hidden="true">◕‿◕</span>
-        </div>
-      ))}
-      <div className="demo-strip__footer">✦ PicToFu ♡</div>
-    </div>
-  );
-}
-
-function BoothPreview() {
-  return (
-    <div className="booth-preview" aria-label="PicToFu booth preview">
-      <div className="booth-preview__topbar">
-        <span className="window-dots" aria-hidden="true"><i /><i /><i /></span>
-        <span className="status-pill">✨ Ready when you are!</span>
-        <span className="camera-pill">▣ Camera</span>
-      </div>
-      <div className="booth-preview__body">
-        <div className="preview-tools" aria-hidden="true">
-          <span><b>3:4</b><small>Ratio</small></span>
-          <span><b>◷</b><small>Timer</small></span>
-          <span><b>●</b><small>Camera</small></span>
-          <span><b>↻</b><small>Flip</small></span>
-        </div>
-        <div className="camera-stage" aria-hidden="true">
-          <div className={styles.homeCameraMedia}>
-            <PresetDemoMedia
-              presetId="korean-date"
-              sizes="(max-width: 780px) 100vw, 560px"
-              priority
-              fit="cover"
-              style={{ objectPosition: "50% 10%" }}
-            />
-          </div>
-          <div className="countdown-ring">3</div>
-          <span className="camera-doodle camera-doodle--one">♡</span>
-          <span className="camera-doodle camera-doodle--two">✦</span>
-        </div>
-        <DemoStrip presetId="korean-date" />
-      </div>
-      <div className="booth-preview__bottom">
-        <div className="editor-preview">
-          <div className="editor-tabs" aria-hidden="true">
-            <span>▦ Layouts</span><span className="is-active">◉ Filters</span><span>▢ Frames</span><span>↺ Retake</span>
-          </div>
-          <div className="filter-row" aria-hidden="true">
-            {["Original", "B&W", "Warm", "Vintage", "Y2K"].map((filter, index) => (
-              <span className={index === 0 ? "is-selected" : ""} key={filter}>
-                <i className={`filter-swatch filter-swatch--${index + 1}`} />
-                <small>{filter}</small>
-              </span>
-            ))}
-          </div>
-        </div>
-        <Link className="gradient-button" href="/booth?preset=korean-date" prefetch={false}>Open Booth ✦</Link>
-      </div>
-    </div>
-  );
 }
 
 function TemplateCard({ preset, index }: { preset: (typeof FEATURED_PRESETS)[number]; index: number }) {
@@ -140,7 +67,7 @@ export default function Home() {
             <span>⇩ <b>Free download</b></span>
           </div>
         </div>
-        <div className="hero-demo"><BoothPreview /></div>
+        <div className="hero-demo"><HomeBoothPreview /></div>
       </section>
 
       <section className="templates-section" id="templates" aria-labelledby="popular-templates-title">
