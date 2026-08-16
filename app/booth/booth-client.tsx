@@ -9,6 +9,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
+import { TofuMark } from "@/components/brand";
 import { emitProductEvent } from "@/lib/analytics";
 import {
   boundedCaptureSize,
@@ -22,9 +23,10 @@ import {
   shotTargetForLayout,
   type PhotoCrop,
 } from "@/lib/compositor";
+import { filterCssValue, getFilterStyle } from "@/lib/filter-styles";
 import type { BoothPreset } from "@/lib/presets";
 import { PRESETS } from "@/lib/presets";
-import { TofuMark } from "@/components/brand";
+import { FilterPicker } from "./filter-picker";
 
 type SupportState = "checking" | "supported" | "unsupported";
 type CameraStatus = "idle" | "requesting" | "ready" | "countdown" | "capturing" | "review" | "error";
@@ -53,14 +55,6 @@ type AdjustDrag = {
 };
 
 const DEFAULT_CROP: PhotoCrop = { x: 0, y: 0, zoom: 1 };
-
-const FILTERS: { id: FilterId; label: string }[] = [
-  { id: "original", label: "Original" },
-  { id: "bw", label: "B&W" },
-  { id: "warm", label: "Warm" },
-  { id: "vintage", label: "Vintage" },
-  { id: "y2k", label: "Y2K" },
-];
 
 const LAYOUTS: { id: LayoutId; label: string }[] = [
   { id: "strip-4", label: "1×4" },
@@ -182,6 +176,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const exportReady = exportSlots.length === selectedLayoutTarget && exportSlots.every((slot) => slot !== null) && !captureBusy && exportStatus !== "working";
   const activeAdjustSlot = activeAdjustIndex === null ? null : captureSlots[activeAdjustIndex] ?? null;
   const activeCrop = normalizedCrop(activeAdjustSlot?.crop);
+  const filterThumbnailUrl = captureSlots.find((slot): slot is CaptureSlot => slot !== null)?.url ?? null;
 
   useEffect(() => {
     const streamHolder = streamRef;
@@ -870,7 +865,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
                         </span>
                         <span className="template-carousel__copy">
                           <strong>{item.name}</strong>
-                          <small>{item.shotCount} {item.shotCount === 1 ? "shot" : "shots"} · {item.filterId}</small>
+                          <small>{item.shotCount} {item.shotCount === 1 ? "shot" : "shots"} · {getFilterStyle(item.filterId).label}</small>
                         </span>
                       </button>
                     ))}
@@ -897,8 +892,14 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
                 {Array.from({ length: Math.min(preset.shotCount, selectedLayoutTarget) }).map((_, index) => {
                   const slot = captureSlots[index];
                   return (
-                    <div className={`result-strip__photo result-strip__photo--${filterId} ${slot ? "has-photo" : ""}`} key={slot?.slotId ?? `slot-${index + 1}`}>
-                      {slot ? <img src={slot.url} alt={`Captured photo ${index + 1}`} style={cropPreviewStyle(slot.crop)} /> : <span aria-hidden="true">{index + 1}</span>}
+                    <div className={`result-strip__photo ${slot ? "has-photo" : ""}`} key={slot?.slotId ?? `slot-${index + 1}`}>
+                      {slot ? (
+                        <img
+                          src={slot.url}
+                          alt={`Captured photo ${index + 1}`}
+                          style={{ ...cropPreviewStyle(slot.crop), filter: filterCssValue(filterId) }}
+                        />
+                      ) : <span aria-hidden="true">{index + 1}</span>}
                     </div>
                   );
                 })}
@@ -923,9 +924,12 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
 
               <div className="editor-control-group">
                 <h2>Filters</h2>
-                <div className="filter-choice-row">
-                  {FILTERS.map((filter) => <button className={filter.id === filterId ? "is-selected" : ""} type="button" key={filter.id} onClick={() => chooseFilter(filter.id)} disabled={captureBusy}><span className={`filter-dot filter-dot--${filter.id}`} aria-hidden="true" />{filter.label}</button>)}
-                </div>
+                <FilterPicker
+                  selectedId={filterId}
+                  thumbnailUrl={filterThumbnailUrl}
+                  disabled={captureBusy}
+                  onSelect={chooseFilter}
+                />
               </div>
 
               <div className="editor-control-group">
