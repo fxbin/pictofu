@@ -1,0 +1,21 @@
+id: pagespeed-mobile-pass
+project: PicToFu
+kind: performance
+source: PageSpeed Insights mobile report for https://pictofu.com
+hypothesis: Reduce anonymous mobile critical-path CSS/JS and below-fold rendering without changing product behavior.
+scope:
+  - defer GA4 bridge and Web Vitals code until analytics consent is granted
+  - remove Next Script from the pre-consent analytics path
+  - replace React Vercel Analytics wrapper with a lightweight deferred Vercel analytics script
+  - remove unnecessary Next Link hydration/prefetch from static navigation surfaces
+  - preserve analytics semantics and Booth functionality
+  - record remaining CSS-split follow-up if globals still ships Booth-only rules to Home
+acceptance:
+  - Node 24 lint/typecheck/build green
+  - Home remains static/cacheable
+  - GA4 does not load before consent
+  - GA4 bridge loads only after consent
+  - Vercel anonymous pageview script still loads
+  - Home/SEO navigation remains functional
+  - Booth routes unaffected
+  - Production smoke passes
