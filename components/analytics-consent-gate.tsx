@@ -1,10 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import Script from "next/script";
-import { usePathname } from "next/navigation";
-import { useRef, useState, useSyncExternalStore } from "react";
-import { AnalyticsBridge } from "@/components/analytics-bridge";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   clearAccessibleGaCookies,
   getServerAnalyticsConsent,
@@ -19,6 +22,12 @@ type AnalyticsConsentGateProps = {
   configured: boolean;
   measurementId: string;
 };
+
+const LazyAnalyticsBridge = lazy(() =>
+  import("@/components/analytics-bridge").then((module) => ({
+    default: module.AnalyticsBridge,
+  })),
+);
 
 const GRANTED_CONSENT = {
   analytics_storage: "granted",
@@ -41,7 +50,6 @@ function consentLabel(consent: AnalyticsConsent) {
 }
 
 export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsConsentGateProps) {
-  const pathname = usePathname();
   const consent = useSyncExternalStore(
     subscribeAnalyticsConsent,
     readAnalyticsConsent,
@@ -50,12 +58,14 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [runtimeReady, setRuntimeReady] = useState(false);
   const initializedRef = useRef(false);
-  const isBooth = pathname === "/booth";
   const wantsGoogle = configured && consent === "granted";
   const googleEnabled = wantsGoogle && runtimeReady;
 
-  function initializeGoogleRuntime() {
-    if (!wantsGoogle) return;
+  useEffect(() => {
+    if (!wantsGoogle) {
+      setRuntimeReady(false);
+      return;
+    }
 
     if (!initializedRef.current) {
       window.dataLayer = window.dataLayer ?? [];
@@ -71,8 +81,34 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
       initializedRef.current = true;
     }
 
-    setRuntimeReady(true);
-  }
+    const scriptId = "pictofu-ga4-loader";
+    const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
+
+    const markReady = () => {
+      const current = document.getElementById(scriptId) as HTMLScriptElement | null;
+      if (current) current.dataset.loaded = "true";
+      setRuntimeReady(true);
+    };
+
+    if (existing?.dataset.loaded === "true") {
+      setRuntimeReady(true);
+      return;
+    }
+
+    if (existing) {
+      existing.addEventListener("load", markReady, { once: true });
+      return () => existing.removeEventListener("load", markReady);
+    }
+
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
+    script.addEventListener("load", markReady, { once: true });
+    document.head.appendChild(script);
+
+    return () => script.removeEventListener("load", markReady);
+  }, [measurementId, wantsGoogle]);
 
   function allowAnalytics() {
     persistAnalyticsConsent("granted");
@@ -97,20 +133,15 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
 
   return (
     <>
-      {wantsGoogle && (
-        <Script
-          id="pictofu-ga4-loader"
-          src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
-          strategy="afterInteractive"
-          onReady={initializeGoogleRuntime}
-        />
+      {googleEnabled && (
+        <Suspense fallback={null}>
+          <LazyAnalyticsBridge enabled />
+        </Suspense>
       )}
-
-      <AnalyticsBridge enabled={googleEnabled} />
 
       {showPanel && (
         <section
-          className={`${styles.banner} ${isBooth ? styles.boothBanner : ""}`}
+          className={styles.banner}
           aria-label="Analytics privacy settings"
         >
           <div className={styles.titleRow}>
@@ -127,14 +158,14 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
             <button className={styles.secondary} type="button" onClick={declineAnalytics}>
               {consent === "granted" ? "Turn off analytics" : consent === "denied" ? "Keep off" : "No thanks"}
             </button>
-            <Link className={styles.privacyLink} href="/privacy">Privacy</Link>
+            <a className={styles.privacyLink} href="/privacy">Privacy</a>
           </div>
         </section>
       )}
 
       {showSettingsButton && (
         <button
-          className={`${styles.settingsButton} ${isBooth ? styles.settingsButtonBooth : ""}`}
+          className={styles.settingsButton}
           type="button"
           onClick={() => setSettingsOpen(true)}
           aria-expanded={settingsOpen}
