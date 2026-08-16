@@ -41,6 +41,17 @@ function referrerClass() {
   }
 }
 
+function acquisitionParameters() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    share_marker: params.get("src") ?? undefined,
+    utm_source: params.get("utm_source") ?? undefined,
+    utm_medium: params.get("utm_medium") ?? undefined,
+    utm_campaign: params.get("utm_campaign") ?? undefined,
+    utm_content: params.get("utm_content") ?? undefined,
+  };
+}
+
 function forwardToVercel(detail: Record<string, unknown>) {
   if (!VERCEL_CUSTOM_EVENTS_ENABLED) return;
 
@@ -96,6 +107,7 @@ export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
         landing_type: pathname === "/" ? "home" : "seo_intent",
         entry_preset: LANDING_PRESET_BY_PATH[pathname],
         referrer_class: referrerClass(),
+        ...acquisitionParameters(),
       });
     }
 

@@ -40,9 +40,16 @@ const SAFE_PROPERTY_KEYS = new Set([
   "output_width",
   "output_height",
   "share_supported",
+  "share_action",
+  "share_preset",
   "delivery_mode",
   "browser_context",
   "referrer_class",
+  "share_marker",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
   "device_class",
   "viewport_bucket",
   "metric_name",
@@ -87,6 +94,11 @@ function storeAcquisitionContext(name: ProductEventName, properties: SafeEventPr
       entry_path: window.location.pathname,
       entry_preset: properties.entry_preset,
       referrer_class: properties.referrer_class,
+      share_marker: properties.share_marker,
+      utm_source: properties.utm_source,
+      utm_medium: properties.utm_medium,
+      utm_campaign: properties.utm_campaign,
+      utm_content: properties.utm_content,
     });
     window.sessionStorage.setItem(ACQUISITION_CONTEXT_KEY, JSON.stringify(context));
   } catch {

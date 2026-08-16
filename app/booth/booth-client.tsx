@@ -26,6 +26,7 @@ import {
 import { filterCssValue, getFilterStyle } from "@/lib/filter-styles";
 import type { BoothPreset } from "@/lib/presets";
 import { PRESETS } from "@/lib/presets";
+import { buildMakeYoursUrl } from "@/lib/share-links";
 import { FilterPicker } from "./filter-picker";
 
 type SupportState = "checking" | "supported" | "unsupported";
@@ -104,6 +105,24 @@ function downloadBlob(blob: Blob, filename: string) {
   anchor.click();
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+async function copyText(text: string) {
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) throw new Error("Clipboard copy is unavailable");
 }
 
 function isWeChatBrowser() {
@@ -649,9 +668,12 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       const file = new File([result.blob], `pictofu-${preset.id}.png`, { type: "image/png" });
       const canShareFile = typeof navigator.share === "function" && (!navigator.canShare || navigator.canShare({ files: [file] }));
       const browserContext = isWeChatBrowser() ? "wechat" : "browser";
+      const shareUrl = buildMakeYoursUrl(window.location.origin, preset.id);
 
       emitProductEvent("share_clicked", {
         share_supported: canShareFile,
+        share_action: "native_photo",
+        share_preset: preset.id,
         delivery_mode: canShareFile ? "native_share" : "save_preview",
         browser_context: browserContext,
       });
@@ -661,8 +683,12 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
         return;
       }
 
-      await navigator.share({ files: [file], title: "My PicToFu photo strip", text: "Made with PicToFu ✨" });
-      setExportMessage("Share sheet opened for your PicToFu strip ✨");
+      await navigator.share({
+        files: [file],
+        title: `${preset.name} — PicToFu`,
+        text: `Made with PicToFu ✨\nMake yours: ${shareUrl}`,
+      });
+      setExportMessage("Share sheet opened — your photo includes a Make yours link ✨");
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         setExportStatus("done");
@@ -671,8 +697,27 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       }
       if (exportStatus !== "error") {
         setExportStatus("error");
-        setExportMessage("Sharing failed. Try Share again or use Download PNG.");
+        setExportMessage("Sharing failed. Try Share photo again or use Download PNG.");
       }
+    }
+  }
+
+  async function copyMakeYoursLink() {
+    try {
+      const shareUrl = buildMakeYoursUrl(window.location.origin, preset.id);
+      await copyText(shareUrl);
+      emitProductEvent("share_clicked", {
+        share_supported: typeof navigator.share === "function",
+        share_action: "copy_link",
+        share_preset: preset.id,
+        delivery_mode: "copy_link",
+        browser_context: isWeChatBrowser() ? "wechat" : "browser",
+      });
+      setExportStatus("done");
+      setExportMessage("Make yours link copied ✨ Send it anywhere you like.");
+    } catch {
+      setExportStatus("error");
+      setExportMessage("Couldn’t copy the link. Try Share photo instead.");
     }
   }
 
@@ -940,12 +985,13 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
               </div>
 
               <div className="export-actions">
+                <button className="share-strip-button" type="button" disabled={!exportReady} onClick={shareStrip}>Share photo ✦</button>
+                <button className="copy-share-link-button" type="button" disabled={!exportReady} onClick={copyMakeYoursLink}>Copy Make yours link</button>
                 <button className="download-shell-button" type="button" disabled={!exportReady} onClick={downloadStrip}>{exportStatus === "working" ? "Creating strip…" : "↓ Download PNG"}</button>
-                <button className="share-strip-button" type="button" disabled={!exportReady} onClick={shareStrip}>Share ✦</button>
               </div>
               {capturedCount > 0 && !exportReady && <p className="export-hint">This look needs more photos than the current capture set. Your existing photos are still safe.</p>}
               {exportMessage && <p className={`export-message ${exportStatus === "error" ? "is-error" : ""}`} aria-live="polite">{exportMessage}</p>}
-              <p className="editor-footnote">PNG is composed locally. No account. No cloud gallery.</p>
+              <p className="editor-footnote">Share photo sends your PNG plus a preset-aware Make yours link. Photos still stay local to this browser.</p>
             </>
           )}
         </aside>
