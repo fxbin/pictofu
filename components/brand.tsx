@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function TofuMark({ compact = false }: { compact?: boolean }) {
   return (
     <span className={`brand ${compact ? "brand--compact" : ""}`} aria-label="PicToFu">
@@ -11,8 +13,8 @@ export function TofuMark({ compact = false }: { compact?: boolean }) {
 
 export function BrandLink() {
   return (
-    <a className="brand-link" href="/" aria-label="PicToFu home">
+    <Link className="brand-link" href="/" aria-label="PicToFu home" prefetch={false}>
       <TofuMark />
-    </a>
+    </Link>
   );
 }
