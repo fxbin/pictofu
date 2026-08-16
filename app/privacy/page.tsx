@@ -4,6 +4,8 @@ import { BrandLink } from "@/components/brand";
 import { SiteFooter } from "@/components/site-footer";
 import styles from "./privacy.module.css";
 
+const CONTACT_EMAIL = "fxbin123@gmail.com";
+
 export const metadata: Metadata = {
   title: { absolute: "Privacy Policy | PicToFu" },
   description:
@@ -19,7 +21,7 @@ export const metadata: Metadata = {
   },
 };
 
-const LAST_UPDATED = "August 15, 2026";
+const LAST_UPDATED = "August 16, 2026";
 
 export default function PrivacyPage() {
   return (
@@ -30,6 +32,7 @@ export default function PrivacyPage() {
           <Link href="/">Home</Link>
           <Link href="/online-photobooth">Photobooth</Link>
           <Link href="/photo-strip-maker">Photo strips</Link>
+          <Link href="/contact">Contact</Link>
         </nav>
         <Link className={styles.headerCta} href="/booth">Start Booth ✦</Link>
       </header>
@@ -158,7 +161,10 @@ export default function PrivacyPage() {
         <section>
           <h2>12. Contact</h2>
           <p>
-            A dedicated public privacy contact route is being added to PicToFu&apos;s site information pages before this policy is promoted as the final production legal contact point. Until that route is published, this section intentionally does not invent an email address or contact form that may not be monitored.
+            For privacy questions or requests, email <a href={`mailto:${CONTACT_EMAIL}?subject=PicToFu%20Privacy%20Inquiry`}>{CONTACT_EMAIL}</a>. You can also use the <Link href="/contact">PicToFu contact page</Link> for general questions and product feedback.
+          </p>
+          <p>
+            Because the current PicToFu MVP has no user account system or cloud photo library, please do not send photo content unless you intentionally choose to attach it and it is necessary to explain your request.
           </p>
         </section>
 
