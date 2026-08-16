@@ -427,7 +427,7 @@ export async function composePhotoStrip(input: ComposeStripInput): Promise<Compo
 
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
-      (nextBlob) => (nextBlob ? resolve(nextBlob) : reject(new Error("PNG export failed.")),
+      (nextBlob) => (nextBlob ? resolve(nextBlob) : reject(new Error("PNG export failed."))),
       "image/png",
     );
   });
