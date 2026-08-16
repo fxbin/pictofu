@@ -3,6 +3,7 @@ import { BrandLink } from "@/components/brand";
 import { PresetDemoMedia } from "@/components/preset-demo-media";
 import { SiteFooter } from "@/components/site-footer";
 import { getReadyPresetDemoAsset } from "@/lib/demo-assets";
+import { getFrameStyle } from "@/lib/frame-styles";
 import type { SeoExperience } from "@/lib/seo-pages";
 import { getSeoExperience } from "@/lib/seo-pages";
 import type { BoothPreset } from "@/lib/presets";
@@ -17,6 +18,7 @@ const LAYOUT_LABELS: Record<BoothPreset["layoutId"], string> = {
 
 export function SeoExperiencePage({ experience }: { experience: SeoExperience }) {
   const preset = getPreset(experience.presetId);
+  const frame = getFrameStyle(preset.frameId);
   const demoAsset = getReadyPresetDemoAsset(preset.id);
   const faqJsonLd = {
     "@context": "https://schema.org",
@@ -77,7 +79,7 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
           <div className="seo-preset-meta">
             <span>{LAYOUT_LABELS[preset.layoutId]}</span>
             <span>{preset.filterId}</span>
-            <span>{preset.frameId} frame</span>
+            <span>{frame.label}</span>
           </div>
         </div>
       </section>
