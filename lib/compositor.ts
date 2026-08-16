@@ -1,7 +1,7 @@
+import { filterCssValue, type FilterId } from "@/lib/filter-styles";
 import type { BoothPreset } from "@/lib/presets";
 
 type LayoutId = BoothPreset["layoutId"];
-type FilterId = BoothPreset["filterId"];
 type FrameId = BoothPreset["frameId"];
 
 export type PhotoCrop = {
@@ -44,22 +44,6 @@ export function shotTargetForLayout(layoutId: LayoutId): number {
     case "grid-4":
     default:
       return 4;
-  }
-}
-
-function canvasFilter(filterId: FilterId): string {
-  switch (filterId) {
-    case "bw":
-      return "grayscale(1) contrast(1.04)";
-    case "warm":
-      return "sepia(.18) saturate(1.18) brightness(1.03)";
-    case "vintage":
-      return "sepia(.38) contrast(.9) saturate(.92)";
-    case "y2k":
-      return "saturate(1.32) contrast(1.08) hue-rotate(-16deg)";
-    case "original":
-    default:
-      return "none";
   }
 }
 
@@ -152,7 +136,7 @@ function drawRoundedPhoto(
   context.beginPath();
   context.roundRect(rect.x, rect.y, rect.width, rect.height, radius);
   context.clip();
-  context.filter = canvasFilter(filterId);
+  context.filter = filterCssValue(filterId);
   const source = resolvePhotoCrop(image.naturalWidth, image.naturalHeight, rect, crop);
   context.drawImage(
     image,
