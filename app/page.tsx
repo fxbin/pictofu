@@ -61,7 +61,7 @@ function BoothPreview() {
             ))}
           </div>
         </div>
-        <Link className="gradient-button" href="/booth?preset=korean-date">Open Booth ✦</Link>
+        <Link className="gradient-button" href="/booth?preset=korean-date" prefetch={false}>Open Booth ✦</Link>
       </div>
     </div>
   );
@@ -69,7 +69,7 @@ function BoothPreview() {
 
 function TemplateCard({ preset, index }: { preset: (typeof FEATURED_PRESETS)[number]; index: number }) {
   return (
-    <Link className={`template-card template-card--${preset.accent}`} href={`/booth?preset=${preset.id}`}>
+    <Link className={`template-card template-card--${preset.accent}`} href={`/booth?preset=${preset.id}`} prefetch={false}>
       <div className="template-card__copy">
         <h3>{preset.name}</h3>
         <p>{preset.description}</p>
@@ -89,12 +89,12 @@ export default function Home() {
         <BrandLink />
         <nav className="desktop-nav" aria-label="Primary navigation">
           <a href="#templates">Templates</a>
-          <Link href="/layouts">Layouts</Link>
-          <Link href="/online-photobooth">Booth</Link>
-          <Link href="/photo-strip-maker">Photo Strip</Link>
-          <Link href="/korean-photobooth">Korean Booth</Link>
+          <Link href="/layouts" prefetch={false}>Layouts</Link>
+          <Link href="/online-photobooth" prefetch={false}>Booth</Link>
+          <Link href="/photo-strip-maker" prefetch={false}>Photo Strip</Link>
+          <Link href="/korean-photobooth" prefetch={false}>Korean Booth</Link>
         </nav>
-        <Link className="header-cta" href="/layouts">Start Booth ✦</Link>
+        <Link className="header-cta" href="/layouts" prefetch={false}>Start Booth ✦</Link>
         <a className="menu-button" href="#templates" aria-label="Jump to templates">☰</a>
       </header>
 
@@ -107,7 +107,7 @@ export default function Home() {
             Snap photo strips instantly in your browser. Add filters and frames, then download or share with your favorite people. <span aria-hidden="true">♡</span>
           </p>
           <div className="hero-actions">
-            <Link className="primary-button" href="/layouts">Start Booth ✦</Link>
+            <Link className="primary-button" href="/layouts" prefetch={false}>Start Booth ✦</Link>
             <a className="secondary-button" href="#templates">Try Templates</a>
           </div>
           <div className="benefit-row" aria-label="PicToFu benefits">
@@ -122,7 +122,7 @@ export default function Home() {
       <section className="templates-section" id="templates" aria-labelledby="popular-templates-title">
         <div className="section-heading">
           <h2 id="popular-templates-title"><span aria-hidden="true">✦</span> Popular Templates</h2>
-          <Link href="/layouts">Explore all layouts →</Link>
+          <Link href="/layouts" prefetch={false}>Explore all layouts →</Link>
         </div>
         <div className="template-scroller">
           {FEATURED_PRESETS.map((preset, index) => <TemplateCard key={preset.id} preset={preset} index={index} />)}
@@ -135,7 +135,7 @@ export default function Home() {
           <h2>Your photos stay with you.</h2>
           <p>PicToFu’s MVP processes camera frames and photo strips in your browser. No account required.</p>
         </div>
-        <Link href="/privacy">Read our privacy policy →</Link>
+        <Link href="/privacy" prefetch={false}>Read our privacy policy →</Link>
       </section>
 
       <SiteFooter />

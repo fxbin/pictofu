@@ -13,7 +13,7 @@
   backdrop-filter: blur(16px);
 }
 
-.boothBanner {
+:global(body:has(.booth-page)) .banner {
   left: auto;
   right: 14px;
   top: calc(80px + env(safe-area-inset-top));
@@ -108,7 +108,7 @@
   backdrop-filter: blur(12px);
 }
 
-.settingsButtonBooth {
+:global(body:has(.booth-page)) .settingsButton {
   top: calc(80px + env(safe-area-inset-top));
   bottom: auto;
 }
@@ -122,7 +122,7 @@
     border-radius: 16px;
   }
 
-  .boothBanner {
+  :global(body:has(.booth-page)) .banner {
     left: 12px;
     right: auto;
     top: calc(74px + env(safe-area-inset-top));
@@ -150,7 +150,7 @@
     bottom: calc(10px + env(safe-area-inset-bottom));
   }
 
-  .settingsButtonBooth {
+  :global(body:has(.booth-page)) .settingsButton {
     top: calc(74px + env(safe-area-inset-top));
     bottom: auto;
   }

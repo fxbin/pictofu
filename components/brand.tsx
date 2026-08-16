@@ -13,7 +13,7 @@ export function TofuMark({ compact = false }: { compact?: boolean }) {
 
 export function BrandLink() {
   return (
-    <Link className="brand-link" href="/" aria-label="PicToFu home">
+    <Link className="brand-link" href="/" aria-label="PicToFu home" prefetch={false}>
       <TofuMark />
     </Link>
   );
