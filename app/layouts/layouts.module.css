@@ -223,6 +223,10 @@
 .accent_mint .cardPreview { background: linear-gradient(145deg, #e8f8f3, #fff9f5); }
 .accent_cream .cardPreview { background: linear-gradient(145deg, #fff1e5, #fffaf5); }
 
+.presetDemoImage {
+  filter: drop-shadow(0 14px 24px rgba(82, 58, 54, .14));
+}
+
 .preview {
   width: 116px;
   min-height: 208px;
