@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { BrandLink } from "@/components/brand";
+import { PresetDemoMedia } from "@/components/preset-demo-media";
 import { SiteFooter } from "@/components/site-footer";
+import { getReadyPresetDemoAsset } from "@/lib/demo-assets";
 import type { SeoExperience } from "@/lib/seo-pages";
 import { getSeoExperience } from "@/lib/seo-pages";
 import type { BoothPreset } from "@/lib/presets";
@@ -15,6 +17,7 @@ const LAYOUT_LABELS: Record<BoothPreset["layoutId"], string> = {
 
 export function SeoExperiencePage({ experience }: { experience: SeoExperience }) {
   const preset = getPreset(experience.presetId);
+  const demoAsset = getReadyPresetDemoAsset(preset.id);
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -55,12 +58,21 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
             <strong>{preset.name}</strong>
           </div>
           <div className={`seo-preset-strip seo-preset-strip--${preset.layoutId}`}>
-            {Array.from({ length: preset.shotCount }).map((_, index) => (
-              <div className={`seo-preset-photo seo-preset-photo--${preset.filterId}`} key={index} aria-hidden="true">
-                <span>{index % 2 === 0 ? "◕‿◕" : "◕ᴗ◕"}</span>
-              </div>
-            ))}
-            <small>✦ PicToFu ♡</small>
+            {demoAsset ? (
+              <PresetDemoMedia
+                presetId={preset.id}
+                sizes="(max-width: 760px) 52vw, 180px"
+              />
+            ) : (
+              <>
+                {Array.from({ length: preset.shotCount }).map((_, index) => (
+                  <div className={`seo-preset-photo seo-preset-photo--${preset.filterId}`} key={index} aria-hidden="true">
+                    <span>{index % 2 === 0 ? "◕‿◕" : "◕ᴗ◕"}</span>
+                  </div>
+                ))}
+                <small>✦ PicToFu ♡</small>
+              </>
+            )}
           </div>
           <div className="seo-preset-meta">
             <span>{LAYOUT_LABELS[preset.layoutId]}</span>
