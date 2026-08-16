@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   lazy,
   Suspense,
@@ -59,10 +60,7 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
   const googleEnabled = wantsGoogle && runtimeReady;
 
   useEffect(() => {
-    if (!wantsGoogle) {
-      setRuntimeReady(false);
-      return;
-    }
+    if (!wantsGoogle) return;
 
     if (!initializedRef.current) {
       window.dataLayer = window.dataLayer ?? [];
@@ -154,7 +152,7 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
             <button className={styles.secondary} type="button" onClick={declineAnalytics}>
               {consent === "granted" ? "Turn off analytics" : consent === "denied" ? "Keep off" : "No thanks"}
             </button>
-            <a className={styles.privacyLink} href="/privacy">Privacy</a>
+            <Link className={styles.privacyLink} href="/privacy" prefetch={false}>Privacy</Link>
           </div>
         </section>
       )}
