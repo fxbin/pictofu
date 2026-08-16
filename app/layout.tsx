@@ -33,6 +33,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {children}
         <AnalyticsConsentGate configured={analyticsConfigured} measurementId={measurementId} />
         <script
+          dangerouslySetInnerHTML={{
+            __html: "window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};",
+          }}
+        />
+        <script
           defer
           src="/_vercel/insights/script.js"
           data-sdkn="@vercel/analytics"
