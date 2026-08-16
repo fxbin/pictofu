@@ -1,4 +1,5 @@
 import type { FilterId } from "@/lib/filter-styles";
+import type { FrameId } from "@/lib/frame-styles";
 
 export type BoothPreset = {
   id: string;
@@ -6,7 +7,7 @@ export type BoothPreset = {
   description: string;
   layoutId: "strip-4" | "strip-3" | "grid-4" | "polaroid";
   filterId: FilterId;
-  frameId: "cream" | "pink" | "lilac" | "mint";
+  frameId: FrameId;
   shotCount: number;
   accent: string;
 };
@@ -18,7 +19,7 @@ export const PRESETS: BoothPreset[] = [
     description: "A clean four-cut strip that works for any moment.",
     layoutId: "strip-4",
     filterId: "original",
-    frameId: "cream",
+    frameId: "white",
     shotCount: 4,
     accent: "cream",
   },
@@ -48,7 +49,7 @@ export const PRESETS: BoothPreset[] = [
     description: "Retro flash energy for sunny memories.",
     layoutId: "strip-4",
     filterId: "y2k",
-    frameId: "lilac",
+    frameId: "chrome",
     shotCount: 4,
     accent: "blue",
   },
@@ -58,7 +59,7 @@ export const PRESETS: BoothPreset[] = [
     description: "Warm, faded film tones for a nostalgic photo strip.",
     layoutId: "strip-4",
     filterId: "vintage",
-    frameId: "cream",
+    frameId: "film",
     shotCount: 4,
     accent: "cream",
   },
