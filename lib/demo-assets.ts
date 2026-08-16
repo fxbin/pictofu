@@ -1,5 +1,6 @@
 export type DemoAssetReviewStatus = "approved";
 export type DemoAssetDeliveryStatus = "pending" | "ready";
+export type DemoAssetTreatment = "warm-faded-film";
 
 export type PresetDemoAsset = {
   presetId: string;
@@ -9,6 +10,7 @@ export type PresetDemoAsset = {
   width: number;
   height: number;
   alt: string;
+  treatment?: DemoAssetTreatment;
 };
 
 /**
@@ -59,10 +61,14 @@ export const PRESET_DEMO_ASSETS = {
     presetId: "vintage-film",
     reviewStatus: "approved",
     deliveryStatus: "ready",
-    src: "/demo/presets/vintage-film.webp",
+    // Production-safe fallback while the corrupted standalone Vintage Film WebP
+    // is replaced. Keep this explicit so the treatment can be removed together
+    // with the fallback when a clean preset-specific binary is approved.
+    src: "/demo/layouts/classic-strip-1x4.webp",
     width: 300,
     height: 857,
-    alt: "Young man shown in a warm faded vintage four-frame photo strip.",
+    alt: "Woman posing in four warm faded vintage-style photo booth portraits.",
+    treatment: "warm-faded-film",
   },
   "polaroid-moment": {
     presetId: "polaroid-moment",
