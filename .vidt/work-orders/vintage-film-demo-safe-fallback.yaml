@@ -1,0 +1,33 @@
+id: vintage-film-demo-safe-fallback
+issue: 130
+parent_issues:
+  - 16
+  - 65
+branch: fix/vintage-film-demo-safe-fallback
+release_target: dev
+objective: >-
+  Remove the visibly corrupted Vintage Film marketing asset from product surfaces
+  without changing camera, compositor, or user-photo behavior.
+scope:
+  - use the already-approved clear 1x4 layout demo asset as a temporary Vintage Film marketing fallback
+  - apply a bounded warm/faded treatment in PresetDemoMedia only
+  - keep the fallback explicit in the demo-asset manifest for later removal
+  - preserve all other preset demo mappings
+out_of_scope:
+  - camera filter behavior
+  - export compositor changes
+  - screenshot crops or duplicated damaged frames
+  - final standalone Vintage Film binary generation
+verification:
+  automated:
+    - npm ci
+    - npm run lint
+    - npm run typecheck
+    - npm run build
+  owner:
+    - Home/template/SEO Vintage Film visual smoke on mobile and desktop
+    - confirm no block/mosaic corruption remains
+guardrails:
+  - main remains production-only
+  - do not close issue 130 until the final standalone Vintage Film asset replaces the fallback
+  - do not couple this fix to Share/Referral release approval
