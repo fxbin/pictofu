@@ -31,6 +31,7 @@ type CameraStatus = "idle" | "requesting" | "ready" | "countdown" | "capturing" 
 type ExportStatus = "idle" | "working" | "done" | "error";
 type FacingMode = "user" | "environment";
 type SavePreviewReason = "download" | "share";
+type WorkspaceMode = "capture" | "review" | "style";
 type LayoutId = BoothPreset["layoutId"];
 type FilterId = BoothPreset["filterId"];
 type FrameId = BoothPreset["frameId"];
@@ -159,6 +160,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const [layoutId, setLayoutId] = useState<LayoutId>(initialPreset.layoutId);
   const [filterId, setFilterId] = useState<FilterId>(initialPreset.filterId);
   const [frameId, setFrameId] = useState<FrameId>(initialPreset.frameId);
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>("capture");
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>("idle");
   const [facingMode, setFacingMode] = useState<FacingMode>("user");
   const [cameraError, setCameraError] = useState<CameraErrorClass | null>(null);
@@ -196,14 +198,14 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   }, []);
 
   useEffect(() => {
-    if (!window.matchMedia("(max-width: 720px)").matches) return;
+    if (workspaceMode === "review" || !window.matchMedia("(max-width: 720px)").matches) return;
     const track = templateTrackRef.current;
     const card = track?.querySelector<HTMLElement>(`[data-preset-id="${presetId}"]`);
     if (!track || !card) return;
     const targetLeft = card.offsetLeft - (track.clientWidth - card.clientWidth) / 2;
     if (Math.abs(track.scrollLeft - targetLeft) < 4) return;
     track.scrollTo({ left: Math.max(0, targetLeft), behavior: "smooth" });
-  }, [presetId]);
+  }, [presetId, workspaceMode]);
 
   function closeSavePreview() {
     if (savePreviewUrlRef.current) URL.revokeObjectURL(savePreviewUrlRef.current);
@@ -252,6 +254,13 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     if (videoRef.current) videoRef.current.srcObject = null;
   }
 
+  function beginEditIfNeeded() {
+    if (capturedCount > 0 && !editStartedRef.current) {
+      editStartedRef.current = true;
+      emitProductEvent("edit_started", { entry_preset: preset.id });
+    }
+  }
+
   function selectPreset(nextId: string) {
     if (captureBusy || nextId === presetId) return;
     const next = PRESETS.find((item) => item.id === nextId);
@@ -274,7 +283,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       setReviewMessage(
         capturedCount >= required
           ? `${next.name} applied. Your ${capturedCount} captured ${photoNoun(capturedCount)} and framing stayed intact.`
-          : `${next.name} applied. Your ${capturedCount} captured ${photoNoun(capturedCount)} stayed intact, but this layout needs ${required}. Retake all to capture a full set.`,
+          : `${next.name} needs ${required} photos. Your ${capturedCount} captured ${photoNoun(capturedCount)} and framing are preserved; return to Review or Retake all when you want a complete set.`,
       );
       return;
     }
@@ -305,13 +314,6 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     }, 140);
   }
 
-  function beginEditIfNeeded() {
-    if (capturedCount > 0 && !editStartedRef.current) {
-      editStartedRef.current = true;
-      emitProductEvent("edit_started", { entry_preset: preset.id });
-    }
-  }
-
   function markStyleChange(styleType: "layout" | "filter" | "frame", styleId: string) {
     closeSavePreview();
     beginEditIfNeeded();
@@ -337,9 +339,9 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   }
 
   function selectAdjustSlot(slotIndex: number) {
-    if (captureBusy || cameraStatus !== "review" || !captureSlots[slotIndex]) return;
+    if (captureBusy || workspaceMode !== "review" || cameraStatus !== "review" || !captureSlots[slotIndex]) return;
     setActiveAdjustIndex(slotIndex);
-    setReviewMessage(`Photo ${slotIndex + 1} selected. Drag to reframe or use the controls below.`);
+    setReviewMessage(`Photo ${slotIndex + 1} selected. Drag directly on the photo to reframe it.`);
   }
 
   function updateSlotCrop(slotIndex: number, crop: PhotoCrop) {
@@ -367,7 +369,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   }
 
   function handleAdjustPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
-    if (activeAdjustIndex === null || !activeAdjustSlot || captureBusy || cameraStatus !== "review") return;
+    if (activeAdjustIndex === null || !activeAdjustSlot || captureBusy || workspaceMode !== "review" || cameraStatus !== "review") return;
     event.currentTarget.setPointerCapture(event.pointerId);
     adjustDragRef.current = {
       pointerId: event.pointerId,
@@ -398,6 +400,23 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     if (activeAdjustIndex !== null) setReviewMessage(`Photo ${activeAdjustIndex + 1} framing updated.`);
   }
 
+  function continueToStyle() {
+    if (!capturedCount) return;
+    setWorkspaceMode("style");
+    setReviewMessage(null);
+  }
+
+  function returnToReview() {
+    if (!capturedCount) return;
+    if (activeAdjustIndex === null || !captureSlots[activeAdjustIndex]) {
+      const firstCapturedIndex = captureSlots.findIndex(Boolean);
+      setActiveAdjustIndex(firstCapturedIndex >= 0 ? firstCapturedIndex : null);
+    }
+    setCameraStatus("review");
+    setWorkspaceMode("review");
+    setReviewMessage("Review your photos. Select any frame to adjust or retake it.");
+  }
+
   async function startCamera(nextFacingMode: FacingMode = facingMode) {
     if (supportState !== "supported") {
       setCameraError("camera_unavailable");
@@ -405,6 +424,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       return;
     }
 
+    setWorkspaceMode("capture");
     setCameraStatus("requesting");
     setCameraError(null);
     emitProductEvent("camera_permission_requested", { facing_mode: nextFacingMode });
@@ -479,6 +499,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
 
   async function captureSequence() {
     if (cameraStatus !== "ready") return;
+    setWorkspaceMode("capture");
     clearCaptureSlots();
     setCaptureSlots(emptyCaptureSlots(preset.shotCount));
     emitProductEvent("capture_started", { layout_id: layoutId, shot_target: preset.shotCount });
@@ -498,21 +519,23 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       }
       setCameraStatus("review");
       setActiveAdjustIndex(0);
-      setReviewMessage("Select a photo to adjust its framing, or retake only the shot that needs another try.");
+      setWorkspaceMode("review");
+      setReviewMessage("Your photos are ready. Select any frame to adjust it, then continue when everything looks good.");
       emitProductEvent("capture_completed", { shot_count: preset.shotCount, layout_id: layoutId });
     } catch {
       setCountdown(null);
       setCameraError("camera_start_failed");
       setCameraStatus("error");
+      setWorkspaceMode("capture");
       emitProductEvent("camera_error", { error_class: "capture_failed" });
     }
   }
 
   async function retakeSlot(slotIndex: number) {
-    if (cameraStatus !== "review" || captureBusy) return;
+    if (cameraStatus !== "review" || workspaceMode !== "review" || captureBusy) return;
     const existingSlot = captureSlots[slotIndex];
     if (!existingSlot || !streamRef.current) {
-      setReviewMessage("Camera is not ready for a retake. Try Retake all to restart the session.");
+      setReviewMessage("Camera is not ready for a retake. Use Retake all to restart the camera session.");
       return;
     }
 
@@ -522,6 +545,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     setCameraError(null);
     setActiveRetakeIndex(slotIndex);
     setActiveAdjustIndex(slotIndex);
+    setWorkspaceMode("capture");
     setReviewMessage(`Retaking photo ${slotIndex + 1}…`);
 
     try {
@@ -535,7 +559,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       });
       window.setTimeout(() => revokePhotoUrl(existingSlot.url), 0);
       emitProductEvent("retake_single", { shot_index: slotIndex + 1, shot_count: preset.shotCount });
-      setReviewMessage(`Photo ${slotIndex + 1} replaced. Its framing was reset; the other photos stayed untouched.`);
+      setReviewMessage(`Photo ${slotIndex + 1} replaced. Its framing reset; every other photo stayed untouched.`);
     } catch {
       setReviewMessage(`Photo ${slotIndex + 1} could not be retaken. Your previous shot is still safe.`);
       emitProductEvent("camera_error", { error_class: "retake_failed" });
@@ -543,6 +567,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       setCountdown(null);
       setActiveRetakeIndex(null);
       setCameraStatus("review");
+      setWorkspaceMode("review");
     }
   }
 
@@ -550,6 +575,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     clearCaptureSlots();
     setCameraError(null);
     setCountdown(null);
+    setWorkspaceMode("capture");
     setCameraStatus(streamRef.current ? "ready" : "idle");
   }
 
@@ -658,7 +684,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const statusCopy = cameraError
     ? cameraErrorMessage(cameraError)
     : cameraStatus === "review"
-      ? `${capturedCount} ${photoNoun(capturedCount)} captured. Adjust framing or retake only the shots you want to improve, then style and share.`
+      ? `${capturedCount} ${photoNoun(capturedCount)} captured. Review framing, then style and share.`
       : cameraStatus === "ready"
         ? `Camera ready. PicToFu will take ${preset.shotCount} ${photoNoun(preset.shotCount)} with a 3-second countdown.`
         : "Enable your camera when you’re ready. Photos stay on this device.";
@@ -667,16 +693,26 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     ? `Retake ${activeRetakeIndex + 1}/${preset.shotCount}`
     : `${Math.min(capturedCount + 1, preset.shotCount)}/${preset.shotCount}`;
 
+  const headerStatus = workspaceMode === "review"
+    ? "Review your photos"
+    : workspaceMode === "style"
+      ? "Style & export"
+      : activeRetakeIndex !== null
+        ? `Retaking photo ${activeRetakeIndex + 1}`
+        : "✨ Ready when you are!";
+
+  const showStyleWorkspace = workspaceMode !== "review";
+
   return (
-    <main className="booth-page">
+    <main className={`booth-page booth-page--${workspaceMode}`}>
       <header className="booth-header">
         <Link href="/" className="booth-back" aria-label="Back to PicToFu home">←</Link>
         <TofuMark compact />
-        <span className="booth-header__status">✨ Ready when you are!</span>
+        <span className="booth-header__status" aria-live="polite">{headerStatus}</span>
         <Link className="booth-close" href="/" aria-label="Close booth">×</Link>
       </header>
 
-      <section className="booth-workspace" aria-label="PicToFu booth workspace">
+      <section className={`booth-workspace booth-workspace--${workspaceMode}`} aria-label="PicToFu booth workspace">
         <div className="booth-camera-card">
           <div className="booth-camera-card__status">
             <span className={`live-dot ${cameraStatus === "ready" ? "is-live" : ""}`} aria-hidden="true" />
@@ -713,98 +749,43 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
         </div>
 
         <aside className="booth-editor-card">
-          <div className="preset-select-row">
-            <label htmlFor="preset">Template</label>
-            <select id="preset" value={presetId} onChange={(event) => selectPreset(event.target.value)} disabled={captureBusy}>
-              {PRESETS.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
-            </select>
-
-            <div className="template-carousel" aria-label="Swipe to change template">
-              <div className="template-carousel__meta">
-                <span>{preset.name}</span>
-                <small>Swipe to explore · {PRESETS.findIndex((item) => item.id === presetId) + 1}/{PRESETS.length}</small>
-              </div>
-              <div className="template-carousel__track" ref={templateTrackRef} onScroll={handleTemplateCarouselScroll}>
-                {PRESETS.map((item) => (
-                  <button
-                    type="button"
-                    className={`template-carousel__card ${item.id === presetId ? "is-selected" : ""}`}
-                    data-preset-id={item.id}
-                    key={item.id}
-                    onClick={() => selectPreset(item.id)}
-                    disabled={captureBusy}
-                    aria-pressed={item.id === presetId}
-                  >
-                    <span className={`template-carousel__preview template-carousel__preview--${item.layoutId} template-carousel__preview--${item.frameId}`} aria-hidden="true">
-                      {Array.from({ length: presetPreviewCellCount(item) }).map((_, index) => <i key={index} />)}
-                    </span>
-                    <span className="template-carousel__copy">
-                      <strong>{item.name}</strong>
-                      <small>{item.shotCount} {item.shotCount === 1 ? "shot" : "shots"} · {item.filterId}</small>
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <div className="template-carousel__dots" aria-label="Choose template">
-                {PRESETS.map((item) => (
-                  <button
-                    type="button"
-                    className={item.id === presetId ? "is-selected" : ""}
-                    key={item.id}
-                    onClick={() => selectPreset(item.id)}
-                    disabled={captureBusy}
-                    aria-label={`Choose ${item.name}`}
-                    aria-pressed={item.id === presetId}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="editor-heading"><span>{capturedCount ? "Your strip" : "Current look"}</span><strong>{preset.name}</strong></div>
-
-          <div className={`result-strip result-strip--${frameId} result-strip--layout-${layoutId}`} aria-label="Photo strip preview">
-            {Array.from({ length: Math.min(preset.shotCount, selectedLayoutTarget) }).map((_, index) => {
-              const slot = captureSlots[index];
-              return (
-                <div className={`result-strip__photo result-strip__photo--${filterId} ${slot ? "has-photo" : ""}`} key={slot?.slotId ?? `slot-${index + 1}`}>
-                  {slot ? <img src={slot.url} alt={`Captured photo ${index + 1}`} style={cropPreviewStyle(slot.crop)} /> : <span aria-hidden="true">{index + 1}</span>}
-                </div>
-              );
-            })}
-            <div className="result-strip__brand">✦ PicToFu ♡</div>
-          </div>
-
-          {capturedCount > 0 && (
-            <section className="capture-review" aria-labelledby="capture-review-title">
-              <div className="capture-review__heading">
+          {workspaceMode === "review" && capturedCount > 0 ? (
+            <section className="review-workspace" aria-labelledby="capture-review-title">
+              <div className="review-workspace__top">
                 <div>
                   <span>Review & Adjust</span>
-                  <h2 id="capture-review-title">Fix one frame, keep the rest</h2>
+                  <h1 id="capture-review-title">Make every frame feel right</h1>
+                  <p>Drag the active photo to reframe it. Your other photos stay untouched.</p>
                 </div>
-                <button type="button" className="capture-review__retake-all" onClick={restartCapture} disabled={captureBusy}>Retake all</button>
+                <button type="button" className="review-workspace__retake-all" onClick={restartCapture} disabled={captureBusy}>Retake all</button>
               </div>
-              <div className="capture-review__grid">
+
+              <div className="review-photo-rail" aria-label="Captured photos">
                 {captureSlots.map((slot, index) => slot ? (
                   <button
                     type="button"
-                    className={`capture-review__shot ${activeAdjustIndex === index ? "is-selected" : ""} ${activeRetakeIndex === index ? "is-active" : ""}`}
+                    className={`review-photo-rail__item ${activeAdjustIndex === index ? "is-selected" : ""}`}
                     key={slot.slotId}
                     onClick={() => selectAdjustSlot(index)}
                     disabled={captureBusy || cameraStatus !== "review"}
-                    aria-label={`Adjust photo ${index + 1}`}
+                    aria-label={`Review photo ${index + 1}`}
                     aria-pressed={activeAdjustIndex === index}
                   >
-                    <span className="capture-review__thumb"><img src={slot.url} alt={`Review photo ${index + 1}`} style={cropPreviewStyle(slot.crop)} /></span>
-                    <span className="capture-review__shot-label"><strong>Photo {index + 1}</strong><span>{activeRetakeIndex === index ? "Retaking…" : activeAdjustIndex === index ? "Selected" : "Adjust"}</span></span>
+                    <span className="review-photo-rail__thumb"><img src={slot.url} alt="" style={cropPreviewStyle(slot.crop)} /></span>
+                    <strong>{index + 1}</strong>
                   </button>
                 ) : null)}
               </div>
 
               {activeAdjustSlot && activeAdjustIndex !== null && (
-                <div className="capture-review__adjust" aria-label={`Adjust photo ${activeAdjustIndex + 1}`}>
+                <div className="review-stage" aria-label={`Adjust photo ${activeAdjustIndex + 1}`}>
+                  <div className="review-stage__meta">
+                    <strong>Photo {activeAdjustIndex + 1} of {capturedCount}</strong>
+                    <span>Drag to reposition</span>
+                  </div>
+
                   <div
-                    className="capture-review__active-photo"
+                    className="capture-review__active-photo review-stage__photo"
                     onPointerDown={handleAdjustPointerDown}
                     onPointerMove={handleAdjustPointerMove}
                     onPointerUp={handleAdjustPointerEnd}
@@ -819,69 +800,150 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
                     <span>Drag to reposition</span>
                   </div>
 
-                  <div className="capture-review__controls">
-                    <label>
-                      <span>Horizontal</span>
-                      <input type="range" min="-1" max="1" step="0.05" value={activeCrop.x} onChange={(event) => updateActiveCrop({ x: Number(event.target.value) })} disabled={captureBusy} />
-                    </label>
-                    <label>
-                      <span>Vertical</span>
-                      <input type="range" min="-1" max="1" step="0.05" value={activeCrop.y} onChange={(event) => updateActiveCrop({ y: Number(event.target.value) })} disabled={captureBusy} />
-                    </label>
-                    <label>
+                  <div className="review-stage__controls">
+                    <label className="review-zoom-control">
                       <span>Zoom <strong>{activeCrop.zoom.toFixed(2)}×</strong></span>
                       <input type="range" min="1" max="2.5" step="0.05" value={activeCrop.zoom} onChange={(event) => updateActiveCrop({ zoom: Number(event.target.value) })} disabled={captureBusy} />
                     </label>
-                    <div className="capture-review__adjust-actions">
-                      <button type="button" onClick={resetActiveCrop} disabled={captureBusy}>Reset framing</button>
-                      <button type="button" className="is-primary" onClick={() => retakeSlot(activeAdjustIndex)} disabled={captureBusy || cameraStatus !== "review"}>Retake photo {activeAdjustIndex + 1}</button>
-                    </div>
+                    <button type="button" className="review-reset" onClick={resetActiveCrop} disabled={captureBusy}>Reset framing</button>
                   </div>
+
+                  <details className="review-advanced">
+                    <summary>More adjustments</summary>
+                    <div className="review-advanced__controls">
+                      <label>
+                        <span>Horizontal</span>
+                        <input type="range" min="-1" max="1" step="0.05" value={activeCrop.x} onChange={(event) => updateActiveCrop({ x: Number(event.target.value) })} disabled={captureBusy} />
+                      </label>
+                      <label>
+                        <span>Vertical</span>
+                        <input type="range" min="-1" max="1" step="0.05" value={activeCrop.y} onChange={(event) => updateActiveCrop({ y: Number(event.target.value) })} disabled={captureBusy} />
+                      </label>
+                    </div>
+                  </details>
                 </div>
               )}
 
-              {reviewMessage && <p className="capture-review__message" aria-live="polite">{reviewMessage}</p>}
-              <p className="capture-review__privacy">Framing is non-destructive and local to each photo. Retaking one slot resets only that slot; every other capture stays untouched on this device.</p>
+              {reviewMessage && <p className="capture-review__message review-workspace__message" aria-live="polite">{reviewMessage}</p>}
+              <p className="capture-review__privacy review-workspace__privacy">Framing is non-destructive and local to each photo. Retaking one frame resets only that frame.</p>
+
+              {activeAdjustIndex !== null && activeAdjustSlot && (
+                <div className="review-workspace__sticky-actions">
+                  <button type="button" className="review-workspace__retake-one" onClick={() => retakeSlot(activeAdjustIndex)} disabled={captureBusy || cameraStatus !== "review"}>Retake photo {activeAdjustIndex + 1}</button>
+                  <button type="button" className="review-workspace__continue" onClick={continueToStyle} disabled={captureBusy}>Looks good <span aria-hidden="true">→</span></button>
+                </div>
+              )}
             </section>
+          ) : (
+            <>
+              {workspaceMode === "style" && capturedCount > 0 && (
+                <div className="style-workspace__topbar">
+                  <button type="button" onClick={returnToReview}>← Review photos</button>
+                  <div><span>Style & Export</span><strong>Turn your captures into a finished strip</strong></div>
+                </div>
+              )}
+
+              <div className="preset-select-row">
+                <label htmlFor="preset">Template</label>
+                <select id="preset" value={presetId} onChange={(event) => selectPreset(event.target.value)} disabled={captureBusy}>
+                  {PRESETS.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
+                </select>
+
+                <div className="template-carousel" aria-label="Swipe to change template">
+                  <div className="template-carousel__meta">
+                    <span>{preset.name}</span>
+                    <small>Swipe to explore · {PRESETS.findIndex((item) => item.id === presetId) + 1}/{PRESETS.length}</small>
+                  </div>
+                  <div className="template-carousel__track" ref={templateTrackRef} onScroll={handleTemplateCarouselScroll}>
+                    {PRESETS.map((item) => (
+                      <button
+                        type="button"
+                        className={`template-carousel__card ${item.id === presetId ? "is-selected" : ""}`}
+                        data-preset-id={item.id}
+                        key={item.id}
+                        onClick={() => selectPreset(item.id)}
+                        disabled={captureBusy}
+                        aria-pressed={item.id === presetId}
+                      >
+                        <span className={`template-carousel__preview template-carousel__preview--${item.layoutId} template-carousel__preview--${item.frameId}`} aria-hidden="true">
+                          {Array.from({ length: presetPreviewCellCount(item) }).map((_, index) => <i key={index} />)}
+                        </span>
+                        <span className="template-carousel__copy">
+                          <strong>{item.name}</strong>
+                          <small>{item.shotCount} {item.shotCount === 1 ? "shot" : "shots"} · {item.filterId}</small>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="template-carousel__dots" aria-label="Choose template">
+                    {PRESETS.map((item) => (
+                      <button
+                        type="button"
+                        className={item.id === presetId ? "is-selected" : ""}
+                        key={item.id}
+                        onClick={() => selectPreset(item.id)}
+                        disabled={captureBusy}
+                        aria-label={`Choose ${item.name}`}
+                        aria-pressed={item.id === presetId}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="editor-heading"><span>{capturedCount ? "Your strip" : "Current look"}</span><strong>{preset.name}</strong></div>
+
+              <div className={`result-strip result-strip--${frameId} result-strip--layout-${layoutId}`} aria-label="Photo strip preview">
+                {Array.from({ length: Math.min(preset.shotCount, selectedLayoutTarget) }).map((_, index) => {
+                  const slot = captureSlots[index];
+                  return (
+                    <div className={`result-strip__photo result-strip__photo--${filterId} ${slot ? "has-photo" : ""}`} key={slot?.slotId ?? `slot-${index + 1}`}>
+                      {slot ? <img src={slot.url} alt={`Captured photo ${index + 1}`} style={cropPreviewStyle(slot.crop)} /> : <span aria-hidden="true">{index + 1}</span>}
+                    </div>
+                  );
+                })}
+                <div className="result-strip__brand">✦ PicToFu ♡</div>
+              </div>
+
+              {capturedCount > 0 && <div className="captured-summary"><strong>{capturedCount} {photoNoun(capturedCount)} captured</strong><span>Stored only in this browser session.</span></div>}
+
+              <div className="editor-control-group">
+                <h2>Layouts</h2>
+                <div className="choice-grid">
+                  {LAYOUTS.map((layout) => {
+                    const unavailable = shotTargetForLayout(layout.id) > preset.shotCount;
+                    return (
+                      <button className={layout.id === layoutId ? "is-selected" : ""} type="button" key={layout.id} onClick={() => chooseLayout(layout.id)} disabled={captureBusy || unavailable} title={unavailable ? `This template captures ${preset.shotCount} ${photoNoun(preset.shotCount)}` : undefined}>
+                        <span className={`layout-icon layout-icon--${layout.id}`} aria-hidden="true" />{layout.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="editor-control-group">
+                <h2>Filters</h2>
+                <div className="filter-choice-row">
+                  {FILTERS.map((filter) => <button className={filter.id === filterId ? "is-selected" : ""} type="button" key={filter.id} onClick={() => chooseFilter(filter.id)} disabled={captureBusy}><span className={`filter-dot filter-dot--${filter.id}`} aria-hidden="true" />{filter.label}</button>)}
+                </div>
+              </div>
+
+              <div className="editor-control-group">
+                <h2>Frames</h2>
+                <div className="frame-choice-row">
+                  {FRAMES.map((frame) => <button className={`frame-choice frame-choice--${frame.id} ${frame.id === frameId ? "is-selected" : ""}`} type="button" key={frame.id} onClick={() => chooseFrame(frame.id)} disabled={captureBusy}><span aria-hidden="true" />{frame.label}</button>)}
+                </div>
+              </div>
+
+              <div className="export-actions">
+                <button className="download-shell-button" type="button" disabled={!exportReady} onClick={downloadStrip}>{exportStatus === "working" ? "Creating strip…" : "↓ Download PNG"}</button>
+                <button className="share-strip-button" type="button" disabled={!exportReady} onClick={shareStrip}>Share ✦</button>
+              </div>
+              {capturedCount > 0 && !exportReady && <p className="export-hint">This look needs more photos than the current capture set. Your existing photos are still safe.</p>}
+              {exportMessage && <p className={`export-message ${exportStatus === "error" ? "is-error" : ""}`} aria-live="polite">{exportMessage}</p>}
+              <p className="editor-footnote">PNG is composed locally. No account. No cloud gallery.</p>
+            </>
           )}
-
-          {capturedCount > 0 && <div className="captured-summary"><strong>{capturedCount} {photoNoun(capturedCount)} captured</strong><span>Stored only in this browser session.</span></div>}
-
-          <div className="editor-control-group">
-            <h2>Layouts</h2>
-            <div className="choice-grid">
-              {LAYOUTS.map((layout) => {
-                const unavailable = shotTargetForLayout(layout.id) > preset.shotCount;
-                return (
-                  <button className={layout.id === layoutId ? "is-selected" : ""} type="button" key={layout.id} onClick={() => chooseLayout(layout.id)} disabled={captureBusy || unavailable} title={unavailable ? `This template captures ${preset.shotCount} ${photoNoun(preset.shotCount)}` : undefined}>
-                    <span className={`layout-icon layout-icon--${layout.id}`} aria-hidden="true" />{layout.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="editor-control-group">
-            <h2>Filters</h2>
-            <div className="filter-choice-row">
-              {FILTERS.map((filter) => <button className={filter.id === filterId ? "is-selected" : ""} type="button" key={filter.id} onClick={() => chooseFilter(filter.id)} disabled={captureBusy}><span className={`filter-dot filter-dot--${filter.id}`} aria-hidden="true" />{filter.label}</button>)}
-            </div>
-          </div>
-
-          <div className="editor-control-group">
-            <h2>Frames</h2>
-            <div className="frame-choice-row">
-              {FRAMES.map((frame) => <button className={`frame-choice frame-choice--${frame.id} ${frame.id === frameId ? "is-selected" : ""}`} type="button" key={frame.id} onClick={() => chooseFrame(frame.id)} disabled={captureBusy}><span aria-hidden="true" />{frame.label}</button>)}
-            </div>
-          </div>
-
-          <div className="export-actions">
-            <button className="download-shell-button" type="button" disabled={!exportReady} onClick={downloadStrip}>{exportStatus === "working" ? "Creating strip…" : "↓ Download PNG"}</button>
-            <button className="share-strip-button" type="button" disabled={!exportReady} onClick={shareStrip}>Share ✦</button>
-          </div>
-          {capturedCount > 0 && !exportReady && <p className="export-hint">Choose a layout that fits the captured set.</p>}
-          {exportMessage && <p className={`export-message ${exportStatus === "error" ? "is-error" : ""}`} aria-live="polite">{exportMessage}</p>}
-          <p className="editor-footnote">PNG is composed locally. No account. No cloud gallery.</p>
         </aside>
       </section>
 
