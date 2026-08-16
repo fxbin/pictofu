@@ -1,0 +1,20 @@
+issue: 16
+mode: soft_orchestration_only
+objective: >
+  Ship approved, optimized preset-specific human demo assets into PicTofu without
+  increasing first-load cost or implying capabilities the browser product does not have.
+scope:
+  - add optimized WebP derivatives only; never ship source-generation PNGs
+  - render approved preset demos on Home template cards and matching SEO experience pages
+  - use next/image responsive delivery and lazy loading below the fold
+  - keep fallback placeholders for presets whose approved binary is not yet safely available
+  - preserve global-audience diversity without using ethnicity as a preset selector
+non_goals:
+  - no AI generation at runtime
+  - no account or media upload path
+  - no new filter/frame capability
+  - no Production deployment in this slice
+verification:
+  - verify binary hashes after GitHub upload
+  - Node 24 install/lint/typecheck/build
+  - inspect rendered markup semantics and image loading attributes
