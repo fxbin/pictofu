@@ -88,6 +88,7 @@ export function SiteFooter() {
           <Link href="/online-photobooth" prefetch={false}>Photobooth</Link>
           <Link href="/photo-strip-maker" prefetch={false}>Photo strips</Link>
           <Link href="/about" prefetch={false}>About</Link>
+          <Link href="/contact" prefetch={false}>Contact</Link>
           <Link href="/privacy" prefetch={false}>Privacy</Link>
         </nav>
         <p className="pictofu-site-footer__note">Photos stay on your device in the current PicToFu MVP.</p>
