@@ -19,6 +19,15 @@ export type PresetDemoAsset = {
  * repository and deliveryStatus is promoted to `ready` in the same change.
  */
 export const PRESET_DEMO_ASSETS = {
+  "classic-booth": {
+    presetId: "classic-booth",
+    reviewStatus: "approved",
+    deliveryStatus: "ready",
+    src: "/demo/presets/classic-booth.webp",
+    width: 300,
+    height: 800,
+    alt: "Young woman posing in four natural portraits in a clean cream classic photo booth strip.",
+  },
   "korean-date": {
     presetId: "korean-date",
     reviewStatus: "approved",
@@ -28,23 +37,23 @@ export const PRESET_DEMO_ASSETS = {
     height: 857,
     alt: "Young woman posing in a soft pink Korean-style four-photo strip.",
   },
-  "y2k-summer": {
-    presetId: "y2k-summer",
-    reviewStatus: "approved",
-    deliveryStatus: "ready",
-    src: "/demo/presets/y2k-summer.webp",
-    width: 300,
-    height: 300,
-    alt: "Two friends posing in a colorful Y2K-inspired four-photo grid.",
-  },
   "couple-date": {
     presetId: "couple-date",
     reviewStatus: "approved",
     deliveryStatus: "ready",
     src: "/demo/presets/couple-date.webp",
     width: 300,
-    height: 300,
-    alt: "Couple sharing playful and affectionate poses in a warm four-photo grid.",
+    height: 800,
+    alt: "Couple sharing four playful and affectionate poses in a soft pink vertical photo strip.",
+  },
+  "y2k-summer": {
+    presetId: "y2k-summer",
+    reviewStatus: "approved",
+    deliveryStatus: "ready",
+    src: "/demo/presets/y2k-summer.webp",
+    width: 300,
+    height: 800,
+    alt: "Two friends posing in four playful Y2K-inspired portraits in a lilac vertical photo strip.",
   },
   "vintage-film": {
     presetId: "vintage-film",
@@ -54,6 +63,24 @@ export const PRESET_DEMO_ASSETS = {
     width: 300,
     height: 857,
     alt: "Young man shown in a warm faded vintage four-frame photo strip.",
+  },
+  "polaroid-moment": {
+    presetId: "polaroid-moment",
+    reviewStatus: "approved",
+    deliveryStatus: "ready",
+    src: "/demo/presets/polaroid-moment.webp",
+    width: 300,
+    height: 375,
+    alt: "Young woman smiling in a warm cream Polaroid-style portrait frame.",
+  },
+  "best-friends": {
+    presetId: "best-friends",
+    reviewStatus: "approved",
+    deliveryStatus: "ready",
+    src: "/demo/presets/best-friends.webp",
+    width: 300,
+    height: 375,
+    alt: "Two best friends sharing playful poses in a clean four-photo grid.",
   },
   graduation: {
     presetId: "graduation",

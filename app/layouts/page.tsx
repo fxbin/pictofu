@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { BrandLink } from "@/components/brand";
+import { PresetDemoMedia } from "@/components/preset-demo-media";
 import { SiteFooter } from "@/components/site-footer";
+import { getReadyPresetDemoAsset } from "@/lib/demo-assets";
 import { LAYOUT_DEMO_ASSETS, LAYOUT_DEMO_TOTAL_BYTES } from "@/lib/layout-demo-assets";
 import { PRESETS } from "@/lib/presets";
 import styles from "./layouts.module.css";
@@ -125,10 +127,21 @@ export default function LayoutsPage() {
         <div className={styles.grid}>
           {PRESETS.map((preset) => {
             const geometry = GEOMETRY_COPY[preset.layoutId];
+            const demoAsset = getReadyPresetDemoAsset(preset.id);
+
             return (
               <article className={`${styles.card} ${styles[`accent_${preset.accent}`]}`} key={preset.id}>
                 <div className={styles.cardPreview}>
-                  <GeometryPreview layout={preset.layoutId} shotCount={preset.shotCount} />
+                  {demoAsset ? (
+                    <PresetDemoMedia
+                      presetId={preset.id}
+                      sizes="(max-width: 680px) 58vw, 208px"
+                      className={styles.presetDemoImage}
+                      style={{ width: "auto", height: "208px", maxWidth: "100%" }}
+                    />
+                  ) : (
+                    <GeometryPreview layout={preset.layoutId} shotCount={preset.shotCount} />
+                  )}
                   <span className={styles.shotBadge}>
                     {preset.shotCount} {preset.shotCount === 1 ? "shot" : "shots"}
                   </span>
