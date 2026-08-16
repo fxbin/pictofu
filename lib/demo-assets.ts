@@ -34,7 +34,7 @@ export const PRESET_DEMO_ASSETS = {
     deliveryStatus: "pending",
     src: "/demo/presets/y2k-summer.webp",
     width: 300,
-    height: 857,
+    height: 300,
     alt: "Friends making playful flash-lit poses in a Y2K Summer photo strip.",
   },
   "couple-date": {
@@ -43,7 +43,7 @@ export const PRESET_DEMO_ASSETS = {
     deliveryStatus: "pending",
     src: "/demo/presets/couple-date.webp",
     width: 300,
-    height: 857,
+    height: 300,
     alt: "Couple sharing four relaxed poses in a blush Couple Date photo strip.",
   },
   "vintage-film": {
@@ -61,7 +61,7 @@ export const PRESET_DEMO_ASSETS = {
     deliveryStatus: "pending",
     src: "/demo/presets/graduation.webp",
     width: 300,
-    height: 652,
+    height: 375,
     alt: "Graduate celebrating across a warm three-photo keepsake strip.",
   },
 } satisfies Record<string, PresetDemoAsset>;
