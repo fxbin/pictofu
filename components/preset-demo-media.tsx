@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Image from "next/image";
 import { getReadyPresetDemoAsset } from "@/lib/demo-assets";
 
@@ -7,6 +8,7 @@ type PresetDemoMediaProps = {
   sizes: string;
   priority?: boolean;
   fit?: "contain" | "cover";
+  style?: CSSProperties;
 };
 
 /**
@@ -20,13 +22,14 @@ export function PresetDemoMedia({
   sizes,
   priority = false,
   fit = "contain",
+  style,
 }: PresetDemoMediaProps) {
   const asset = getReadyPresetDemoAsset(presetId);
   if (!asset) return null;
 
-  const imageStyle = fit === "cover"
-    ? { width: "100%", height: "100%", objectFit: "cover" as const, display: "block" }
-    : { width: "100%", height: "auto", objectFit: "contain" as const, display: "block" };
+  const imageStyle: CSSProperties = fit === "cover"
+    ? { width: "100%", height: "100%", objectFit: "cover", display: "block" }
+    : { width: "100%", height: "auto", objectFit: "contain", display: "block" };
 
   return (
     <Image
@@ -37,7 +40,7 @@ export function PresetDemoMedia({
       sizes={sizes}
       priority={priority}
       className={className}
-      style={imageStyle}
+      style={{ ...imageStyle, ...style }}
     />
   );
 }
