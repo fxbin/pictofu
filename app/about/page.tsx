@@ -169,6 +169,10 @@ export default function AboutPage() {
             <li>For sharing, use the native share sheet when offered; otherwise save the finished image and share it from your device.</li>
           </ul>
         </div>
+        <div className={styles.heroActions}>
+          <Link className={styles.secondaryAction} href="/contact">Contact PicToFu</Link>
+          <Link className={styles.secondaryAction} href="/privacy">Read Privacy Policy</Link>
+        </div>
       </section>
 
       <section className={styles.faq} aria-labelledby="faq-title">
