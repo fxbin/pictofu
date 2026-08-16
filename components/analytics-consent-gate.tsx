@@ -86,8 +86,8 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
     };
 
     if (existing?.dataset.loaded === "true") {
-      setRuntimeReady(true);
-      return;
+      const timer = window.setTimeout(markReady, 0);
+      return () => window.clearTimeout(timer);
     }
 
     if (existing) {
