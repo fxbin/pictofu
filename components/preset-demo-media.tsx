@@ -11,6 +11,12 @@ type PresetDemoMediaProps = {
   style?: CSSProperties;
 };
 
+const TREATMENT_STYLES = {
+  "warm-faded-film": {
+    filter: "sepia(0.28) saturate(0.82) contrast(0.94) brightness(0.98)",
+  },
+} satisfies Record<string, CSSProperties>;
+
 /**
  * Fail-closed renderer for static preset marketing media.
  * Pending assets render nothing, so a missing binary can never become a public
@@ -31,6 +37,10 @@ export function PresetDemoMedia({
     ? { width: "100%", height: "100%", objectFit: "cover", display: "block" }
     : { width: "100%", height: "auto", objectFit: "contain", display: "block" };
 
+  const treatmentStyle = asset.treatment
+    ? TREATMENT_STYLES[asset.treatment]
+    : undefined;
+
   return (
     <Image
       src={asset.src}
@@ -40,7 +50,7 @@ export function PresetDemoMedia({
       sizes={sizes}
       priority={priority}
       className={className}
-      style={{ ...imageStyle, ...style }}
+      style={{ ...imageStyle, ...treatmentStyle, ...style }}
     />
   );
 }
