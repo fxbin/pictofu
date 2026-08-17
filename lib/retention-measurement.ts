@@ -154,6 +154,13 @@ async function sendBucket(state: RetentionState, bucket: RetentionBucket) {
   return writeState(state);
 }
 
+async function sendDueBuckets(state: RetentionState) {
+  for (const bucket of dueBuckets(state)) {
+    const persisted = await sendBucket(state, bucket);
+    if (!persisted) return;
+  }
+}
+
 export function recordRetentionVisit() {
   if (typeof window === "undefined") return;
 
@@ -162,11 +169,9 @@ export function recordRetentionVisit() {
   const state = readState() ?? createState();
   if (!state) return;
 
-  for (const bucket of dueBuckets(state)) {
-    void sendBucket(state, bucket).catch(() => {
-      // Retention measurement is best-effort and must never block the photobooth.
-    });
-  }
+  void sendDueBuckets(state).catch(() => {
+    // Retention measurement is best-effort and must never block the photobooth.
+  });
 }
 
 export function clearRetentionMeasurement() {
