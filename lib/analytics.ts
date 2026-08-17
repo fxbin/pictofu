@@ -3,6 +3,7 @@ import {
   sanitizeSafeEventProperties,
   type SafeEventProperties,
 } from "@/lib/analytics-safety";
+import { countGrowthStage } from "@/lib/growth-measurement";
 
 export type ProductEventName =
   | "landing_view"
@@ -142,6 +143,7 @@ function buildEventDetail(name: ProductEventName, properties: SafeEventPropertie
 }
 
 function dispatchEventDetail(detail: ReturnType<typeof buildEventDetail>) {
+  countGrowthStage(detail);
   window.dispatchEvent(new CustomEvent("pictofu:analytics", { detail }));
 
   if (process.env.NODE_ENV === "development") {

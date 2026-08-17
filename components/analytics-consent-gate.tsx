@@ -137,20 +137,20 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
       )}
 
       {showPanel && (
-        <section className={styles.banner} aria-label="Analytics privacy settings">
+        <section className={styles.banner} aria-label="Google Analytics privacy settings">
           <div className={styles.titleRow}>
-            <strong>Help improve PicToFu?</strong>
+            <strong>Optional Google Analytics</strong>
             <span className={styles.status}>{consentLabel(consent)}</span>
           </div>
           <p className={styles.copy}>
-            Analytics helps us understand visits and completed photo strips. Google Analytics only loads after you allow it, and PicToFu never sends your photos in analytics events.
+            PicToFu uses privacy-minimized traffic and daily funnel counters without photo media or user/session identifiers in the growth store. Google Analytics only loads after you allow it.
           </p>
           <div className={styles.actions}>
             <button className={styles.primary} type="button" onClick={allowAnalytics}>
-              {consent === "granted" ? "Keep analytics" : "Allow analytics"}
+              {consent === "granted" ? "Keep Google Analytics" : "Allow Google Analytics"}
             </button>
             <button className={styles.secondary} type="button" onClick={declineAnalytics}>
-              {consent === "granted" ? "Turn off analytics" : consent === "denied" ? "Keep off" : "No thanks"}
+              {consent === "granted" ? "Turn off Google Analytics" : consent === "denied" ? "Keep off" : "No thanks"}
             </button>
             <Link className={styles.privacyLink} href="/privacy" prefetch={false}>Privacy</Link>
           </div>

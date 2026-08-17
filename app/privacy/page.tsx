@@ -74,46 +74,54 @@ export default function PrivacyPage() {
         <section>
           <h2>3. Information we may process</h2>
           <p>
-            PicToFu may process limited technical and usage information needed to operate, secure, and understand the site. Depending on which analytics services are enabled, this can include page paths, timestamps, referrer information, approximate location, browser type, operating system, device class, and product interaction events such as starting the booth or completing an export.
+            PicToFu may process limited technical and usage information needed to operate, secure, and understand the site. Depending on the measurement service, this can include page paths, bounded acquisition labels, device class, referrer category, and product interaction stages such as starting the booth or completing an export.
           </p>
           <p>
-            Product analytics are designed to use small, structured event fields. They must not include your photo content, camera frames, exported image bytes, Blob URLs, base64 data, or free-form text taken from your images.
+            Product measurement uses small, structured fields. It must not include your photo content, camera frames, exported image bytes, Blob URLs, base64 data, or free-form text taken from your images.
           </p>
         </section>
 
         <section>
-          <h2>4. Analytics</h2>
+          <h2>4. Analytics and product measurement</h2>
           <h3>Vercel Web Analytics</h3>
           <p>
-            PicToFu may use Vercel Web Analytics for aggregated traffic measurement, such as page views, referrers, general location, browser, operating system, and device information. Vercel describes its Web Analytics product as privacy-focused, cookie-free for visitor analytics, and based on anonymous aggregated data rather than persistent cross-site identifiers.
+            PicToFu uses Vercel Web Analytics for aggregated website traffic measurement, such as page visits and general traffic context provided by the hosting analytics service. This is separate from the PicToFu product-funnel counters described below.
+          </p>
+
+          <h3>Privacy-minimized product funnel counters</h3>
+          <p>
+            PicToFu records privacy-minimized daily funnel counters so we can understand whether visitors reach stages such as landing, opening the booth, granting camera access, completing capture, exporting, downloading, or sharing. These counters are aggregated by bounded dimensions such as page path, preset, device class, referrer category, and campaign labels such as UTM source/content.
+          </p>
+          <p>
+            The aggregate growth store does not store a PicToFu user ID, analytics session ID, IP address, photo media, or free-form text. The browser uses session storage only to avoid counting the same funnel stage repeatedly during one browser session; that session marker is not included in the aggregate payload. PicToFu&apos;s current aggregate counter infrastructure is hosted with Supabase.
           </p>
 
           <h3>Google Analytics 4</h3>
           <p>
-            Google Analytics 4 (GA4) is optional and is not required for the photobooth to function. When GA4 is configured, PicToFu uses a conservative analytics-consent gate: the Google Analytics tag is not loaded until you choose <strong>Allow analytics</strong>. If you decline, the core photobooth remains usable without GA4.
+            Google Analytics 4 (GA4) is optional and is not required for the photobooth to function. When GA4 is configured, PicToFu uses a conservative analytics-consent gate: the Google Analytics tag is not loaded until you choose <strong>Allow Google Analytics</strong>. If you decline, the core photobooth and the privacy-minimized aggregate funnel counters remain usable without GA4.
           </p>
           <p>
-            After analytics consent is granted, GA4 can collect usage information such as user and session statistics, approximate geolocation, browser/device information, page views, and the structured product events described above. Google Analytics can use a first-party identifier such as the <code>_ga</code> cookie when analytics storage is allowed. Advertising storage, ad personalization, and remarketing remain disabled in the current setup.
+            After Google Analytics consent is granted, GA4 can collect usage information such as user and session statistics, approximate geolocation, browser/device information, page views, and structured product events. Google Analytics can use a first-party identifier such as the <code>_ga</code> cookie when analytics storage is allowed. Advertising storage, ad personalization, and remarketing remain disabled in the current setup.
           </p>
           <p>
-            You can reopen PicToFu&apos;s Privacy settings and change the analytics choice. If a previously granted choice is revoked, PicToFu stores the denied state and reloads the page so the next page lifecycle starts without loading the Google Analytics tag.
+            You can reopen PicToFu&apos;s Privacy settings and change the Google Analytics choice. If a previously granted choice is revoked, PicToFu stores the denied state and reloads the page so the next page lifecycle starts without loading the Google Analytics tag.
           </p>
         </section>
 
         <section>
           <h2>5. Cookies and local browser storage</h2>
           <p>
-            The core PicToFu booth does not require an account cookie or a cloud photo-session cookie. When GA4 is configured, PicToFu stores your analytics-consent choice in first-party browser storage under a small preference key so it can be remembered on later visits. Optional analytics providers may use browser storage or first-party cookies only according to their enabled configuration and the consent state that applies.
+            The core PicToFu booth does not require an account cookie or a cloud photo-session cookie. When GA4 is configured, PicToFu stores your Google Analytics consent choice in first-party browser storage under a small preference key so it can be remembered on later visits. The browser-local acquisition context and one-per-session growth-stage markers are kept in session storage and contain no photo media; the session identifier used by optional analytics is not sent to the aggregate growth counter.
           </p>
         </section>
 
         <section>
           <h2>6. Third-party infrastructure</h2>
           <p>
-            PicToFu uses third-party infrastructure to deliver the website. Vercel hosts and serves the application and may also provide privacy-focused traffic analytics when enabled. Google Analytics may provide optional product and acquisition measurement after the analytics-consent gate allows it. Those providers process technical information under their own terms and privacy documentation.
+            PicToFu uses third-party infrastructure to deliver and understand the website. Vercel hosts and serves the application and may provide aggregated traffic analytics. Supabase hosts the privacy-minimized daily product-funnel counters. Google Analytics may provide additional optional product and acquisition measurement only after the Google Analytics consent gate allows it. Those providers process limited technical information under their own terms and privacy documentation.
           </p>
           <p>
-            PicToFu does not authorize analytics providers to receive captured photo bytes as part of the current analytics contract.
+            PicToFu does not authorize these measurement services to receive captured photo bytes as part of the current analytics contract.
           </p>
         </section>
 
@@ -123,7 +131,7 @@ export default function PrivacyPage() {
             PicToFu does not maintain a server-side library of your captured photos in the current service. Temporary browser objects used during a booth session are intended to disappear when the page/session is cleared, while files you choose to download remain under your control on your device.
           </p>
           <p>
-            Aggregated analytics data, when enabled, is retained according to the configured analytics provider and PicToFu&apos;s account settings with that provider. PicToFu does not use analytics retention to reconstruct or store your photo content.
+            The PicToFu growth store retains daily aggregate counts rather than user/session event histories. Other aggregated analytics data, when enabled, is retained according to the configured provider and PicToFu&apos;s account settings with that provider. PicToFu does not use analytics retention to reconstruct or store your photo content.
           </p>
         </section>
 
@@ -140,7 +148,7 @@ export default function PrivacyPage() {
             Depending on where you live, privacy law may give you rights concerning personal information, which can include access, correction, deletion, restriction, objection, portability, or withdrawal of consent. PicToFu currently has no user account or cloud photo library, so many requests involving photos can be resolved directly by clearing the browser session or deleting files you saved to your own device.
           </p>
           <p>
-            Where GA4 is configured, you can reopen the visible Privacy settings control to allow, decline, or withdraw analytics consent. The preference is stored in your browser rather than in a PicToFu user account.
+            Where GA4 is configured, you can reopen the visible Privacy settings control to allow, decline, or withdraw Google Analytics consent. The preference is stored in your browser rather than in a PicToFu user account.
           </p>
         </section>
 

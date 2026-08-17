@@ -7,12 +7,8 @@ declare global {
   interface Window {
     dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
-    va?: (...args: unknown[]) => void;
   }
 }
-
-const VERCEL_CUSTOM_EVENTS_ENABLED =
-  process.env.NEXT_PUBLIC_VERCEL_CUSTOM_EVENTS_ENABLED === "true";
 
 const LANDING_PRESET_BY_PATH: Record<string, string> = {
   "/": "classic-booth",
@@ -52,42 +48,23 @@ function acquisitionParameters() {
   };
 }
 
-function forwardToVercel(detail: Record<string, unknown>) {
-  if (!VERCEL_CUSTOM_EVENTS_ENABLED) return;
-
-  const eventName = detail.event_name;
-  if (typeof eventName !== "string" || eventName === "web_vital") return;
-
-  const safeParameters = Object.fromEntries(
-    Object.entries(detail).filter(([key, value]) => {
-      if (key === "event_name" || key === "session_id" || key === "timestamp") return false;
-      return typeof value === "string" || typeof value === "number" || typeof value === "boolean";
-    }),
-  ) as Record<string, string | number | boolean>;
-
-  window.va?.("event", { name: eventName, data: safeParameters });
-}
-
 export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
   const lastLandingPath = useRef<string | null>(null);
 
   useEffect(() => {
-    function forwardToProviders(event: Event) {
+    function forwardToGoogle(event: Event) {
       if (!(event instanceof CustomEvent)) return;
       const detail = event.detail as Record<string, unknown>;
       const eventName = detail.event_name;
-      if (typeof eventName !== "string") return;
+      if (typeof eventName !== "string" || !enabled || !window.gtag) return;
 
-      forwardToVercel(detail);
-
-      if (!enabled || !window.gtag) return;
       const { event_name: _eventName, ...parameters } = detail;
       void _eventName;
       window.gtag("event", eventName, parameters);
     }
 
-    window.addEventListener("pictofu:analytics", forwardToProviders);
-    return () => window.removeEventListener("pictofu:analytics", forwardToProviders);
+    window.addEventListener("pictofu:analytics", forwardToGoogle);
+    return () => window.removeEventListener("pictofu:analytics", forwardToGoogle);
   }, [enabled]);
 
   useEffect(() => {
