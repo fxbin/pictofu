@@ -11,6 +11,7 @@ const layouts = read("app/layouts/page.tsx");
 const seoExperience = read("components/seo-experience-page.tsx");
 const about = read("app/about/page.tsx");
 const boothPage = read("app/booth/page.tsx");
+const boothClient = read("app/booth/booth-client.tsx");
 const privacy = read("app/privacy/page.tsx");
 const footer = read("components/site-footer.tsx");
 const seoPages = read("lib/seo-pages.ts");
@@ -84,4 +85,53 @@ for (const [file, source] of Object.entries(publicCopyFiles)) {
   assert.ok(!/\bMVP\b/i.test(source), `${file} must not present PicToFu to users as an unfinished MVP.`);
 }
 
-console.log("P1 product truth contracts passed.");
+assert.ok(
+  boothClient.includes('className="style-progressive"'),
+  "Post-capture Style mode must expose the progressive export surface.",
+);
+assert.ok(
+  boothClient.includes('<details className="style-disclosure">') &&
+    boothClient.includes('<details className="style-disclosure style-disclosure--more">'),
+  "Look customization and advanced layout/photo controls must be collapsed behind native disclosures.",
+);
+assert.ok(
+  boothClient.includes("Share or download this strip") &&
+    boothClient.includes("You can export the current result without changing anything else."),
+  "The default post-capture state must make export feel complete without mandatory editing.",
+);
+assert.ok(
+  boothClient.includes("Adjust crop or retake in Review photos →") &&
+    boothClient.includes("onClick={returnToReview}"),
+  "Crop and retake must remain reachable from the advanced escape hatch.",
+);
+assert.ok(
+  boothClient.includes('!(workspaceMode === "style" && capturedCount > 0) && templateControls'),
+  "Pre-capture template selection must remain visible; progressive disclosure only applies after capture.",
+);
+
+const progressiveStart = boothClient.indexOf('className="style-progressive"');
+const progressiveSource = boothClient.slice(progressiveStart);
+assert.ok(progressiveStart >= 0, "Progressive Style section must exist.");
+assert.ok(
+  progressiveSource.indexOf("{exportControls}") >= 0 &&
+    progressiveSource.indexOf("{exportControls}") < progressiveSource.indexOf('className="style-disclosure"'),
+  "Export actions must appear before optional customization in post-capture Style mode.",
+);
+
+for (const invariant of [
+  "async function retakeSlot",
+  "function choosePhotoSelection",
+  "async function createStrip",
+  "composePhotoStrip({",
+  "async function shareStrip",
+  "async function downloadStrip",
+]) {
+  assert.ok(boothClient.includes(invariant), `Existing Booth capability must remain present: ${invariant}`);
+}
+
+assert.ok(
+  boothPage.includes('import "./progressive-disclosure.css"'),
+  "Booth page must load the progressive disclosure stylesheet.",
+);
+
+console.log("P1 product truth and progressive disclosure contracts passed.");

@@ -6,6 +6,7 @@ import "./camera.css";
 import "./export.css";
 import "./filter-picker.css";
 import "./workspace-modes.css";
+import "./progressive-disclosure.css";
 import "./mobile-viewport.css";
 import { getPreset } from "@/lib/presets";
 
