@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BrandLink } from "@/components/brand";
 import { SiteFooter } from "@/components/site-footer";
+import { FILTER_STYLES } from "@/lib/filter-styles";
+import { FRAME_STYLES } from "@/lib/frame-styles";
 import styles from "./about.module.css";
 
 export const metadata: Metadata = {
@@ -19,6 +21,9 @@ export const metadata: Metadata = {
   },
 };
 
+const FILTER_LABELS = FILTER_STYLES.map((filter) => filter.label).join(" · ");
+const FRAME_LABELS = FRAME_STYLES.map((frame) => frame.label).join(" · ");
+
 const FAQ = [
   {
     question: "What is PicToFu?",
@@ -28,7 +33,7 @@ const FAQ = [
   {
     question: "Are my photos uploaded to PicToFu?",
     answer:
-      "In the current PicToFu MVP, captured camera frames and the composed photo strip are processed in your browser. PicToFu does not maintain a cloud photo gallery or account-based photo history.",
+      "Captured camera frames and the composed photo strip are processed in your browser. PicToFu does not maintain a cloud photo gallery or account-based photo history.",
   },
   {
     question: "Does PicToFu work on iPhone, Android, and desktop?",
@@ -43,7 +48,7 @@ const FAQ = [
   {
     question: "Which layouts, filters, and frames are available?",
     answer:
-      "The current preset system supports four-cut strips, three-cut strips, a 2×2 grid, and a Polaroid-style layout, with Original, B&W, Warm, Vintage, and Y2K filters plus cream, pink, lilac, and mint frame themes.",
+      `PicToFu currently supports four-cut strips, three-cut strips, a 2×2 grid, and a Polaroid-style layout; ${FILTER_STYLES.length} filters (${FILTER_LABELS}); and ${FRAME_STYLES.length} frames (${FRAME_LABELS}).`,
   },
   {
     question: "Can I retake only one photo?",
@@ -104,7 +109,7 @@ export default function AboutPage() {
         <article>
           <span aria-hidden="true">♡</span>
           <h2>Private by design</h2>
-          <p>The current MVP keeps captured photos and the composed strip in your browser rather than a PicToFu cloud gallery.</p>
+          <p>Captured photos and the composed strip stay in your browser rather than a PicToFu cloud photo gallery.</p>
         </article>
         <article>
           <span aria-hidden="true">⇩</span>
@@ -129,7 +134,7 @@ export default function AboutPage() {
 
       <section className={styles.capabilities} aria-labelledby="capabilities-title">
         <div className={styles.sectionHeading}>
-          <p>Current MVP</p>
+          <p>Available now</p>
           <h2 id="capabilities-title">What you can make today</h2>
         </div>
         <div className={styles.capabilityGrid}>
@@ -138,12 +143,12 @@ export default function AboutPage() {
             <p>1×4 strip · 1×3 strip · 2×2 grid · Polaroid-style</p>
           </article>
           <article>
-            <h3>Filters</h3>
-            <p>Original · B&W · Warm · Vintage · Y2K</p>
+            <h3>Filters · {FILTER_STYLES.length}</h3>
+            <p>{FILTER_LABELS}</p>
           </article>
           <article>
-            <h3>Frames</h3>
-            <p>Cream · Pink · Lilac · Mint</p>
+            <h3>Frames · {FRAME_STYLES.length}</h3>
+            <p>{FRAME_LABELS}</p>
           </article>
           <article>
             <h3>Review</h3>
