@@ -85,7 +85,10 @@ export default function PrivacyPage() {
           <h2>4. Analytics</h2>
           <h3>Vercel Web Analytics</h3>
           <p>
-            PicToFu may use Vercel Web Analytics for aggregated traffic measurement, such as page views, referrers, general location, browser, operating system, and device information. Vercel describes its Web Analytics product as privacy-focused, cookie-free for visitor analytics, and based on anonymous aggregated data rather than persistent cross-site identifiers.
+            PicToFu uses Vercel Web Analytics for aggregated traffic measurement and bounded product-interaction measurement. This can include page views, referrers, general location, browser, operating system, device information, and structured events such as starting the booth, completing an export, or choosing to share a finished strip. PicToFu excludes captured photo content, camera frames, Blob URLs, base64 image data, generated image bytes, its internal analytics session identifier, and event timestamps from the custom-event data sent through this product-event bridge.
+          </p>
+          <p>
+            Vercel Web Analytics is separate from the optional Google Analytics consent choice below. PicToFu keeps the Vercel product-event payload deliberately small and structured so the core acquisition and completion funnel can be measured without sending photo media.
           </p>
 
           <h3>Google Analytics 4</h3>
@@ -103,14 +106,14 @@ export default function PrivacyPage() {
         <section>
           <h2>5. Cookies and local browser storage</h2>
           <p>
-            The core PicToFu booth does not require an account cookie or a cloud photo-session cookie. When GA4 is configured, PicToFu stores your analytics-consent choice in first-party browser storage under a small preference key so it can be remembered on later visits. Optional analytics providers may use browser storage or first-party cookies only according to their enabled configuration and the consent state that applies.
+            The core PicToFu booth does not require an account cookie or a cloud photo-session cookie. When GA4 is configured, PicToFu stores your analytics-consent choice in first-party browser storage under a small preference key so it can be remembered on later visits. The browser-local acquisition context used to attribute a visit to a bounded source or UTM campaign is kept in session storage and contains no photo media.
           </p>
         </section>
 
         <section>
           <h2>6. Third-party infrastructure</h2>
           <p>
-            PicToFu uses third-party infrastructure to deliver the website. Vercel hosts and serves the application and may also provide privacy-focused traffic analytics when enabled. Google Analytics may provide optional product and acquisition measurement after the analytics-consent gate allows it. Those providers process technical information under their own terms and privacy documentation.
+            PicToFu uses third-party infrastructure to deliver the website. Vercel hosts and serves the application and provides the traffic and bounded product-interaction measurement described above. Google Analytics may provide additional optional product and acquisition measurement only after the analytics-consent gate allows it. Those providers process technical information under their own terms and privacy documentation.
           </p>
           <p>
             PicToFu does not authorize analytics providers to receive captured photo bytes as part of the current analytics contract.
@@ -140,7 +143,7 @@ export default function PrivacyPage() {
             Depending on where you live, privacy law may give you rights concerning personal information, which can include access, correction, deletion, restriction, objection, portability, or withdrawal of consent. PicToFu currently has no user account or cloud photo library, so many requests involving photos can be resolved directly by clearing the browser session or deleting files you saved to your own device.
           </p>
           <p>
-            Where GA4 is configured, you can reopen the visible Privacy settings control to allow, decline, or withdraw analytics consent. The preference is stored in your browser rather than in a PicToFu user account.
+            Where GA4 is configured, you can reopen the visible Privacy settings control to allow, decline, or withdraw Google Analytics consent. The preference is stored in your browser rather than in a PicToFu user account.
           </p>
         </section>
 
