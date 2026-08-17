@@ -143,7 +143,7 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
             <span className={styles.status}>{consentLabel(consent)}</span>
           </div>
           <p className={styles.copy}>
-            PicToFu uses Vercel Web Analytics for bounded traffic and product-event measurement without photo media. Optional Google Analytics only loads after you allow it.
+            PicToFu uses privacy-minimized traffic and daily funnel counters without photo media or user/session identifiers in the growth store. Google Analytics only loads after you allow it.
           </p>
           <div className={styles.actions}>
             <button className={styles.primary} type="button" onClick={allowAnalytics}>
