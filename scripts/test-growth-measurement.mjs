@@ -93,8 +93,9 @@ assert.ok(
 );
 assert.ok(
   consentGate.includes("Optional Google Analytics") &&
-    consentGate.includes("Google Analytics only loads after you allow it"),
-  "Consent UI must identify the optional provider instead of implying all PicToFu measurement can be disabled there.",
+    consentGate.includes("Google Analytics only loads after you allow it") &&
+    consentGate.includes("without photo media or user/session identifiers in the growth store"),
+  "Consent UI must identify optional GA4 and accurately summarize the separate privacy-minimized counters.",
 );
 
 assert.ok(
