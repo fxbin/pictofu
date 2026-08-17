@@ -1,4 +1,8 @@
 import { FRAME_STYLES, type FrameId } from "@/lib/frame-styles";
+import {
+  sanitizeSafeEventProperties,
+  type SafeEventProperties,
+} from "@/lib/analytics-safety";
 
 export type ProductEventName =
   | "landing_view"
@@ -22,50 +26,7 @@ export type ProductEventName =
   | "share_clicked"
   | "web_vital";
 
-type SafeScalar = string | number | boolean | null | undefined;
-type SafeEventProperties = Record<string, SafeScalar>;
-
 const ACQUISITION_CONTEXT_KEY = "pictofu:acquisition_context";
-
-const SAFE_PROPERTY_KEYS = new Set([
-  "landing_type",
-  "entry_path",
-  "entry_preset",
-  "cta_location",
-  "facing_mode",
-  "error_class",
-  "layout_id",
-  "shot_target",
-  "shot_index",
-  "shot_count",
-  "style_type",
-  "style_id",
-  "preset_id",
-  "filter_id",
-  "frame_id",
-  "frame_group",
-  "format",
-  "output_width",
-  "output_height",
-  "share_supported",
-  "share_action",
-  "share_preset",
-  "delivery_mode",
-  "browser_context",
-  "referrer_class",
-  "share_marker",
-  "utm_source",
-  "utm_medium",
-  "utm_campaign",
-  "utm_content",
-  "device_class",
-  "viewport_bucket",
-  "metric_name",
-  "metric_value",
-  "metric_delta",
-  "metric_rating",
-  "metric_id",
-]);
 
 function deviceClass(width: number) {
   if (width < 768) return "mobile";
@@ -82,26 +43,19 @@ function viewportBucket(width: number) {
   return "1100+";
 }
 
-function frameGroup(frameId: SafeScalar) {
+function frameGroup(frameId: unknown) {
   if (typeof frameId !== "string") return undefined;
   return FRAME_STYLES.find((frame) => frame.id === (frameId as FrameId))?.category;
 }
 
-function enrichFrameProperties(properties: SafeEventProperties) {
+function enrichFrameProperties(properties: SafeEventProperties): SafeEventProperties {
   if (properties.frame_group !== undefined) return properties;
   const group = frameGroup(properties.frame_id);
   return group ? { ...properties, frame_group: group } : properties;
 }
 
 function sanitizeProperties(properties: SafeEventProperties) {
-  return Object.fromEntries(
-    Object.entries(enrichFrameProperties(properties))
-      .filter(([key, value]) => SAFE_PROPERTY_KEYS.has(key) && value !== undefined)
-      .map(([key, value]) => [
-        key,
-        typeof value === "string" ? value.slice(0, 120) : value,
-      ]),
-  );
+  return sanitizeSafeEventProperties(enrichFrameProperties(properties));
 }
 
 function storeAcquisitionContext(name: ProductEventName, properties: SafeEventProperties) {
