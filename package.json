@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify:release-policy": "node scripts/verify-release-boundary.mjs",
+    "test:p0": "node scripts/test-p0-contracts.mjs",
+    "verify:p0": "npm run verify:release-policy && npm run test:p0"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
