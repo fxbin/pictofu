@@ -1,3 +1,5 @@
+import { FRAME_STYLES, type FrameId } from "@/lib/frame-styles";
+
 export type ProductEventName =
   | "landing_view"
   | "start_booth"
@@ -11,8 +13,10 @@ export type ProductEventName =
   | "retake_single"
   | "edit_started"
   | "style_changed"
+  | "frame_selected"
   | "export_started"
   | "export_completed"
+  | "export_png"
   | "export_error"
   | "download_clicked"
   | "share_clicked"
@@ -36,6 +40,10 @@ const SAFE_PROPERTY_KEYS = new Set([
   "shot_count",
   "style_type",
   "style_id",
+  "preset_id",
+  "filter_id",
+  "frame_id",
+  "frame_group",
   "format",
   "output_width",
   "output_height",
@@ -74,9 +82,20 @@ function viewportBucket(width: number) {
   return "1100+";
 }
 
+function frameGroup(frameId: SafeScalar) {
+  if (typeof frameId !== "string") return undefined;
+  return FRAME_STYLES.find((frame) => frame.id === (frameId as FrameId))?.category;
+}
+
+function enrichFrameProperties(properties: SafeEventProperties) {
+  if (properties.frame_group !== undefined) return properties;
+  const group = frameGroup(properties.frame_id);
+  return group ? { ...properties, frame_group: group } : properties;
+}
+
 function sanitizeProperties(properties: SafeEventProperties) {
   return Object.fromEntries(
-    Object.entries(properties)
+    Object.entries(enrichFrameProperties(properties))
       .filter(([key, value]) => SAFE_PROPERTY_KEYS.has(key) && value !== undefined)
       .map(([key, value]) => [
         key,
@@ -154,15 +173,10 @@ function shouldEmitStartBooth() {
   return true;
 }
 
-export function emitProductEvent(name: ProductEventName, properties: SafeEventProperties = {}) {
-  if (typeof window === "undefined") return;
-  if (name === "start_booth" && !shouldEmitStartBooth()) return;
-
-  storeAcquisitionContext(name, properties);
-  const normalizedName = normalizeEvent(name, properties);
+function buildEventDetail(name: ProductEventName, properties: SafeEventProperties) {
   const width = window.innerWidth;
-  const detail = {
-    event_name: normalizedName,
+  return {
+    event_name: name,
     session_id: getSessionId(),
     page_path: window.location.pathname,
     timestamp: new Date().toISOString(),
@@ -171,11 +185,29 @@ export function emitProductEvent(name: ProductEventName, properties: SafeEventPr
     ...readAcquisitionContext(),
     ...sanitizeProperties(properties),
   };
+}
 
+function dispatchEventDetail(detail: ReturnType<typeof buildEventDetail>) {
   window.dispatchEvent(new CustomEvent("pictofu:analytics", { detail }));
 
   if (process.env.NODE_ENV === "development") {
     // Never add captured photo data, Blob URLs, base64 or camera frame content here.
     console.info("[PicToFu event]", detail);
+  }
+}
+
+export function emitProductEvent(name: ProductEventName, properties: SafeEventProperties = {}) {
+  if (typeof window === "undefined") return;
+  if (name === "start_booth" && !shouldEmitStartBooth()) return;
+
+  storeAcquisitionContext(name, properties);
+  const normalizedName = normalizeEvent(name, properties);
+  const detail = buildEventDetail(normalizedName, properties);
+  dispatchEventDetail(detail);
+
+  // Keep export_completed as the core funnel metric while exposing a dedicated
+  // frame-aware PNG event for Frames V2 preference analysis.
+  if (normalizedName === "export_completed" && properties.format === "png") {
+    dispatchEventDetail(buildEventDetail("export_png", properties));
   }
 }
