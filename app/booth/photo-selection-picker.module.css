@@ -1,0 +1,315 @@
+.picker {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #eadde1;
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(255,255,255,.94), rgba(255,247,250,.88));
+}
+
+.heading,
+.sectionLabel {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.heading > div,
+.sectionLabel {
+  min-width: 0;
+}
+
+.heading strong,
+.sectionLabel strong {
+  color: #514348;
+  font-size: 12px;
+}
+
+.heading span,
+.sectionLabel span {
+  color: #9a7c86;
+  font-size: 10px;
+}
+
+.heading > div {
+  display: grid;
+  gap: 2px;
+}
+
+.heading em {
+  flex: none;
+  min-width: 38px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+  text-align: center;
+}
+
+.statusComplete {
+  background: #edf8f4;
+  color: #4f7c6e;
+}
+
+.statusIncomplete {
+  background: #fff2f4;
+  color: #a75d70;
+}
+
+.orderSection,
+.captureSection {
+  display: grid;
+  gap: 8px;
+}
+
+.orderRail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.orderCard,
+.emptySlot {
+  min-width: 0;
+}
+
+.orderCard {
+  display: grid;
+  gap: 5px;
+}
+
+.orderCard > strong {
+  overflow: hidden;
+  color: #65555a;
+  font-size: 9px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.orderPreview,
+.emptySlot {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.orderPreview {
+  background: #f3e9e7;
+  box-shadow: 0 5px 14px rgba(78, 52, 62, .1);
+}
+
+.orderPreview img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.orderPreview > span {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #ff6f8f;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  box-shadow: 0 3px 10px rgba(255,111,143,.3);
+}
+
+.removeButton {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(35, 27, 31, .72);
+  color: #fff;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  backdrop-filter: blur(6px);
+}
+
+.emptySlot {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  border: 1px dashed #ddcbd1;
+  background: rgba(255,255,255,.52);
+  color: #aa9098;
+}
+
+.emptySlot span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #f7e9ed;
+  color: #a26777;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.emptySlot small {
+  font-size: 9px;
+}
+
+.orderControls {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+}
+
+.orderControls button {
+  min-height: 26px;
+  padding: 0;
+  border: 1px solid #eadce1;
+  border-radius: 8px;
+  background: #fff;
+  color: #775f68;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.orderControls button:disabled,
+.removeButton:disabled {
+  cursor: not-allowed;
+  opacity: .35;
+}
+
+.captureRail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.choice {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 11px;
+  background: #f3e9e7;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(78, 52, 62, .08);
+}
+
+.choice img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.choice > span {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  max-width: calc(100% - 12px);
+  padding: 4px 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(35, 27, 31, .72);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  backdrop-filter: blur(6px);
+}
+
+.choice > b {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #ff6f8f;
+  color: #fff;
+  font-size: 10px;
+  box-shadow: 0 3px 10px rgba(255, 111, 143, .35);
+}
+
+.choiceSelected {
+  border-color: #ff7796;
+  box-shadow: 0 0 0 2px rgba(255,119,150,.13), 0 8px 18px rgba(109,65,80,.13);
+}
+
+.choice:disabled {
+  cursor: not-allowed;
+  opacity: .42;
+}
+
+.choiceSelected:disabled {
+  opacity: .72;
+}
+
+.choice:focus-visible,
+.orderControls button:focus-visible,
+.removeButton:focus-visible {
+  outline: 3px solid rgba(117, 91, 191, .32);
+  outline-offset: 2px;
+}
+
+@media (max-width: 390px) {
+  .picker {
+    gap: 12px;
+    padding: 11px;
+  }
+
+  .heading,
+  .sectionLabel {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .heading {
+    position: relative;
+    padding-right: 44px;
+  }
+
+  .heading em {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+
+  .orderRail,
+  .captureRail {
+    gap: 6px;
+  }
+
+  .orderPreview > span,
+  .choice > b {
+    width: 20px;
+    height: 20px;
+    font-size: 9px;
+  }
+
+  .orderControls button {
+    min-height: 24px;
+  }
+}
