@@ -58,14 +58,26 @@ When: user first changes layout/filter/frame/sticker state after capture.
 ### `style_changed`
 Properties: `style_type`, `style_id`.
 
+### `frame_selected`
+When: user explicitly switches to a different Frames V2 option.
+Properties: `frame_id`, `frame_group` (`basic|cute|retro`), `preset_id`, `layout_id`, `filter_id`.
+
+Use this event for preference/consideration analysis. Do not count the preset's initial default frame as an explicit selection.
+
 ### `export_started`
-Properties: `format`, `layout_id`.
+Properties: `format`, `layout_id`, `preset_id`, `filter_id`, `frame_id`, `frame_group`.
 
 ### `export_completed`
 When: final strip blob is produced and download/share is available.
-Properties: `format`, `layout_id`, `output_width`, `output_height`.
+Properties: `format`, `layout_id`, `preset_id`, `filter_id`, `frame_id`, `frame_group`, `output_width`, `output_height`.
 
 This event is the operational definition of a **completed photo strip**.
+
+### `export_png`
+When: emitted alongside a successful PNG `export_completed` event.
+Properties: same frame-aware properties as `export_completed`.
+
+Use this event to rank Frames V2 by actual generated output rather than clicks alone. Keep `export_completed` as the canonical funnel metric.
 
 ### `download_clicked`
 When: user downloads the final strip.
@@ -98,6 +110,9 @@ Avoid high-cardinality raw error strings in the primary analytics stream.
 - `capture_completion_rate = capture_completed / capture_started`
 - `export_rate = export_completed / capture_completed`
 - `share_intent_rate = share_clicked / export_completed`
+- `frame_selection_share = count(frame_selected by frame_id) / count(frame_selected)`
+- `frame_export_share = count(export_png by frame_id) / count(export_png)`
+- `frame_conversion = count(export_png by frame_id) / count(frame_selected by frame_id)` (directional only; initial preset defaults are not counted as selections)
 
 ## SEO measurement joins
 
@@ -105,5 +120,6 @@ At aggregate level, compare Search Console landing/query data with:
 - Start Booth rate by page
 - Completed strip rate by page
 - Share intent rate by page/preset
+- Frame export share by landing/preset where sample size is sufficient
 
 This should identify whether a keyword page produces useful sessions rather than impressions alone.
