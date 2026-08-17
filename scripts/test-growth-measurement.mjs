@@ -177,17 +177,20 @@ for (const forbidden of [
   '"base64"',
   '"camera_frame"',
   '"exported_png"',
+  '"filename"',
 ]) {
   assert.ok(!safety.includes(forbidden), `Analytics allowlist must not admit media-bearing field ${forbidden}.`);
 }
 
 assert.ok(
   privacy.includes("privacy-minimized daily funnel counters") &&
-    privacy.includes("does not store a PicToFu user ID, analytics session ID, IP address, photo media, or free-form text") &&
+    privacy.includes("does not store a PicToFu user ID, analytics session ID, IP address, photo media, filenames, or free-form text") &&
+    privacy.includes("device-selected photo files") &&
+    privacy.includes("without a PicToFu media-upload request") &&
     privacy.includes("Optional first-party rolling retention") &&
     privacy.includes("browser-local retention cohort record") &&
     privacy.includes("Google Analytics 4 (GA4) is optional"),
-  "Privacy policy must accurately distinguish aggregate growth counters, optional retention, and optional GA4.",
+  "Privacy policy must accurately distinguish local photo processing, aggregate growth counters, optional retention, and optional GA4.",
 );
 
-console.log("Growth aggregate observability, consent, and retention privacy contracts passed.");
+console.log("Growth aggregate observability, consent, local upload, and retention privacy contracts passed.");
