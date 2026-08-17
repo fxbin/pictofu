@@ -77,7 +77,7 @@ assert.ok(
   "About capabilities must derive filter/frame truth from the canonical registries.",
 );
 assert.ok(
-  about.includes("Capture the preset's shot sequence using the built-in countdown.") &&
+  about.includes("Capture the shots for this preset using the built-in countdown.") &&
     !about.includes("three- or four-shot session"),
   "About capture copy must cover one-, three-, and four-shot presets without hard-coded shot counts.",
 );
