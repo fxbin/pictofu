@@ -1,6 +1,7 @@
 export type AnalyticsConsent = "unknown" | "granted" | "denied";
 
-export const ANALYTICS_CONSENT_STORAGE_KEY = "pictofu.analytics-consent.v1";
+export const ANALYTICS_CONSENT_STORAGE_KEY = "pictofu.analytics-consent.v2";
+const LEGACY_ANALYTICS_CONSENT_STORAGE_KEY = "pictofu.analytics-consent.v1";
 const ANALYTICS_CONSENT_CHANGE_EVENT = "pictofu:analytics-consent-change";
 
 let volatileConsent: AnalyticsConsent = "unknown";
@@ -43,6 +44,9 @@ export function persistAnalyticsConsent(value: Exclude<AnalyticsConsent, "unknow
   if (typeof window === "undefined") return;
   volatileConsent = value;
   try {
+    // v2 expands the optional analytics choice to include first-party rolling retention,
+    // so an older GA-only choice is not silently reused.
+    window.localStorage.removeItem(LEGACY_ANALYTICS_CONSENT_STORAGE_KEY);
     window.localStorage.setItem(ANALYTICS_CONSENT_STORAGE_KEY, value);
   } catch {
     // Keep the choice for the current page lifecycle if persistent storage is unavailable.

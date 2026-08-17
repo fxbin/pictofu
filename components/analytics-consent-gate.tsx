@@ -18,6 +18,10 @@ import {
   subscribeAnalyticsConsent,
   type AnalyticsConsent,
 } from "@/lib/analytics-consent";
+import {
+  clearRetentionMeasurement,
+  recordRetentionVisit,
+} from "@/lib/retention-measurement";
 import styles from "./analytics-consent-gate.module.css";
 
 type AnalyticsConsentGateProps = {
@@ -56,8 +60,14 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [runtimeReady, setRuntimeReady] = useState(false);
   const initializedRef = useRef(false);
-  const wantsGoogle = configured && consent === "granted";
+  const analyticsAllowed = consent === "granted";
+  const wantsGoogle = configured && analyticsAllowed;
   const googleEnabled = wantsGoogle && runtimeReady;
+
+  useEffect(() => {
+    if (!analyticsAllowed) return;
+    recordRetentionVisit();
+  }, [analyticsAllowed]);
 
   useEffect(() => {
     if (!wantsGoogle) return;
@@ -111,6 +121,8 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
   }
 
   function declineAnalytics() {
+    clearRetentionMeasurement();
+
     if (consent === "granted") {
       window.gtag?.("consent", "update", DENIED_CONSENT);
       clearAccessibleGaCookies();
@@ -123,8 +135,8 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
     setSettingsOpen(false);
   }
 
-  const showPanel = configured && (consent === "unknown" || settingsOpen);
-  const showSettingsButton = configured && consent !== "unknown" && !settingsOpen;
+  const showPanel = consent === "unknown" || settingsOpen;
+  const showSettingsButton = consent !== "unknown" && !settingsOpen;
 
   return (
     <>
@@ -137,20 +149,20 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
       )}
 
       {showPanel && (
-        <section className={styles.banner} aria-label="Google Analytics privacy settings">
+        <section className={styles.banner} aria-label="Analytics privacy settings">
           <div className={styles.titleRow}>
-            <strong>Optional Google Analytics</strong>
+            <strong>Optional analytics</strong>
             <span className={styles.status}>{consentLabel(consent)}</span>
           </div>
           <p className={styles.copy}>
-            PicToFu uses privacy-minimized traffic and daily funnel counters without photo media or user/session identifiers in the growth store. Google Analytics only loads after you allow it.
+            If you allow analytics, PicToFu can remember a browser-local cohort marker for approximate D1/D7/D30 return measurement and can load Google Analytics when configured. The retention store receives only aggregate cohort dimensions, not a user or session identifier, IP address, or photo media.
           </p>
           <div className={styles.actions}>
             <button className={styles.primary} type="button" onClick={allowAnalytics}>
-              {consent === "granted" ? "Keep Google Analytics" : "Allow Google Analytics"}
+              {consent === "granted" ? "Keep analytics" : "Allow analytics"}
             </button>
             <button className={styles.secondary} type="button" onClick={declineAnalytics}>
-              {consent === "granted" ? "Turn off Google Analytics" : consent === "denied" ? "Keep off" : "No thanks"}
+              {consent === "granted" ? "Turn off analytics" : consent === "denied" ? "Keep off" : "No thanks"}
             </button>
             <Link className={styles.privacyLink} href="/privacy" prefetch={false}>Privacy</Link>
           </div>
