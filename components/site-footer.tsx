@@ -91,7 +91,7 @@ export function SiteFooter() {
           <Link href="/contact" prefetch={false}>Contact</Link>
           <Link href="/privacy" prefetch={false}>Privacy</Link>
         </nav>
-        <p className="pictofu-site-footer__note">Photos stay on your device in the current PicToFu MVP.</p>
+        <p className="pictofu-site-footer__note">Captured photos and finished strips are processed in your browser, not stored in a PicToFu cloud photo gallery.</p>
       </footer>
       <style>{footerStyles}</style>
     </>
