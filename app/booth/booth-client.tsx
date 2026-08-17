@@ -29,6 +29,7 @@ import { PRESETS } from "@/lib/presets";
 import { buildMakeYoursUrl } from "@/lib/share-links";
 import { FilterPicker } from "./filter-picker";
 import { FramePicker } from "./frame-picker";
+import { SinglePhotoPicker } from "./single-photo-picker";
 
 type SupportState = "checking" | "supported" | "unsupported";
 type CameraStatus = "idle" | "requesting" | "ready" | "countdown" | "capturing" | "review" | "error";
@@ -180,13 +181,16 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [savePreviewUrl, setSavePreviewUrl] = useState<string | null>(null);
   const [savePreviewReason, setSavePreviewReason] = useState<SavePreviewReason | null>(null);
+  const [singlePhotoIndex, setSinglePhotoIndex] = useState(0);
 
   const captureBusy = cameraStatus === "requesting" || cameraStatus === "countdown" || cameraStatus === "capturing";
   const capturedCount = captureSlots.reduce((total, slot) => total + (slot ? 1 : 0), 0);
   const canFlip = cameraStatus === "ready" && !captureBusy;
   const selectedLayoutTarget = shotTargetForLayout(layoutId);
-  const exportSlots = captureSlots.slice(0, selectedLayoutTarget);
+  const selectedSingleSlot = captureSlots[singlePhotoIndex] ?? captureSlots.find((slot): slot is CaptureSlot => slot !== null) ?? null;
+  const exportSlots = selectedLayoutTarget === 1 ? [selectedSingleSlot] : captureSlots.slice(0, selectedLayoutTarget);
   const exportReady = exportSlots.length === selectedLayoutTarget && exportSlots.every((slot) => slot !== null) && !captureBusy && exportStatus !== "working";
+  const singlePhotoChoices = captureSlots.flatMap((slot, index) => slot ? [{ index, id: slot.slotId, url: slot.url, crop: slot.crop }] : []);
   const activeAdjustSlot = activeAdjustIndex === null ? null : captureSlots[activeAdjustIndex] ?? null;
   const activeCrop = normalizedCrop(activeAdjustSlot?.crop);
   const filterThumbnailUrl = captureSlots.find((slot): slot is CaptureSlot => slot !== null)?.url ?? null;
@@ -249,6 +253,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     setCaptureSlots([]);
     setActiveRetakeIndex(null);
     setActiveAdjustIndex(null);
+    setSinglePhotoIndex(0);
     adjustDragRef.current = null;
     setReviewMessage(null);
     setExportStatus("idle");
@@ -344,6 +349,16 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   function chooseFrame(nextFrame: FrameId) {
     setFrameId(nextFrame);
     markStyleChange("frame", nextFrame);
+  }
+
+  function chooseSinglePhoto(nextIndex: number) {
+    if (!captureSlots[nextIndex] || nextIndex === singlePhotoIndex) return;
+    setSinglePhotoIndex(nextIndex);
+    closeSavePreview();
+    beginEditIfNeeded();
+    emitProductEvent("style_changed", { style_type: "source_photo", style_id: `photo-${nextIndex + 1}` });
+    setExportStatus("idle");
+    setExportMessage(null);
   }
 
   function selectAdjustSlot(slotIndex: number) {
@@ -937,14 +952,14 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
               <div className="editor-heading"><span>{capturedCount ? "Your strip" : "Current look"}</span><strong>{preset.name}</strong></div>
 
               <div className={`result-strip result-strip--${frameId} result-strip--layout-${layoutId}`} aria-label="Photo strip preview">
-                {Array.from({ length: Math.min(preset.shotCount, selectedLayoutTarget) }).map((_, index) => {
-                  const slot = captureSlots[index];
+                {exportSlots.map((slot, index) => {
+                  const sourceIndex = slot ? captureSlots.indexOf(slot) : index;
                   return (
                     <div className={`result-strip__photo ${slot ? "has-photo" : ""}`} key={slot?.slotId ?? `slot-${index + 1}`}>
                       {slot ? (
                         <img
                           src={slot.url}
-                          alt={`Captured photo ${index + 1}`}
+                          alt={`Captured photo ${sourceIndex + 1}`}
                           style={{ ...cropPreviewStyle(slot.crop), filter: filterCssValue(filterId) }}
                         />
                       ) : <span aria-hidden="true">{index + 1}</span>}
@@ -969,6 +984,19 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
                   })}
                 </div>
               </div>
+
+              {selectedLayoutTarget === 1 && capturedCount > 1 && (
+                <div className="editor-control-group">
+                  <h2>Photo</h2>
+                  <SinglePhotoPicker
+                    photos={singlePhotoChoices}
+                    selectedIndex={singlePhotoIndex}
+                    filter={filterCssValue(filterId)}
+                    disabled={captureBusy}
+                    onSelect={chooseSinglePhoto}
+                  />
+                </div>
+              )}
 
               <div className="editor-control-group">
                 <h2>Filters</h2>
