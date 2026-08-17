@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   },
 };
 
-const LAST_UPDATED = "August 16, 2026";
+const LAST_UPDATED = "August 17, 2026";
 
 export default function PrivacyPage() {
   return (
@@ -50,14 +50,14 @@ export default function PrivacyPage() {
         <section className={styles.summary} aria-label="Privacy summary">
           <strong>Your photos stay with you.</strong>
           <p>
-            In the current PicToFu MVP, camera frames, captured shots, filters, strip composition, and PNG export are processed in your browser. PicToFu does not maintain a cloud photo gallery or account-based photo history.
+            In the current PicToFu service, camera frames, captured shots, filters, strip composition, and PNG export are processed in your browser. PicToFu does not maintain a cloud photo gallery or account-based photo history.
           </p>
         </section>
 
         <section>
           <h2>1. Scope</h2>
           <p>
-            This policy describes the privacy practices for the PicToFu website and browser-based photobooth. It covers the current public MVP and the analytics services described below. If PicToFu later adds accounts, cloud photo storage, payments, advertising, or other material data processing, this policy will be updated before those features are treated as part of the normal service.
+            This policy describes the privacy practices for the PicToFu website and browser-based photobooth. It covers the current public service and the analytics services described below. If PicToFu later adds accounts, cloud photo storage, payments, advertising, or other material data processing, this policy will be updated before those features are treated as part of the normal service.
           </p>
         </section>
 
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
             PicToFu asks your browser for camera permission only when a camera experience needs it. Your browser and operating system control that permission. You can deny or revoke camera access through your browser or device settings.
           </p>
           <p>
-            In the current MVP, captured image bytes and the final composed photo strip stay in browser memory while you use the booth. PicToFu does not intentionally transmit captured photos, camera frames, Blob URLs, base64 image data, or the generated PNG to analytics providers. If you download or share an image, the resulting file is handled by your browser, device, or the destination you choose.
+            In the current service, captured image bytes and the final composed photo strip stay in browser memory while you use the booth. PicToFu does not intentionally transmit captured photos, camera frames, Blob URLs, base64 image data, or the generated PNG to analytics providers. If you download or share an image, the resulting file is handled by your browser, device, or the destination you choose.
           </p>
         </section>
 
@@ -113,14 +113,14 @@ export default function PrivacyPage() {
             PicToFu uses third-party infrastructure to deliver the website. Vercel hosts and serves the application and may also provide privacy-focused traffic analytics when enabled. Google Analytics may provide optional product and acquisition measurement after the analytics-consent gate allows it. Those providers process technical information under their own terms and privacy documentation.
           </p>
           <p>
-            PicToFu does not authorize analytics providers to receive captured photo bytes as part of the current MVP analytics contract.
+            PicToFu does not authorize analytics providers to receive captured photo bytes as part of the current analytics contract.
           </p>
         </section>
 
         <section>
           <h2>7. Data retention</h2>
           <p>
-            PicToFu does not maintain a server-side library of your captured photos in the current MVP. Temporary browser objects used during a booth session are intended to disappear when the page/session is cleared, while files you choose to download remain under your control on your device.
+            PicToFu does not maintain a server-side library of your captured photos in the current service. Temporary browser objects used during a booth session are intended to disappear when the page/session is cleared, while files you choose to download remain under your control on your device.
           </p>
           <p>
             Aggregated analytics data, when enabled, is retained according to the configured analytics provider and PicToFu&apos;s account settings with that provider. PicToFu does not use analytics retention to reconstruct or store your photo content.
@@ -147,7 +147,7 @@ export default function PrivacyPage() {
         <section>
           <h2>10. Children and minors</h2>
           <p>
-            PicToFu is a general-audience creative tool and is not designed specifically for children. The current MVP does not ask users to create accounts or submit profile information. Parents or guardians should supervise camera and sharing use where appropriate for the user&apos;s age and local requirements.
+            PicToFu is a general-audience creative tool and is not designed specifically for children. The current service does not ask users to create accounts or submit profile information. Parents or guardians should supervise camera and sharing use where appropriate for the user&apos;s age and local requirements.
           </p>
         </section>
 
@@ -164,7 +164,7 @@ export default function PrivacyPage() {
             For privacy questions or requests, email <a href={`mailto:${CONTACT_EMAIL}?subject=PicToFu%20Privacy%20Inquiry`}>{CONTACT_EMAIL}</a>. You can also use the <Link href="/contact">PicToFu contact page</Link> for general questions and product feedback.
           </p>
           <p>
-            Because the current PicToFu MVP has no user account system or cloud photo library, please do not send photo content unless you intentionally choose to attach it and it is necessary to explain your request.
+            Because the current PicToFu service has no user account system or cloud photo library, please do not send photo content unless you intentionally choose to attach it and it is necessary to explain your request.
           </p>
         </section>
 
