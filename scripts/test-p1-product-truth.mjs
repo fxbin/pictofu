@@ -7,6 +7,7 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
 const home = read("app/page.tsx");
 const homePreview = read("components/home-booth-preview.tsx");
+const homePreviewStyles = read("components/home-booth-preview.module.css");
 const layouts = read("app/layouts/page.tsx");
 const seoExperience = read("components/seo-experience-page.tsx");
 const about = read("app/about/page.tsx");
@@ -37,6 +38,24 @@ assert.ok(
 assert.ok(
   !homePreview.includes("treatment:"),
   "Homepage preview must not maintain a second CSS filter recipe system.",
+);
+assert.ok(
+  homePreview.includes("useSyncExternalStore") &&
+    homePreview.includes('const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)"'),
+  "Homepage preview must subscribe to the user's reduced-motion preference.",
+);
+assert.ok(
+  homePreview.includes("if (!autoPlay || prefersReducedMotion) return;"),
+  "Homepage preview autoplay must stop when reduced motion is requested.",
+);
+assert.ok(
+  homePreview.includes("if (prefersReducedMotion)") && homePreview.includes("setActiveIndex(index)"),
+  "Reduced-motion users must still be able to select filters manually without restarting autoplay.",
+);
+assert.ok(
+  homePreviewStyles.includes("@media (prefers-reduced-motion: reduce)") &&
+    homePreviewStyles.includes("transition: none"),
+  "Homepage preview CSS transitions must remain disabled for reduced-motion users.",
 );
 
 assert.ok(
@@ -134,4 +153,4 @@ assert.ok(
   "Booth page must load the progressive disclosure stylesheet.",
 );
 
-console.log("P1 product truth and progressive disclosure contracts passed.");
+console.log("P1 product truth, progressive disclosure, and reduced-motion contracts passed.");
