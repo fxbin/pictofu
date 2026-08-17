@@ -3,35 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { getFilterStyle } from "@/lib/filter-styles";
 import styles from "./home-booth-preview.module.css";
 
-const FILTERS = [
-  {
-    id: "original",
-    label: "Original",
-    treatment: "none",
-  },
-  {
-    id: "bw",
-    label: "B&W",
-    treatment: "grayscale(1)",
-  },
-  {
-    id: "warm",
-    label: "Warm",
-    treatment: "sepia(.16) saturate(1.1) brightness(1.04)",
-  },
-  {
-    id: "vintage",
-    label: "Vintage",
-    treatment: "sepia(.32) saturate(.72) contrast(.92) brightness(1.02)",
-  },
-  {
-    id: "y2k",
-    label: "Y2K",
-    treatment: "saturate(1.18) hue-rotate(315deg) brightness(1.04)",
-  },
-] as const;
+const HOME_FILTER_IDS = ["original", "bw", "warm", "vintage", "y2k"] as const;
+const FILTERS = HOME_FILTER_IDS.map((filterId) => getFilterStyle(filterId));
 
 const AUTO_SWITCH_MS = 2200;
 const RESUME_AFTER_CLICK_MS = 8000;
@@ -98,7 +74,7 @@ export function HomeBoothPreview() {
             sizes="(max-width: 780px) 100vw, 560px"
             priority
             className={styles.previewImage}
-            style={{ filter: activeFilter.treatment }}
+            style={{ filter: activeFilter.cssFilter }}
           />
           <div className="countdown-ring">3</div>
           <span className="camera-doodle camera-doodle--one">♡</span>
@@ -114,7 +90,7 @@ export function HomeBoothPreview() {
             sizes="124px"
             priority
             className={styles.stripImage}
-            style={{ filter: activeFilter.treatment }}
+            style={{ filter: activeFilter.cssFilter }}
           />
         </div>
       </div>
@@ -134,7 +110,11 @@ export function HomeBoothPreview() {
                 aria-pressed={index === activeIndex}
                 aria-label={`Preview ${filter.label} filter`}
               >
-                <i className={`filter-swatch filter-swatch--${index + 1} ${styles.filterSwatch}`} aria-hidden="true" />
+                <i
+                  className={`filter-swatch filter-swatch--${index + 1} ${styles.filterSwatch}`}
+                  style={{ background: filter.swatch }}
+                  aria-hidden="true"
+                />
                 <small>{filter.label}</small>
               </button>
             ))}
