@@ -11,9 +11,6 @@ declare global {
   }
 }
 
-const VERCEL_CUSTOM_EVENTS_ENABLED =
-  process.env.NEXT_PUBLIC_VERCEL_CUSTOM_EVENTS_ENABLED === "true";
-
 const LANDING_PRESET_BY_PATH: Record<string, string> = {
   "/": "classic-booth",
   "/online-photobooth": "classic-booth",
@@ -53,8 +50,6 @@ function acquisitionParameters() {
 }
 
 function forwardToVercel(detail: Record<string, unknown>) {
-  if (!VERCEL_CUSTOM_EVENTS_ENABLED) return;
-
   const eventName = detail.event_name;
   if (typeof eventName !== "string" || eventName === "web_vital") return;
 
@@ -78,6 +73,8 @@ export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
       const eventName = detail.event_name;
       if (typeof eventName !== "string") return;
 
+      // Vercel Web Analytics receives only the bounded scalar product-event detail.
+      // GA4 remains a separate, explicitly consent-gated provider below.
       forwardToVercel(detail);
 
       if (!enabled || !window.gtag) return;
