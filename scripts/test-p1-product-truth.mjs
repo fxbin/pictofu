@@ -76,6 +76,17 @@ assert.ok(
     about.includes('import { FRAME_STYLES } from "@/lib/frame-styles"'),
   "About capabilities must derive filter/frame truth from the canonical registries.",
 );
+assert.ok(
+  about.includes("Capture the shots for this preset using the built-in countdown.") &&
+    !about.includes("three- or four-shot session"),
+  "About capture copy must cover one-, three-, and four-shot presets without hard-coded shot counts.",
+);
+assert.ok(
+  boothClient.includes('function photoNoun(count: number)') &&
+    boothClient.includes('count === 1 ? "photo" : "photos"') &&
+    boothClient.includes('This template captures ${preset.shotCount} ${photoNoun(preset.shotCount)}'),
+  "Booth layout tooltip must use singular photo for one-shot presets and plural photos otherwise.",
+);
 
 for (const [id, label] of [
   ["original", "Original"],
@@ -153,4 +164,4 @@ assert.ok(
   "Booth page must load the progressive disclosure stylesheet.",
 );
 
-console.log("P1 product truth, progressive disclosure, and reduced-motion contracts passed.");
+console.log("P1 product truth, progressive disclosure, reduced-motion, and P2 copy contracts passed.");
