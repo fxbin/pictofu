@@ -48,11 +48,11 @@ for (const dimension of [
   assert.ok(growth.includes(`"${dimension}"`), `Growth aggregate must retain bounded dimension ${dimension}.`);
 }
 
-for (const forbidden of [
-  "session_id",
+assert.ok(!growth.includes("detail.session_id"), "Growth payload must never copy the analytics session id.");
+assert.ok(!growth.includes("detail.timestamp"), "Growth payload must never copy the analytics event timestamp.");
+for (const forbiddenPayloadKey of [
   "anonymous_user_id",
   "user_id",
-  "timestamp",
   "photo",
   "blob_url",
   "base64",
@@ -60,7 +60,7 @@ for (const forbidden of [
   "exported_png",
   "props",
 ]) {
-  assert.ok(!growth.includes(`"${forbidden}"`), `Growth payload must not include ${forbidden}.`);
+  assert.ok(!growth.includes(`"${forbiddenPayloadKey}"`), `Growth payload must not include ${forbiddenPayloadKey}.`);
 }
 
 assert.ok(
