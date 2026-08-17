@@ -198,6 +198,8 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const activeAdjustSlot = activeAdjustIndex === null ? null : captureSlots[activeAdjustIndex] ?? null;
   const activeCrop = normalizedCrop(activeAdjustSlot?.crop);
   const filterThumbnailUrl = captureSlots.find((slot): slot is CaptureSlot => slot !== null)?.url ?? null;
+  const selectedLayoutLabel = LAYOUTS.find((layout) => layout.id === layoutId)?.label ?? layoutId;
+  const selectedFilterLabel = getFilterStyle(filterId).label;
 
   useEffect(() => {
     const streamHolder = streamRef;
@@ -748,6 +750,120 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     }
   }
 
+  const templateControls = (
+    <div className="preset-select-row">
+      <label htmlFor="preset">Template</label>
+      <select id="preset" value={presetId} onChange={(event) => selectPreset(event.target.value)} disabled={captureBusy}>
+        {PRESETS.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
+      </select>
+
+      <div className="template-carousel" aria-label="Swipe to change template">
+        <div className="template-carousel__meta">
+          <span>{preset.name}</span>
+          <small>Swipe to explore · {PRESETS.findIndex((item) => item.id === presetId) + 1}/{PRESETS.length}</small>
+        </div>
+        <div className="template-carousel__track" ref={templateTrackRef} onScroll={handleTemplateCarouselScroll}>
+          {PRESETS.map((item) => (
+            <button
+              type="button"
+              className={`template-carousel__card ${item.id === presetId ? "is-selected" : ""}`}
+              data-preset-id={item.id}
+              key={item.id}
+              onClick={() => selectPreset(item.id)}
+              disabled={captureBusy}
+              aria-pressed={item.id === presetId}
+            >
+              <span className={`template-carousel__preview template-carousel__preview--${item.layoutId} template-carousel__preview--${item.frameId}`} aria-hidden="true">
+                {Array.from({ length: presetPreviewCellCount(item) }).map((_, index) => <i key={index} />)}
+              </span>
+              <span className="template-carousel__copy">
+                <strong>{item.name}</strong>
+                <small>{item.shotCount} {item.shotCount === 1 ? "shot" : "shots"} · {getFilterStyle(item.filterId).label}</small>
+              </span>
+            </button>
+          ))}
+        </div>
+        <div className="template-carousel__dots" aria-label="Choose template">
+          {PRESETS.map((item) => (
+            <button
+              type="button"
+              className={item.id === presetId ? "is-selected" : ""}
+              key={item.id}
+              onClick={() => selectPreset(item.id)}
+              disabled={captureBusy}
+              aria-label={`Choose ${item.name}`}
+              aria-pressed={item.id === presetId}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const layoutControls = (
+    <div className="editor-control-group">
+      <h2>Layouts</h2>
+      <div className="choice-grid">
+        {LAYOUTS.map((layout) => {
+          const unavailable = shotTargetForLayout(layout.id) > preset.shotCount;
+          return (
+            <button className={layout.id === layoutId ? "is-selected" : ""} type="button" key={layout.id} onClick={() => chooseLayout(layout.id)} disabled={captureBusy || unavailable} title={unavailable ? `This template captures ${preset.shotCount} ${photoNoun(preset.shotCount)}` : undefined}>
+              <span className={`layout-icon layout-icon--${layout.id}`} aria-hidden="true" />{layout.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const photoSelectionControls = capturedCount > 1 && selectedLayoutTarget <= capturedCount ? (
+    <div className="editor-control-group">
+      <h2>{selectedLayoutTarget === 1 ? "Photo" : "Photos"}</h2>
+      <PhotoSelectionPicker
+        photos={photoChoices}
+        selectedIndexes={selectedPhotoIndexes}
+        targetCount={selectedLayoutTarget}
+        filter={filterCssValue(filterId)}
+        disabled={captureBusy}
+        onChange={choosePhotoSelection}
+      />
+    </div>
+  ) : null;
+
+  const filterControls = (
+    <div className="editor-control-group">
+      <h2>Filters</h2>
+      <FilterPicker
+        selectedId={filterId}
+        thumbnailUrl={filterThumbnailUrl}
+        disabled={captureBusy}
+        onSelect={chooseFilter}
+      />
+    </div>
+  );
+
+  const frameControls = (
+    <div className="editor-control-group">
+      <h2>Frames</h2>
+      <FramePicker
+        selectedId={frameId}
+        presetId={preset.id}
+        layoutId={layoutId}
+        filterId={filterId}
+        disabled={captureBusy}
+        onSelect={chooseFrame}
+      />
+    </div>
+  );
+
+  const exportControls = (
+    <div className="export-actions">
+      <button className="share-strip-button" type="button" disabled={!exportReady} onClick={shareStrip}>Share photo ✦</button>
+      <button className="copy-share-link-button" type="button" disabled={!exportReady} onClick={copyMakeYoursLink}>Copy Make yours link</button>
+      <button className="download-shell-button" type="button" disabled={!exportReady} onClick={downloadStrip}>{exportStatus === "working" ? "Creating strip…" : "↓ Download PNG"}</button>
+    </div>
+  );
+
   const statusCopy = cameraError
     ? cameraErrorMessage(cameraError)
     : cameraStatus === "review"
@@ -767,8 +883,6 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       : activeRetakeIndex !== null
         ? `Retaking photo ${activeRetakeIndex + 1}`
         : "✨ Ready when you are!";
-
-  const showStyleWorkspace = workspaceMode !== "review";
 
   return (
     <main className={`booth-page booth-page--${workspaceMode}`}>
@@ -906,57 +1020,11 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
               {workspaceMode === "style" && capturedCount > 0 && (
                 <div className="style-workspace__topbar">
                   <button type="button" onClick={returnToReview}>← Review photos</button>
-                  <div><span>Style & Export</span><strong>Turn your captures into a finished strip</strong></div>
+                  <div><span>Style & Export</span><strong>Your strip is ready — export now or customize it</strong></div>
                 </div>
               )}
 
-              <div className="preset-select-row">
-                <label htmlFor="preset">Template</label>
-                <select id="preset" value={presetId} onChange={(event) => selectPreset(event.target.value)} disabled={captureBusy}>
-                  {PRESETS.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
-                </select>
-
-                <div className="template-carousel" aria-label="Swipe to change template">
-                  <div className="template-carousel__meta">
-                    <span>{preset.name}</span>
-                    <small>Swipe to explore · {PRESETS.findIndex((item) => item.id === presetId) + 1}/{PRESETS.length}</small>
-                  </div>
-                  <div className="template-carousel__track" ref={templateTrackRef} onScroll={handleTemplateCarouselScroll}>
-                    {PRESETS.map((item) => (
-                      <button
-                        type="button"
-                        className={`template-carousel__card ${item.id === presetId ? "is-selected" : ""}`}
-                        data-preset-id={item.id}
-                        key={item.id}
-                        onClick={() => selectPreset(item.id)}
-                        disabled={captureBusy}
-                        aria-pressed={item.id === presetId}
-                      >
-                        <span className={`template-carousel__preview template-carousel__preview--${item.layoutId} template-carousel__preview--${item.frameId}`} aria-hidden="true">
-                          {Array.from({ length: presetPreviewCellCount(item) }).map((_, index) => <i key={index} />)}
-                        </span>
-                        <span className="template-carousel__copy">
-                          <strong>{item.name}</strong>
-                          <small>{item.shotCount} {item.shotCount === 1 ? "shot" : "shots"} · {getFilterStyle(item.filterId).label}</small>
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="template-carousel__dots" aria-label="Choose template">
-                    {PRESETS.map((item) => (
-                      <button
-                        type="button"
-                        className={item.id === presetId ? "is-selected" : ""}
-                        key={item.id}
-                        onClick={() => selectPreset(item.id)}
-                        disabled={captureBusy}
-                        aria-label={`Choose ${item.name}`}
-                        aria-pressed={item.id === presetId}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
+              {!(workspaceMode === "style" && capturedCount > 0) && templateControls}
 
               <div className="editor-heading"><span>{capturedCount ? "Your strip" : "Current look"}</span><strong>{preset.name}</strong></div>
 
@@ -980,61 +1048,49 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
 
               {capturedCount > 0 && <div className="captured-summary"><strong>{capturedCount} {photoNoun(capturedCount)} captured</strong><span>Stored only in this browser session.</span></div>}
 
-              <div className="editor-control-group">
-                <h2>Layouts</h2>
-                <div className="choice-grid">
-                  {LAYOUTS.map((layout) => {
-                    const unavailable = shotTargetForLayout(layout.id) > preset.shotCount;
-                    return (
-                      <button className={layout.id === layoutId ? "is-selected" : ""} type="button" key={layout.id} onClick={() => chooseLayout(layout.id)} disabled={captureBusy || unavailable} title={unavailable ? `This template captures ${preset.shotCount} ${photoNoun(preset.shotCount)}` : undefined}>
-                        <span className={`layout-icon layout-icon--${layout.id}`} aria-hidden="true" />{layout.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              {workspaceMode === "style" && capturedCount > 0 ? (
+                <section className="style-progressive" aria-label="Style and export options">
+                  <div className="style-progressive__primary">
+                    <div className="style-progressive__primary-copy">
+                      <span>Ready to keep</span>
+                      <strong>Share or download this strip</strong>
+                      <p>You can export the current result without changing anything else.</p>
+                    </div>
+                    {exportControls}
+                  </div>
 
-              {capturedCount > 1 && selectedLayoutTarget <= capturedCount && (
-                <div className="editor-control-group">
-                  <h2>{selectedLayoutTarget === 1 ? "Photo" : "Photos"}</h2>
-                  <PhotoSelectionPicker
-                    photos={photoChoices}
-                    selectedIndexes={selectedPhotoIndexes}
-                    targetCount={selectedLayoutTarget}
-                    filter={filterCssValue(filterId)}
-                    disabled={captureBusy}
-                    onChange={choosePhotoSelection}
-                  />
-                </div>
+                  <details className="style-disclosure">
+                    <summary>
+                      <span><strong>Customize look</strong><small>{preset.name} · {selectedFilterLabel}</small></span>
+                    </summary>
+                    <div className="style-disclosure__content">
+                      {templateControls}
+                      {filterControls}
+                      {frameControls}
+                    </div>
+                  </details>
+
+                  <details className="style-disclosure style-disclosure--more">
+                    <summary>
+                      <span><strong>More options</strong><small>{selectedLayoutLabel} · choose & arrange photos</small></span>
+                    </summary>
+                    <div className="style-disclosure__content">
+                      {layoutControls}
+                      {photoSelectionControls}
+                      <button type="button" className="style-disclosure__review-link" onClick={returnToReview}>Adjust crop or retake in Review photos →</button>
+                    </div>
+                  </details>
+                </section>
+              ) : (
+                <>
+                  {layoutControls}
+                  {photoSelectionControls}
+                  {filterControls}
+                  {frameControls}
+                  {exportControls}
+                </>
               )}
 
-              <div className="editor-control-group">
-                <h2>Filters</h2>
-                <FilterPicker
-                  selectedId={filterId}
-                  thumbnailUrl={filterThumbnailUrl}
-                  disabled={captureBusy}
-                  onSelect={chooseFilter}
-                />
-              </div>
-
-              <div className="editor-control-group">
-                <h2>Frames</h2>
-                <FramePicker
-                  selectedId={frameId}
-                  presetId={preset.id}
-                  layoutId={layoutId}
-                  filterId={filterId}
-                  disabled={captureBusy}
-                  onSelect={chooseFrame}
-                />
-              </div>
-
-              <div className="export-actions">
-                <button className="share-strip-button" type="button" disabled={!exportReady} onClick={shareStrip}>Share photo ✦</button>
-                <button className="copy-share-link-button" type="button" disabled={!exportReady} onClick={copyMakeYoursLink}>Copy Make yours link</button>
-                <button className="download-shell-button" type="button" disabled={!exportReady} onClick={downloadStrip}>{exportStatus === "working" ? "Creating strip…" : "↓ Download PNG"}</button>
-              </div>
               {capturedCount > 0 && !exportReady && <p className="export-hint">This look needs more photos than the current capture set. Your existing photos are still safe.</p>}
               {exportMessage && <p className={`export-message ${exportStatus === "error" ? "is-error" : ""}`} aria-live="polite">{exportMessage}</p>}
               <p className="editor-footnote">Share photo sends your PNG plus a preset-aware Make yours link. Photos still stay local to this browser.</p>
