@@ -29,7 +29,7 @@ import { PRESETS } from "@/lib/presets";
 import { buildMakeYoursUrl } from "@/lib/share-links";
 import { FilterPicker } from "./filter-picker";
 import { FramePicker } from "./frame-picker";
-import { SinglePhotoPicker } from "./single-photo-picker";
+import { PhotoSelectionPicker } from "./photo-selection-picker";
 
 type SupportState = "checking" | "supported" | "unsupported";
 type CameraStatus = "idle" | "requesting" | "ready" | "countdown" | "capturing" | "review" | "error";
@@ -181,16 +181,20 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [savePreviewUrl, setSavePreviewUrl] = useState<string | null>(null);
   const [savePreviewReason, setSavePreviewReason] = useState<SavePreviewReason | null>(null);
-  const [singlePhotoIndex, setSinglePhotoIndex] = useState(0);
+  const [photoSelections, setPhotoSelections] = useState<Partial<Record<LayoutId, number[]>>>({});
 
   const captureBusy = cameraStatus === "requesting" || cameraStatus === "countdown" || cameraStatus === "capturing";
   const capturedCount = captureSlots.reduce((total, slot) => total + (slot ? 1 : 0), 0);
   const canFlip = cameraStatus === "ready" && !captureBusy;
   const selectedLayoutTarget = shotTargetForLayout(layoutId);
-  const selectedSingleSlot = captureSlots[singlePhotoIndex] ?? captureSlots.find((slot): slot is CaptureSlot => slot !== null) ?? null;
-  const exportSlots = selectedLayoutTarget === 1 ? [selectedSingleSlot] : captureSlots.slice(0, selectedLayoutTarget);
+  const availablePhotoIndexes = captureSlots.flatMap((slot, index) => slot ? [index] : []);
+  const storedPhotoSelection = photoSelections[layoutId];
+  const selectedPhotoIndexes = storedPhotoSelection === undefined
+    ? availablePhotoIndexes.slice(0, selectedLayoutTarget)
+    : storedPhotoSelection.filter((index) => Boolean(captureSlots[index])).slice(0, selectedLayoutTarget);
+  const exportSlots = selectedPhotoIndexes.map((index) => captureSlots[index] ?? null);
   const exportReady = exportSlots.length === selectedLayoutTarget && exportSlots.every((slot) => slot !== null) && !captureBusy && exportStatus !== "working";
-  const singlePhotoChoices = captureSlots.flatMap((slot, index) => slot ? [{ index, id: slot.slotId, url: slot.url, crop: slot.crop }] : []);
+  const photoChoices = captureSlots.flatMap((slot, index) => slot ? [{ index, id: slot.slotId, url: slot.url, crop: slot.crop }] : []);
   const activeAdjustSlot = activeAdjustIndex === null ? null : captureSlots[activeAdjustIndex] ?? null;
   const activeCrop = normalizedCrop(activeAdjustSlot?.crop);
   const filterThumbnailUrl = captureSlots.find((slot): slot is CaptureSlot => slot !== null)?.url ?? null;
@@ -253,7 +257,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     setCaptureSlots([]);
     setActiveRetakeIndex(null);
     setActiveAdjustIndex(null);
-    setSinglePhotoIndex(0);
+    setPhotoSelections({});
     adjustDragRef.current = null;
     setReviewMessage(null);
     setExportStatus("idle");
@@ -351,12 +355,17 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     markStyleChange("frame", nextFrame);
   }
 
-  function chooseSinglePhoto(nextIndex: number) {
-    if (!captureSlots[nextIndex] || nextIndex === singlePhotoIndex) return;
-    setSinglePhotoIndex(nextIndex);
+  function choosePhotoSelection(nextIndexes: number[]) {
+    const uniqueIndexes = Array.from(new Set(nextIndexes));
+    if (uniqueIndexes.length > selectedLayoutTarget || uniqueIndexes.some((index) => !captureSlots[index])) return;
+    if (uniqueIndexes.length === selectedPhotoIndexes.length && uniqueIndexes.every((index, position) => index === selectedPhotoIndexes[position])) return;
+    setPhotoSelections((current) => ({ ...current, [layoutId]: uniqueIndexes }));
     closeSavePreview();
     beginEditIfNeeded();
-    emitProductEvent("style_changed", { style_type: "source_photo", style_id: `photo-${nextIndex + 1}` });
+    emitProductEvent("style_changed", {
+      style_type: selectedLayoutTarget === 1 ? "source_photo" : "photo_selection",
+      style_id: uniqueIndexes.length ? uniqueIndexes.map((index) => `p${index + 1}`).join("-") : "none",
+    });
     setExportStatus("idle");
     setExportMessage(null);
   }
@@ -985,15 +994,16 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
                 </div>
               </div>
 
-              {selectedLayoutTarget === 1 && capturedCount > 1 && (
+              {capturedCount > 1 && selectedLayoutTarget <= capturedCount && (
                 <div className="editor-control-group">
-                  <h2>Photo</h2>
-                  <SinglePhotoPicker
-                    photos={singlePhotoChoices}
-                    selectedIndex={singlePhotoIndex}
+                  <h2>{selectedLayoutTarget === 1 ? "Photo" : "Photos"}</h2>
+                  <PhotoSelectionPicker
+                    photos={photoChoices}
+                    selectedIndexes={selectedPhotoIndexes}
+                    targetCount={selectedLayoutTarget}
                     filter={filterCssValue(filterId)}
                     disabled={captureBusy}
-                    onSelect={chooseSinglePhoto}
+                    onChange={choosePhotoSelection}
                   />
                 </div>
               )}
