@@ -1,0 +1,86 @@
+name: One-shot photo arrangement patch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/one-shot-photo-arrangement.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Patch booth photo selection model
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("app/booth/booth-client.tsx")
+          text = path.read_text()
+
+          replacements = [
+              (
+                  'import { SinglePhotoPicker } from "./single-photo-picker";\n',
+                  'import { PhotoSelectionPicker } from "./photo-selection-picker";\n',
+              ),
+              (
+                  '  const [savePreviewReason, setSavePreviewReason] = useState<SavePreviewReason | null>(null);\n  const [singlePhotoIndex, setSinglePhotoIndex] = useState(0);\n\n  const captureBusy',
+                  '  const [savePreviewReason, setSavePreviewReason] = useState<SavePreviewReason | null>(null);\n  const [photoSelections, setPhotoSelections] = useState<Partial<Record<LayoutId, number[]>>>({});\n\n  const captureBusy',
+              ),
+              (
+                  '  const selectedLayoutTarget = shotTargetForLayout(layoutId);\n  const selectedSingleSlot = captureSlots[singlePhotoIndex] ?? captureSlots.find((slot): slot is CaptureSlot => slot !== null) ?? null;\n  const exportSlots = selectedLayoutTarget === 1 ? [selectedSingleSlot] : captureSlots.slice(0, selectedLayoutTarget);\n  const exportReady = exportSlots.length === selectedLayoutTarget && exportSlots.every((slot) => slot !== null) && !captureBusy && exportStatus !== "working";\n  const singlePhotoChoices = captureSlots.flatMap((slot, index) => slot ? [{ index, id: slot.slotId, url: slot.url, crop: slot.crop }] : []);\n  const activeAdjustSlot',
+                  '  const selectedLayoutTarget = shotTargetForLayout(layoutId);\n  const availablePhotoIndexes = captureSlots.flatMap((slot, index) => slot ? [index] : []);\n  const storedPhotoSelection = photoSelections[layoutId];\n  const selectedPhotoIndexes = storedPhotoSelection === undefined\n    ? availablePhotoIndexes.slice(0, selectedLayoutTarget)\n    : storedPhotoSelection.filter((index) => Boolean(captureSlots[index])).slice(0, selectedLayoutTarget);\n  const exportSlots = selectedPhotoIndexes.map((index) => captureSlots[index] ?? null);\n  const exportReady = exportSlots.length === selectedLayoutTarget && exportSlots.every((slot) => slot !== null) && !captureBusy && exportStatus !== "working";\n  const photoChoices = captureSlots.flatMap((slot, index) => slot ? [{ index, id: slot.slotId, url: slot.url, crop: slot.crop }] : []);\n  const activeAdjustSlot',
+              ),
+              (
+                  '    setCaptureSlots([]);\n    setActiveRetakeIndex(null);\n    setActiveAdjustIndex(null);\n    setSinglePhotoIndex(0);\n    adjustDragRef.current = null;',
+                  '    setCaptureSlots([]);\n    setActiveRetakeIndex(null);\n    setActiveAdjustIndex(null);\n    setPhotoSelections({});\n    adjustDragRef.current = null;',
+              ),
+              (
+                  '  function chooseSinglePhoto(nextIndex: number) {\n    if (!captureSlots[nextIndex] || nextIndex === singlePhotoIndex) return;\n    setSinglePhotoIndex(nextIndex);\n    closeSavePreview();\n    beginEditIfNeeded();\n    emitProductEvent("style_changed", { style_type: "source_photo", style_id: `photo-${nextIndex + 1}` });\n    setExportStatus("idle");\n    setExportMessage(null);\n  }\n\n  function selectAdjustSlot',
+                  '  function choosePhotoSelection(nextIndexes: number[]) {\n    const uniqueIndexes = Array.from(new Set(nextIndexes));\n    if (uniqueIndexes.length > selectedLayoutTarget || uniqueIndexes.some((index) => !captureSlots[index])) return;\n    if (uniqueIndexes.length === selectedPhotoIndexes.length && uniqueIndexes.every((index, position) => index === selectedPhotoIndexes[position])) return;\n    setPhotoSelections((current) => ({ ...current, [layoutId]: uniqueIndexes }));\n    closeSavePreview();\n    beginEditIfNeeded();\n    emitProductEvent("style_changed", {\n      style_type: selectedLayoutTarget === 1 ? "source_photo" : "photo_selection",\n      style_id: uniqueIndexes.length ? uniqueIndexes.map((index) => `p${index + 1}`).join("-") : "none",\n    });\n    setExportStatus("idle");\n    setExportMessage(null);\n  }\n\n  function selectAdjustSlot',
+              ),
+              (
+                  '              {selectedLayoutTarget === 1 && capturedCount > 1 && (\n                <div className="editor-control-group">\n                  <h2>Photo</h2>\n                  <SinglePhotoPicker\n                    photos={singlePhotoChoices}\n                    selectedIndex={singlePhotoIndex}\n                    filter={filterCssValue(filterId)}\n                    disabled={captureBusy}\n                    onSelect={chooseSinglePhoto}\n                  />\n                </div>\n              )}',
+                  '              {capturedCount > 1 && selectedLayoutTarget <= capturedCount && (\n                <div className="editor-control-group">\n                  <h2>{selectedLayoutTarget === 1 ? "Photo" : "Photos"}</h2>\n                  <PhotoSelectionPicker\n                    photos={photoChoices}\n                    selectedIndexes={selectedPhotoIndexes}\n                    targetCount={selectedLayoutTarget}\n                    filter={filterCssValue(filterId)}\n                    disabled={captureBusy}\n                    onChange={choosePhotoSelection}\n                  />\n                </div>\n              )}',
+              ),
+          ]
+
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit(f"Expected patch target not found:\n{old[:220]}")
+              text = text.replace(old, new, 1)
+
+          path.write_text(text)
+
+      - name: Remove superseded single-photo picker
+        run: rm app/booth/single-photo-picker.tsx app/booth/single-photo-picker.module.css
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify production build
+        run: npm run build
+
+      - name: Remove one-shot workflow
+        run: rm .github/workflows/one-shot-photo-arrangement.yml
+
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/booth/booth-client.tsx app/booth/photo-selection-picker.tsx app/booth/photo-selection-picker.module.css app/booth/single-photo-picker.tsx app/booth/single-photo-picker.module.css .github/workflows/one-shot-photo-arrangement.yml
+          git commit -m "feat: select and arrange captured photos by layout"
+          git push origin HEAD:main
