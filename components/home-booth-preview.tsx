@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getFilterStyle } from "@/lib/filter-styles";
 import styles from "./home-booth-preview.module.css";
 
@@ -11,22 +11,49 @@ const FILTERS = HOME_FILTER_IDS.map((filterId) => getFilterStyle(filterId));
 
 const AUTO_SWITCH_MS = 2200;
 const RESUME_AFTER_CLICK_MS = 8000;
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+function subscribeToReducedMotion(onStoreChange: () => void) {
+  const mediaQuery = window.matchMedia(REDUCED_MOTION_QUERY);
+  const handleChange = () => onStoreChange();
+
+  if (typeof mediaQuery.addEventListener === "function") {
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }
+
+  mediaQuery.addListener(handleChange);
+  return () => mediaQuery.removeListener(handleChange);
+}
+
+function getReducedMotionSnapshot() {
+  return window.matchMedia(REDUCED_MOTION_QUERY).matches;
+}
+
+function getServerReducedMotionSnapshot() {
+  return false;
+}
 
 export function HomeBoothPreview() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
   const resumeTimerRef = useRef<number | null>(null);
+  const prefersReducedMotion = useSyncExternalStore(
+    subscribeToReducedMotion,
+    getReducedMotionSnapshot,
+    getServerReducedMotionSnapshot,
+  );
   const activeFilter = FILTERS[activeIndex];
 
   useEffect(() => {
-    if (!autoPlay) return;
+    if (!autoPlay || prefersReducedMotion) return;
 
     const intervalId = window.setInterval(() => {
       setActiveIndex((current) => (current + 1) % FILTERS.length);
     }, AUTO_SWITCH_MS);
 
     return () => window.clearInterval(intervalId);
-  }, [autoPlay]);
+  }, [autoPlay, prefersReducedMotion]);
 
   useEffect(() => {
     return () => {
@@ -38,13 +65,20 @@ export function HomeBoothPreview() {
 
   function selectFilter(index: number) {
     setActiveIndex(index);
-    setAutoPlay(false);
 
     if (resumeTimerRef.current !== null) {
       window.clearTimeout(resumeTimerRef.current);
+      resumeTimerRef.current = null;
     }
 
+    if (prefersReducedMotion) {
+      setAutoPlay(true);
+      return;
+    }
+
+    setAutoPlay(false);
     resumeTimerRef.current = window.setTimeout(() => {
+      resumeTimerRef.current = null;
       setAutoPlay(true);
     }, RESUME_AFTER_CLICK_MS);
   }
