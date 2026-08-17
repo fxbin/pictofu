@@ -84,7 +84,8 @@ assert.ok(
 assert.ok(
   boothClient.includes('function photoNoun(count: number)') &&
     boothClient.includes('count === 1 ? "photo" : "photos"') &&
-    boothClient.includes('This template captures ${preset.shotCount} ${photoNoun(preset.shotCount)}'),
+    (boothClient.includes('This template captures ${preset.shotCount} ${photoNoun(preset.shotCount)}') ||
+      boothClient.includes('This template uses up to ${preset.shotCount} ${photoNoun(preset.shotCount)}')),
   "Booth layout tooltip must use singular photo for one-shot presets and plural photos otherwise.",
 );
 
@@ -130,9 +131,10 @@ assert.ok(
   "The default post-capture state must make export feel complete without mandatory editing.",
 );
 assert.ok(
-  boothClient.includes("Adjust crop or retake in Review photos →") &&
+  (boothClient.includes("Adjust crop or retake in Review photos →") ||
+    boothClient.includes("Adjust crop or replace photos in Review photos →")) &&
     boothClient.includes("onClick={returnToReview}"),
-  "Crop and retake must remain reachable from the advanced escape hatch.",
+  "Crop plus the correct retake/replace escape hatch must remain reachable from advanced options.",
 );
 assert.ok(
   boothClient.includes('!(workspaceMode === "style" && capturedCount > 0) && templateControls'),
@@ -164,4 +166,4 @@ assert.ok(
   "Booth page must load the progressive disclosure stylesheet.",
 );
 
-console.log("P1 product truth, progressive disclosure, reduced-motion, and P2 copy contracts passed.");
+console.log("P1 product truth, progressive disclosure, reduced-motion, upload input, and P2 copy contracts passed.");

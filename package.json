@@ -12,9 +12,10 @@
     "test:p0": "node scripts/test-p0-contracts.mjs",
     "test:p1": "node scripts/test-p1-product-truth.mjs",
     "test:growth": "node scripts/test-growth-measurement.mjs",
+    "test:upload": "node scripts/test-upload-flow.mjs",
     "verify:p0": "npm run verify:release-policy && npm run test:p0",
     "verify:p1": "npm run verify:p0 && npm run test:p1",
-    "verify:growth": "npm run verify:p1 && npm run test:growth"
+    "verify:growth": "npm run verify:p1 && npm run test:growth && npm run test:upload"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
