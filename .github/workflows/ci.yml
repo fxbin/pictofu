@@ -30,8 +30,8 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: P0 release/state/privacy contracts
-        run: npm run verify:p0
+      - name: P0 + P1 release/state/privacy/product-truth contracts
+        run: npm run verify:p1
 
       - name: Lint
         shell: bash

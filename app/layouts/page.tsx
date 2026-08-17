@@ -5,6 +5,7 @@ import { BrandLink } from "@/components/brand";
 import { PresetDemoMedia } from "@/components/preset-demo-media";
 import { SiteFooter } from "@/components/site-footer";
 import { getReadyPresetDemoAsset } from "@/lib/demo-assets";
+import { getFilterStyle } from "@/lib/filter-styles";
 import { getFrameStyle } from "@/lib/frame-styles";
 import { LAYOUT_DEMO_ASSETS, LAYOUT_DEMO_TOTAL_BYTES } from "@/lib/layout-demo-assets";
 import { PRESETS } from "@/lib/presets";
@@ -129,6 +130,7 @@ export default function LayoutsPage() {
           {PRESETS.map((preset) => {
             const geometry = GEOMETRY_COPY[preset.layoutId];
             const demoAsset = getReadyPresetDemoAsset(preset.id);
+            const filter = getFilterStyle(preset.filterId);
             const frame = getFrameStyle(preset.frameId);
 
             return (
@@ -154,7 +156,7 @@ export default function LayoutsPage() {
                       <p>{geometry.short}</p>
                       <h3>{preset.name}</h3>
                     </div>
-                    <span>{preset.filterId}</span>
+                    <span>{filter.label}</span>
                   </div>
                   <p className={styles.description}>{preset.description}</p>
                   <dl className={styles.meta}>
