@@ -7,8 +7,10 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
 const bridge = read("components/analytics-bridge.tsx");
 const consentGate = read("components/analytics-consent-gate.tsx");
+const analyticsConsent = read("lib/analytics-consent.ts");
 const analytics = read("lib/analytics.ts");
 const growth = read("lib/growth-measurement.ts");
+const retention = read("lib/retention-measurement.ts");
 const safety = read("lib/analytics-safety.ts");
 const privacy = read("app/privacy/page.tsx");
 const envExample = read(".env.example");
@@ -86,17 +88,78 @@ assert.ok(
 );
 
 assert.ok(
-  consentGate.includes('const wantsGoogle = configured && consent === "granted"') &&
+  consentGate.includes('const wantsGoogle = configured && analyticsAllowed') &&
     consentGate.includes('if (!wantsGoogle) return;') &&
     consentGate.includes('src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`'),
   "GA4 must remain explicitly consent-gated.",
 );
 assert.ok(
-  consentGate.includes("Optional Google Analytics") &&
-    consentGate.includes("Google Analytics only loads after you allow it") &&
-    consentGate.includes("without photo media or user/session identifiers in the growth store"),
-  "Consent UI must identify optional GA4 and accurately summarize the separate privacy-minimized counters.",
+  consentGate.includes("Optional analytics") &&
+    consentGate.includes("browser-local cohort marker") &&
+    consentGate.includes("not a user or session identifier, IP address, or photo media"),
+  "Consent UI must accurately describe optional first-party retention and GA4.",
 );
+assert.ok(
+  consentGate.includes("recordRetentionVisit();") &&
+    consentGate.includes('if (!analyticsAllowed) return;') &&
+    consentGate.includes("clearRetentionMeasurement();"),
+  "First-party retention must only run after analytics consent and must clear local cohort state when analytics is declined.",
+);
+assert.ok(
+  analyticsConsent.includes('ANALYTICS_CONSENT_STORAGE_KEY = "pictofu.analytics-consent.v2"') &&
+    analyticsConsent.includes('LEGACY_ANALYTICS_CONSENT_STORAGE_KEY = "pictofu.analytics-consent.v1"') &&
+    analyticsConsent.includes("removeItem(LEGACY_ANALYTICS_CONSENT_STORAGE_KEY)"),
+  "The expanded analytics purpose must use a new consent version instead of silently reusing the older GA-only choice.",
+);
+
+for (const bucket of ["new_browser", "rolling_d1", "rolling_d7", "rolling_d30"]) {
+  assert.ok(retention.includes(`"${bucket}"`), `Retention measurement must include ${bucket}.`);
+}
+for (const field of [
+  "cohort_date",
+  "first_entry_path",
+  "first_entry_preset",
+  "first_utm_source",
+  "first_utm_medium",
+  "first_utm_campaign",
+  "first_utm_content",
+  "first_referrer_class",
+  "first_device_class",
+]) {
+  assert.ok(retention.includes(field), `Retention aggregate must retain bounded field ${field}.`);
+}
+assert.ok(
+  retention.includes('RETENTION_STORAGE_KEY = "pictofu.retention-cohort.v1"') &&
+    retention.includes("window.localStorage.setItem(RETENTION_STORAGE_KEY") &&
+    retention.includes("window.localStorage.removeItem(RETENTION_STORAGE_KEY)"),
+  "Retention cohort state must be browser-local and removable.",
+);
+assert.ok(
+  retention.includes("pictofu-retention-ingest") &&
+    retention.includes('authorization: `Bearer ${RETENTION_ANON_KEY}`') &&
+    retention.includes("keepalive: true"),
+  "Retention buckets must use the dedicated JWT-protected Supabase ingest.",
+);
+assert.ok(
+  retention.includes("async function sendDueBuckets") &&
+    retention.includes("const persisted = await sendBucket(state, bucket)") &&
+    retention.includes("if (!persisted) return;"),
+  "Due retention buckets must be sent sequentially so cohort denominators are not skipped on partial failures.",
+);
+for (const forbiddenRetentionField of [
+  "anonymous_user_id",
+  "user_id",
+  "session_id",
+  "fingerprint",
+  "photo",
+  "blob_url",
+  "base64",
+  "camera_frame",
+  "exported_png",
+  "free_text",
+]) {
+  assert.ok(!retention.includes(`"${forbiddenRetentionField}"`), `Retention payload must not include ${forbiddenRetentionField}.`);
+}
 
 assert.ok(
   analytics.includes('const ACQUISITION_CONTEXT_KEY = "pictofu:acquisition_context"') &&
@@ -121,8 +184,10 @@ for (const forbidden of [
 assert.ok(
   privacy.includes("privacy-minimized daily funnel counters") &&
     privacy.includes("does not store a PicToFu user ID, analytics session ID, IP address, photo media, or free-form text") &&
+    privacy.includes("Optional first-party rolling retention") &&
+    privacy.includes("browser-local retention cohort record") &&
     privacy.includes("Google Analytics 4 (GA4) is optional"),
-  "Privacy policy must accurately distinguish aggregate growth counters from optional GA4.",
+  "Privacy policy must accurately distinguish aggregate growth counters, optional retention, and optional GA4.",
 );
 
-console.log("Growth aggregate observability/privacy contracts passed.");
+console.log("Growth aggregate observability, consent, and retention privacy contracts passed.");
