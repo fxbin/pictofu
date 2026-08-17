@@ -126,7 +126,7 @@ export default function AboutPage() {
         <ol>
           <li><span>01</span><div><strong>Choose a look</strong><p>Start from a PicToFu preset that defines the strip geometry, filter, frame, and number of shots.</p></div></li>
           <li><span>02</span><div><strong>Open the camera</strong><p>Grant browser camera permission and use the front camera by default, with a flip path when another camera is available.</p></div></li>
-          <li><span>03</span><div><strong>Pose through the countdown</strong><p>Capture the three- or four-shot session using the built-in countdown.</p></div></li>
+          <li><span>03</span><div><strong>Pose through the countdown</strong><p>Capture the shots for this preset using the built-in countdown.</p></div></li>
           <li><span>04</span><div><strong>Review and retake</strong><p>Keep the shots you like and selectively retake a single slot instead of restarting the whole set.</p></div></li>
           <li><span>05</span><div><strong>Finish the strip</strong><p>Apply the current style controls, export the PNG, then download or use the sharing options your browser supports.</p></div></li>
         </ol>
