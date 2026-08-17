@@ -28,6 +28,7 @@ import type { BoothPreset } from "@/lib/presets";
 import { PRESETS } from "@/lib/presets";
 import { buildMakeYoursUrl } from "@/lib/share-links";
 import { FilterPicker } from "./filter-picker";
+import { FramePicker } from "./frame-picker";
 
 type SupportState = "checking" | "supported" | "unsupported";
 type CameraStatus = "idle" | "requesting" | "ready" | "countdown" | "capturing" | "review" | "error";
@@ -62,17 +63,6 @@ const LAYOUTS: { id: LayoutId; label: string }[] = [
   { id: "strip-3", label: "1×3" },
   { id: "grid-4", label: "2×2" },
   { id: "polaroid", label: "Polaroid" },
-];
-
-const FRAMES: { id: FrameId; label: string }[] = [
-  { id: "white", label: "Clean White" },
-  { id: "cream", label: "Soft Cream" },
-  { id: "black", label: "Black Film" },
-  { id: "pink", label: "Blush Hearts" },
-  { id: "lilac", label: "Lilac Stars" },
-  { id: "mint", label: "Mint Doodle" },
-  { id: "chrome", label: "Chrome Y2K" },
-  { id: "film", label: "Vintage Film" },
 ];
 
 function subscribeToBrowserCapability() {
@@ -615,7 +605,13 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     if (!exportReady) throw new Error(`Capture at least ${selectedLayoutTarget} ${photoNoun(selectedLayoutTarget)} for this layout.`);
     setExportStatus("working");
     setExportMessage(null);
-    emitProductEvent("export_started", { format: "png", layout_id: layoutId });
+    emitProductEvent("export_started", {
+      format: "png",
+      layout_id: layoutId,
+      preset_id: preset.id,
+      filter_id: filterId,
+      frame_id: frameId,
+    });
     try {
       const readySlots = exportSlots.filter((slot): slot is CaptureSlot => Boolean(slot));
       if (readySlots.length !== selectedLayoutTarget) throw new Error("One or more captured photos are unavailable.");
@@ -630,6 +626,9 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       emitProductEvent("export_completed", {
         format: "png",
         layout_id: layoutId,
+        preset_id: preset.id,
+        filter_id: filterId,
+        frame_id: frameId,
         output_width: result.width,
         output_height: result.height,
       });
@@ -983,9 +982,14 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
 
               <div className="editor-control-group">
                 <h2>Frames</h2>
-                <div className="frame-choice-row">
-                  {FRAMES.map((frame) => <button className={`frame-choice frame-choice--${frame.id} ${frame.id === frameId ? "is-selected" : ""}`} type="button" key={frame.id} onClick={() => chooseFrame(frame.id)} disabled={captureBusy}><span aria-hidden="true" />{frame.label}</button>)}
-                </div>
+                <FramePicker
+                  selectedId={frameId}
+                  presetId={preset.id}
+                  layoutId={layoutId}
+                  filterId={filterId}
+                  disabled={captureBusy}
+                  onSelect={chooseFrame}
+                />
               </div>
 
               <div className="export-actions">
