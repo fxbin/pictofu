@@ -3,6 +3,7 @@ import { BrandLink } from "@/components/brand";
 import { PresetDemoMedia } from "@/components/preset-demo-media";
 import { SiteFooter } from "@/components/site-footer";
 import { getReadyPresetDemoAsset } from "@/lib/demo-assets";
+import { getFilterStyle } from "@/lib/filter-styles";
 import { getFrameStyle } from "@/lib/frame-styles";
 import type { SeoExperience } from "@/lib/seo-pages";
 import { getSeoExperience } from "@/lib/seo-pages";
@@ -18,6 +19,7 @@ const LAYOUT_LABELS: Record<BoothPreset["layoutId"], string> = {
 
 export function SeoExperiencePage({ experience }: { experience: SeoExperience }) {
   const preset = getPreset(experience.presetId);
+  const filter = getFilterStyle(preset.filterId);
   const frame = getFrameStyle(preset.frameId);
   const demoAsset = getReadyPresetDemoAsset(preset.id);
   const faqJsonLd = {
@@ -51,7 +53,7 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
             <Link className="seo-primary" href={`/booth?preset=${preset.id}`}>{experience.cta}</Link>
             <Link className="seo-secondary" href="/photo-strip-maker">See strip styles</Link>
           </div>
-          <p className="seo-privacy">▣ Photos are processed in your browser in the current PicToFu MVP.</p>
+          <p className="seo-privacy">▣ Photos are processed in your browser and stay out of a PicToFu cloud photo gallery.</p>
         </div>
 
         <div className={`seo-preset-card seo-preset-card--${preset.frameId}`} aria-label={`${preset.name} preset preview`}>
@@ -78,7 +80,7 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
           </div>
           <div className="seo-preset-meta">
             <span>{LAYOUT_LABELS[preset.layoutId]}</span>
-            <span>{preset.filterId}</span>
+            <span>{filter.label}</span>
             <span>{frame.label}</span>
           </div>
         </div>
