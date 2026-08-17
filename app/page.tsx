@@ -45,7 +45,7 @@ export default function Home() {
           <Link href="/photo-strip-maker" prefetch={false}>Photo Strip</Link>
           <Link href="/korean-photobooth" prefetch={false}>Korean Booth</Link>
         </nav>
-        <Link className="header-cta" href="/layouts" prefetch={false}>Start Booth ✦</Link>
+        <Link className="header-cta" href="/booth?preset=classic-booth" prefetch={false}>Start Booth ✦</Link>
         <a className="menu-button" href="#templates" aria-label="Jump to templates">☰</a>
       </header>
 
@@ -58,8 +58,8 @@ export default function Home() {
             Snap photo strips instantly in your browser. Add filters and frames, then download or share with your favorite people. <span aria-hidden="true">♡</span>
           </p>
           <div className="hero-actions">
-            <Link className="primary-button" href="/layouts" prefetch={false}>Start Booth ✦</Link>
-            <a className="secondary-button" href="#templates">Try Templates</a>
+            <Link className="primary-button" href="/booth?preset=classic-booth" prefetch={false}>Start Booth ✦</Link>
+            <Link className="secondary-button" href="/layouts" prefetch={false}>Choose a look</Link>
           </div>
           <div className="benefit-row" aria-label="PicToFu benefits">
             <span>☁ <b>No app needed</b></span>
@@ -84,7 +84,7 @@ export default function Home() {
         <span className="privacy-note__icon" aria-hidden="true">▣</span>
         <div>
           <h2>Your photos stay with you.</h2>
-          <p>PicToFu’s MVP processes camera frames and photo strips in your browser. No account required.</p>
+          <p>PicToFu processes camera frames and photo strips in your browser. No account required.</p>
         </div>
         <Link href="/privacy" prefetch={false}>Read our privacy policy →</Link>
       </section>
