@@ -9,12 +9,12 @@ const CONTACT_EMAIL = "fxbin123@gmail.com";
 export const metadata: Metadata = {
   title: { absolute: "Privacy Policy | PicToFu" },
   description:
-    "Learn how PicToFu handles camera access, browser-local photo processing, analytics, cookies, retention, and privacy choices.",
+    "Learn how PicToFu handles camera access, local photo uploads, browser-local photo processing, analytics, cookies, retention, and privacy choices.",
   alternates: { canonical: "/privacy" },
   openGraph: {
     title: "Privacy Policy | PicToFu",
     description:
-      "How PicToFu handles camera access, photos, analytics, cookies, retention, and privacy choices.",
+      "How PicToFu handles camera access, local photo uploads, analytics, cookies, retention, and privacy choices.",
     url: "https://pictofu.com/privacy",
     siteName: "PicToFu",
     type: "website",
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
           <p className={styles.eyebrow}>Privacy at PicToFu</p>
           <h1>Privacy Policy</h1>
           <p className={styles.lede}>
-            PicToFu is designed so the core photobooth can work without an account and without uploading your captured photos to a PicToFu photo server.
+            PicToFu is designed so the core photobooth can work without an account and without uploading your captured or device-selected photos to a PicToFu photo server.
           </p>
           <p className={styles.updated}>Last updated: {LAST_UPDATED}</p>
         </div>
@@ -50,7 +50,7 @@ export default function PrivacyPage() {
         <section className={styles.summary} aria-label="Privacy summary">
           <strong>Your photos stay with you.</strong>
           <p>
-            In the current PicToFu service, camera frames, captured shots, filters, strip composition, and PNG export are processed in your browser. PicToFu does not maintain a cloud photo gallery or account-based photo history.
+            In the current PicToFu service, camera frames, captured shots, photos you select from your device, filters, strip composition, and PNG export are processed in your browser. PicToFu does not maintain a cloud photo gallery or account-based photo history.
           </p>
         </section>
 
@@ -62,12 +62,12 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2>2. Camera access and photo processing</h2>
+          <h2>2. Camera, local uploads, and photo processing</h2>
           <p>
-            PicToFu asks your browser for camera permission only when a camera experience needs it. Your browser and operating system control that permission. You can deny or revoke camera access through your browser or device settings.
+            PicToFu asks your browser for camera permission only when a camera experience needs it. Your browser and operating system control that permission. You can deny or revoke camera access through your browser or device settings. You can also choose existing photos from your device without enabling the camera.
           </p>
           <p>
-            In the current service, captured image bytes and the final composed photo strip stay in browser memory while you use the booth. PicToFu does not intentionally transmit captured photos, camera frames, Blob URLs, base64 image data, or the generated PNG to analytics providers. If you download or share an image, the resulting file is handled by your browser, device, or the destination you choose.
+            In the current service, captured image bytes, device-selected photo files, and the final composed photo strip stay in browser memory while you use the booth. Local photo selection uses browser object URLs so the selected images can be previewed and cropped without a PicToFu media-upload request. PicToFu does not intentionally transmit captured or selected photos, camera frames, Blob URLs, base64 image data, or the generated PNG to analytics providers. If you download or share an image, the resulting file is handled by your browser, device, or the destination you choose.
           </p>
         </section>
 
@@ -77,7 +77,7 @@ export default function PrivacyPage() {
             PicToFu may process limited technical and usage information needed to operate, secure, and understand the site. Depending on the measurement service and your analytics choice, this can include page paths, bounded acquisition labels, device class, referrer category, cohort date, and product interaction stages such as starting the booth or completing an export.
           </p>
           <p>
-            Product measurement uses small, structured fields. It must not include your photo content, camera frames, exported image bytes, Blob URLs, base64 data, or free-form text taken from your images.
+            Product measurement uses small, structured fields. It must not include your photo content, camera frames, exported image bytes, Blob URLs, base64 data, filenames, or free-form text taken from your images.
           </p>
         </section>
 
@@ -90,10 +90,10 @@ export default function PrivacyPage() {
 
           <h3>Privacy-minimized product funnel counters</h3>
           <p>
-            PicToFu records privacy-minimized daily funnel counters so we can understand whether visitors reach stages such as landing, opening the booth, granting camera access, completing capture, exporting, downloading, or sharing. These counters are aggregated by bounded dimensions such as page path, preset, device class, referrer category, and campaign labels such as UTM source/content.
+            PicToFu records privacy-minimized daily funnel counters so we can understand whether visitors reach stages such as landing, opening the booth, granting camera access, completing capture or local photo selection, exporting, downloading, or sharing. These counters are aggregated by bounded dimensions such as page path, preset, device class, referrer category, and campaign labels such as UTM source/content.
           </p>
           <p>
-            The aggregate growth store does not store a PicToFu user ID, analytics session ID, IP address, photo media, or free-form text. The browser uses session storage only to avoid counting the same funnel stage repeatedly during one browser session; that session marker is not included in the aggregate payload. PicToFu&apos;s current aggregate counter infrastructure is hosted with Supabase.
+            The aggregate growth store does not store a PicToFu user ID, analytics session ID, IP address, photo media, filenames, or free-form text. The browser uses session storage only to avoid counting the same funnel stage repeatedly during one browser session; that session marker is not included in the aggregate payload. PicToFu&apos;s current aggregate counter infrastructure is hosted with Supabase.
           </p>
 
           <h3>Optional first-party rolling retention</h3>
@@ -129,14 +129,14 @@ export default function PrivacyPage() {
             PicToFu uses third-party infrastructure to deliver and understand the website. Vercel hosts and serves the application and may provide aggregated traffic analytics. Supabase hosts the privacy-minimized daily product-funnel counters and aggregate retention counters. Google Analytics may provide additional optional product and acquisition measurement only after the analytics consent gate allows it. Those providers process limited technical information under their own terms and privacy documentation.
           </p>
           <p>
-            PicToFu does not authorize these measurement services to receive captured photo bytes as part of the current analytics contract.
+            PicToFu does not authorize these measurement services to receive captured or device-selected photo bytes as part of the current analytics contract.
           </p>
         </section>
 
         <section>
           <h2>7. Data retention</h2>
           <p>
-            PicToFu does not maintain a server-side library of your captured photos in the current service. Temporary browser objects used during a booth session are intended to disappear when the page/session is cleared, while files you choose to download remain under your control on your device.
+            PicToFu does not maintain a server-side library of your captured or device-selected photos in the current service. Temporary browser objects used during a booth session are intended to disappear when the page/session is cleared, while files you choose to download remain under your control on your device.
           </p>
           <p>
             The PicToFu growth and retention stores retain aggregate counts rather than user/session event histories. If analytics is allowed, the browser-local retention cohort record can remain in local storage so later D1/D7/D30 returns can be counted once; it is removed when you turn analytics off or when you clear the relevant browser storage. Other aggregated analytics data, when enabled, is retained according to the configured provider and PicToFu&apos;s account settings with that provider. PicToFu does not use analytics retention to reconstruct or store your photo content.
@@ -163,7 +163,7 @@ export default function PrivacyPage() {
         <section>
           <h2>10. Children and minors</h2>
           <p>
-            PicToFu is a general-audience creative tool and is not designed specifically for children. The current service does not ask users to create accounts or submit profile information. Parents or guardians should supervise camera and sharing use where appropriate for the user&apos;s age and local requirements.
+            PicToFu is a general-audience creative tool and is not designed specifically for children. The current service does not ask users to create accounts or submit profile information. Parents or guardians should supervise camera, local photo selection, and sharing use where appropriate for the user&apos;s age and local requirements.
           </p>
         </section>
 
