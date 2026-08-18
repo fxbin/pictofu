@@ -198,6 +198,50 @@
   pointer-events: none;
 }
 
+.review-transform-tools {
+  width: min(100%, 780px);
+  justify-self: center;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.review-transform-tools button {
+  min-height: 58px;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid #eadde0;
+  border-radius: 13px;
+  background: rgba(255,255,255,.9);
+  color: #67575b;
+  cursor: pointer;
+}
+
+.review-transform-tools button:hover:not(:disabled),
+.review-transform-tools button:focus-visible,
+.review-transform-tools button.is-selected {
+  border-color: #ef8ba1;
+  background: #fff1f5;
+  color: #a74f67;
+}
+
+.review-transform-tools button:focus-visible {
+  outline: 2px solid #d95f7d;
+  outline-offset: 2px;
+}
+
+.review-transform-tools strong {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.review-transform-tools span {
+  font-size: 10px;
+  font-weight: 800;
+}
+
 .review-stage__control-grid {
   width: min(100%, 780px);
   justify-self: center;
@@ -234,6 +278,10 @@
   width: 100%;
   min-height: 32px;
   accent-color: #ef7894;
+}
+
+.review-stage__control-grid .review-straighten-control {
+  grid-column: 1 / -1;
 }
 
 .review-stage__utility-row {
@@ -400,9 +448,23 @@
     border-radius: 14px;
   }
 
+  .review-transform-tools {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .review-transform-tools button {
+    min-height: 54px;
+    padding: 7px 5px;
+  }
+
   .review-stage__control-grid {
     grid-template-columns: 1fr;
     gap: 8px;
+  }
+
+  .review-stage__control-grid .review-straighten-control {
+    grid-column: auto;
   }
 
   .review-stage__control-grid label {
