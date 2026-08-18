@@ -13,8 +13,10 @@ import {
 type StickerEditorProps = {
   presetId: string;
   targetId: string;
+  controlsTargetId: string;
   disabled?: boolean;
   onChange: (stickers: StickerInstance[]) => void;
+  onToolUse?: () => void;
 };
 
 type StickerDrag = {
@@ -32,16 +34,27 @@ function stickerKey() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function StickerEditor({ presetId, targetId, disabled, onChange }: StickerEditorProps) {
+export function StickerEditor({
+  presetId,
+  targetId,
+  controlsTargetId,
+  disabled,
+  onChange,
+  onToolUse,
+}: StickerEditorProps) {
   const pack = useMemo(() => stickerPackForPreset(presetId), [presetId]);
   const [stickers, setStickers] = useState<StickerInstance[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  const [controlsTarget, setControlsTarget] = useState<HTMLElement | null>(null);
   const dragRef = useRef<StickerDrag | null>(null);
 
   useEffect(() => {
-    setPortalTarget(document.getElementById(targetId));
-  }, [targetId]);
+    const nextPortal = document.getElementById(targetId);
+    const nextControls = document.getElementById(controlsTargetId);
+    setPortalTarget((current) => current === nextPortal ? current : nextPortal);
+    setControlsTarget((current) => current === nextControls ? current : nextControls);
+  });
 
   useEffect(() => {
     setStickers([]);
@@ -53,11 +66,14 @@ export function StickerEditor({ presetId, targetId, disabled, onChange }: Sticke
     onChange(stickers);
   }, [stickers, onChange]);
 
-  if (pack.length === 0) return null;
-
   const activeSticker = activeId ? stickers.find((sticker) => sticker.id === activeId) ?? null : null;
 
+  function markUse() {
+    onToolUse?.();
+  }
+
   function updateSticker(id: string, partial: Partial<StickerInstance>) {
+    markUse();
     setStickers((current) => current.map((sticker) => (
       sticker.id === id
         ? normalizeStickerInstance({ ...sticker, ...partial })
@@ -67,6 +83,7 @@ export function StickerEditor({ presetId, targetId, disabled, onChange }: Sticke
 
   function addSticker(stickerId: string) {
     if (disabled) return;
+    markUse();
     const offset = stickers.length % 4;
     const next = normalizeStickerInstance({
       id: stickerKey(),
@@ -82,11 +99,13 @@ export function StickerEditor({ presetId, targetId, disabled, onChange }: Sticke
   }
 
   function removeSticker(id: string) {
+    markUse();
     setStickers((current) => current.filter((sticker) => sticker.id !== id));
     setActiveId((current) => current === id ? null : current);
   }
 
   function clearStickers() {
+    markUse();
     setStickers([]);
     setActiveId(null);
     dragRef.current = null;
@@ -128,7 +147,7 @@ export function StickerEditor({ presetId, targetId, disabled, onChange }: Sticke
     dragRef.current = null;
   }
 
-  const overlay = portalTarget ? createPortal(
+  const overlay = portalTarget && pack.length > 0 ? createPortal(
     <div className="sticker-overlay" aria-label="Stickers on photo strip">
       {[...stickers].sort((a, b) => a.zIndex - b.zIndex).map((sticker) => {
         const definition = getStickerDefinition(sticker.stickerId);
@@ -162,66 +181,66 @@ export function StickerEditor({ presetId, targetId, disabled, onChange }: Sticke
     portalTarget,
   ) : null;
 
-  return (
-    <>
-      {overlay}
-      <div className="editor-control-group sticker-editor" aria-label="Sticker editor">
-        <div className="sticker-editor__heading">
-          <div>
-            <h2>Stickers</h2>
-            <p>Curated for this template · tap to add, then drag it on your strip.</p>
-          </div>
-          {stickers.length > 0 && (
-            <button type="button" onClick={clearStickers} disabled={disabled}>Clear stickers</button>
-          )}
+  const controls = controlsTarget && pack.length > 0 ? createPortal(
+    <div className="editor-control-group sticker-editor" aria-label="Sticker editor">
+      <div className="sticker-editor__heading">
+        <div>
+          <h2>Stickers</h2>
+          <p>Curated for this template · tap to add, then drag it on your strip.</p>
         </div>
-
-        <div className="sticker-pack" aria-label="Choose a sticker">
-          {pack.map((sticker) => (
-            <button
-              type="button"
-              key={sticker.id}
-              onClick={() => addSticker(sticker.id)}
-              disabled={disabled}
-              title={sticker.label}
-              aria-label={`Add ${sticker.label} sticker`}
-            >
-              <strong style={{ color: sticker.tone }}>{sticker.glyph}</strong>
-              <span>{sticker.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {activeSticker && (
-          <div className="sticker-editor__active" aria-label="Adjust selected sticker">
-            <label>
-              <span>Size <strong>{activeSticker.scale.toFixed(2)}×</strong></span>
-              <input
-                type="range"
-                min="0.55"
-                max="2"
-                step="0.05"
-                value={activeSticker.scale}
-                onChange={(event) => updateSticker(activeSticker.id, { scale: Number(event.target.value) })}
-                disabled={disabled}
-              />
-            </label>
-            <label>
-              <span>Rotate <strong>{Math.round(activeSticker.rotation)}°</strong></span>
-              <input
-                type="range"
-                min="-45"
-                max="45"
-                step="1"
-                value={activeSticker.rotation}
-                onChange={(event) => updateSticker(activeSticker.id, { rotation: Number(event.target.value) })}
-                disabled={disabled}
-              />
-            </label>
-            <button type="button" className="sticker-editor__delete" onClick={() => removeSticker(activeSticker.id)} disabled={disabled}>Delete sticker</button>
-          </div>
+        {stickers.length > 0 && (
+          <button type="button" onClick={clearStickers} disabled={disabled}>Clear stickers</button>
         )}
       </div>
-    </>
-  );
+
+      <div className="sticker-pack" aria-label="Choose a sticker">
+        {pack.map((sticker) => (
+          <button
+            type="button"
+            key={sticker.id}
+            onClick={() => addSticker(sticker.id)}
+            disabled={disabled}
+            title={sticker.label}
+            aria-label={`Add ${sticker.label} sticker`}
+          >
+            <strong style={{ color: sticker.tone }}>{sticker.glyph}</strong>
+            <span>{sticker.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {activeSticker && (
+        <div className="sticker-editor__active" aria-label="Adjust selected sticker">
+          <label>
+            <span>Size <strong>{activeSticker.scale.toFixed(2)}×</strong></span>
+            <input
+              type="range"
+              min="0.55"
+              max="2"
+              step="0.05"
+              value={activeSticker.scale}
+              onChange={(event) => updateSticker(activeSticker.id, { scale: Number(event.target.value) })}
+              disabled={disabled}
+            />
+          </label>
+          <label>
+            <span>Rotate <strong>{Math.round(activeSticker.rotation)}°</strong></span>
+            <input
+              type="range"
+              min="-45"
+              max="45"
+              step="1"
+              value={activeSticker.rotation}
+              onChange={(event) => updateSticker(activeSticker.id, { rotation: Number(event.target.value) })}
+              disabled={disabled}
+            />
+          </label>
+          <button type="button" className="sticker-editor__delete" onClick={() => removeSticker(activeSticker.id)} disabled={disabled}>Delete sticker</button>
+        </div>
+      )}
+    </div>,
+    controlsTarget,
+  ) : null;
+
+  return <>{overlay}{controls}</>;
 }
