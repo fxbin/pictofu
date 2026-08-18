@@ -1,6 +1,7 @@
 import { filterCssValue, type FilterId } from "@/lib/filter-styles";
 import { getFrameStyle, type FrameId } from "@/lib/frame-styles";
 import type { BoothPreset } from "@/lib/presets";
+import { getStickerDefinition, normalizeStickerInstance, type StickerInstance } from "@/lib/stickers";
 
 type LayoutId = BoothPreset["layoutId"];
 
@@ -11,6 +12,7 @@ export type PhotoCrop = {
 };
 
 export type QuarterRotation = 0 | 90 | 180 | 270;
+export type PhotoRatio = "auto" | "1:1" | "4:3" | "3:4";
 
 export type PhotoAdjustment = {
   panX: number;
@@ -38,6 +40,8 @@ export type ComposeStripInput = {
   layoutId: LayoutId;
   filterId: FilterId;
   frameId: FrameId;
+  photoRatio?: PhotoRatio;
+  stickers?: StickerInstance[];
 };
 
 export type ComposeStripResult = {
@@ -71,7 +75,13 @@ export function shotTargetForLayout(layoutId: LayoutId): number {
   }
 }
 
-export function cellAspectRatioForLayout(layoutId: LayoutId): number {
+export function cellAspectRatioForLayout(
+  layoutId: LayoutId,
+  photoRatio: PhotoRatio = "auto",
+): number {
+  if (photoRatio === "1:1") return 1;
+  if (photoRatio === "4:3") return 4 / 3;
+  if (photoRatio === "3:4") return 3 / 4;
   if (layoutId === "grid-4" || layoutId === "polaroid") return 1;
   return 1 / 0.72;
 }
@@ -139,9 +149,6 @@ export function resolvePhotoTransform(
   const cosine = Math.abs(Math.cos(angle));
   const sine = Math.abs(Math.sin(angle));
 
-  // Inverse-rotate the destination viewport and cover its bounding box. This is
-  // intentionally conservative: it may crop a little more at fine angles, but it
-  // guarantees the rounded destination cell never exposes an empty corner.
   const requiredLocalWidth = safeViewportWidth * cosine + safeViewportHeight * sine;
   const requiredLocalHeight = safeViewportWidth * sine + safeViewportHeight * cosine;
   const coverScale = Math.max(
@@ -257,22 +264,28 @@ function drawRoundedPhoto(
   context.restore();
 }
 
-function layoutGeometry(layoutId: LayoutId, photoCount: number) {
+function layoutGeometry(
+  layoutId: LayoutId,
+  photoCount: number,
+  photoRatio: PhotoRatio = "auto",
+) {
   const count = Math.max(1, Math.min(photoCount, shotTargetForLayout(layoutId)));
+  const ratio = cellAspectRatioForLayout(layoutId, photoRatio);
 
   if (layoutId === "grid-4") {
     const width = 1600;
     const margin = 58;
     const gap = 34;
-    const cell = Math.floor((width - margin * 2 - gap) / 2);
+    const cellWidth = Math.floor((width - margin * 2 - gap) / 2);
+    const cellHeight = Math.round(cellWidth / ratio);
     const footer = 130;
     const rows = Math.ceil(count / 2);
-    const height = margin + rows * cell + Math.max(0, rows - 1) * gap + footer;
+    const height = margin + rows * cellHeight + Math.max(0, rows - 1) * gap + footer;
     const rects = Array.from({ length: count }, (_, index) => ({
-      x: margin + (index % 2) * (cell + gap),
-      y: margin + Math.floor(index / 2) * (cell + gap),
-      width: cell,
-      height: cell,
+      x: margin + (index % 2) * (cellWidth + gap),
+      y: margin + Math.floor(index / 2) * (cellHeight + gap),
+      width: cellWidth,
+      height: cellHeight,
     }));
     return { width, height, rects, footer };
   }
@@ -281,8 +294,10 @@ function layoutGeometry(layoutId: LayoutId, photoCount: number) {
     const width = 1200;
     const margin = 64;
     const footer = 250;
-    const rects = [{ x: margin, y: margin, width: width - margin * 2, height: width - margin * 2 }];
-    return { width, height: margin + rects[0].height + footer, rects, footer };
+    const cellWidth = width - margin * 2;
+    const cellHeight = Math.round(cellWidth / ratio);
+    const rects = [{ x: margin, y: margin, width: cellWidth, height: cellHeight }];
+    return { width, height: margin + cellHeight + footer, rects, footer };
   }
 
   const width = 1080;
@@ -290,7 +305,7 @@ function layoutGeometry(layoutId: LayoutId, photoCount: number) {
   const gap = 28;
   const footer = 120;
   const cellWidth = width - margin * 2;
-  const cellHeight = Math.round(cellWidth * 0.72);
+  const cellHeight = Math.round(cellWidth / ratio);
   const height = margin + count * cellHeight + Math.max(0, count - 1) * gap + footer;
   const rects = Array.from({ length: count }, (_, index) => ({
     x: margin,
@@ -482,6 +497,33 @@ function drawFrameDecorations(
   }
 }
 
+function drawSticker(
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  sticker: StickerInstance,
+) {
+  const definition = getStickerDefinition(sticker.stickerId);
+  if (!definition) return;
+  const next = normalizeStickerInstance(sticker);
+  const baseSize = Math.max(38, Math.min(width, height) * 0.075);
+  const size = baseSize * next.scale;
+
+  context.save();
+  context.translate(next.x * width, next.y * height);
+  context.rotate((next.rotation * Math.PI) / 180);
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.font = `${definition.weight === "bold" ? 900 : 700} ${size}px ui-rounded, system-ui, sans-serif`;
+  context.lineJoin = "round";
+  context.lineWidth = Math.max(3, size * 0.085);
+  context.strokeStyle = "rgba(255,255,255,.92)";
+  context.fillStyle = definition.tone;
+  context.strokeText(definition.glyph, 0, 0);
+  context.fillText(definition.glyph, 0, 0);
+  context.restore();
+}
+
 function drawBranding(
   context: CanvasRenderingContext2D,
   width: number,
@@ -514,7 +556,7 @@ export async function composePhotoStrip(input: ComposeStripInput): Promise<Compo
   }
 
   const images = await Promise.all(urls.map(loadImage));
-  const geometry = layoutGeometry(input.layoutId, images.length);
+  const geometry = layoutGeometry(input.layoutId, images.length, input.photoRatio ?? "auto");
   const canvas = document.createElement("canvas");
   canvas.width = geometry.width;
   canvas.height = geometry.height;
@@ -537,6 +579,12 @@ export async function composePhotoStrip(input: ComposeStripInput): Promise<Compo
       adjustment,
     );
   });
+
+  [...(input.stickers ?? [])]
+    .map(normalizeStickerInstance)
+    .sort((a, b) => a.zIndex - b.zIndex)
+    .forEach((sticker) => drawSticker(context, canvas.width, canvas.height, sticker));
+
   drawBranding(context, canvas.width, canvas.height, input.frameId, input.layoutId);
 
   const blob = await new Promise<Blob>((resolve, reject) => {
