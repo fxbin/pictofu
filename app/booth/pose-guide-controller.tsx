@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { emitProductEvent } from "@/lib/analytics";
+import { setPoseGuideProfile } from "@/lib/pose-guide-measurement";
 import {
   getPoseGuideSequence,
   poseGuideStepForShot,
@@ -14,6 +15,7 @@ type AnalyticsDetail = {
   capture_source?: string;
   shot_index?: number;
   error_class?: string;
+  facing_mode?: string;
 };
 
 function selectedPresetFromDom() {
@@ -37,6 +39,7 @@ export function PoseGuideController({ initialPresetId }: { initialPresetId: stri
   const [shotIndex, setShotIndex] = useState(0);
   const [poseOffset, setPoseOffset] = useState(0);
   const [cameraLive, setCameraLive] = useState(false);
+  const [mirrored, setMirrored] = useState(true);
 
   const sequence = useMemo(() => getPoseGuideSequence(presetId), [presetId]);
   const pose = sequence ? poseGuideStepForShot(sequence, shotIndex, poseOffset) : null;
@@ -107,6 +110,7 @@ export function PoseGuideController({ initialPresetId }: { initialPresetId: stri
     const onAnalytics = (event: Event) => {
       const detail = (event as CustomEvent<AnalyticsDetail>).detail ?? {};
       if (detail.event_name === "camera_permission_granted") {
+        setMirrored(detail.facing_mode !== "environment");
         setCameraLive(true);
         setShotIndex(0);
       }
@@ -115,7 +119,8 @@ export function PoseGuideController({ initialPresetId }: { initialPresetId: stri
         setShotIndex(0);
       }
       if (detail.event_name === "photo_captured" && typeof detail.shot_index === "number") {
-        setShotIndex(Math.max(0, detail.shot_index));
+        const lastIndex = Math.max(0, (sequence?.steps.length ?? 1) - 1);
+        setShotIndex(Math.min(lastIndex, Math.max(0, detail.shot_index)));
       }
       if (detail.event_name === "capture_completed" || detail.event_name === "retake_single") {
         setCameraLive(false);
@@ -126,27 +131,31 @@ export function PoseGuideController({ initialPresetId }: { initialPresetId: stri
     };
     window.addEventListener("pictofu:analytics", onAnalytics);
     return () => window.removeEventListener("pictofu:analytics", onAnalytics);
-  }, []);
+  }, [sequence]);
 
   useEffect(() => {
     if (!cameraLive) return;
-    emitProductEvent("pose_guide_changed", {
-      preset_id: presetId,
-      pose_guide_action: sequence ? "shown" : "unavailable",
-      pose_id: pose?.id,
-    });
-  }, [cameraLive, pose?.id, presetId, sequence]);
+    if (!sequence) {
+      setPoseGuideProfile("none");
+      return;
+    }
+    if (!enabled) {
+      setPoseGuideProfile("disabled");
+      return;
+    }
+    setPoseGuideProfile(poseOffset === 0 ? "guided" : "customized");
+  }, [cameraLive, enabled, poseOffset, sequence]);
 
   if (!surface || !sequence || !pose || !cameraLive) return null;
 
   const toggleGuide = () => {
     const next = !enabled;
     setEnabled(next);
-    emitProductEvent("pose_guide_changed", {
+    setPoseGuideProfile(next ? (poseOffset === 0 ? "guided" : "customized") : "disabled");
+    emitProductEvent("style_changed", {
+      style_type: "pose_guide",
+      style_id: next ? "enabled" : "disabled",
       preset_id: presetId,
-      pose_guide_action: next ? "enabled" : "disabled",
-      pose_guide_state: next ? "on" : "off",
-      pose_id: pose.id,
     });
   };
 
@@ -154,11 +163,11 @@ export function PoseGuideController({ initialPresetId }: { initialPresetId: stri
     const nextOffset = (poseOffset + 1) % sequence.steps.length;
     const next = poseGuideStepForShot(sequence, shotIndex, nextOffset);
     setPoseOffset(nextOffset);
-    emitProductEvent("pose_guide_changed", {
+    setPoseGuideProfile(enabled ? "customized" : "disabled");
+    emitProductEvent("style_changed", {
+      style_type: "pose_guide",
+      style_id: `next:${next?.id ?? "unknown"}`,
       preset_id: presetId,
-      pose_guide_action: "next",
-      pose_guide_state: enabled ? "on" : "off",
-      pose_id: next?.id,
     });
   };
 
@@ -169,7 +178,7 @@ export function PoseGuideController({ initialPresetId }: { initialPresetId: stri
           pose={pose}
           shotIndex={shotIndex}
           shotCount={sequence.steps.length}
-          mirrored={document.querySelector(".booth-video")?.classList.contains("is-mirrored") ?? false}
+          mirrored={mirrored}
         />
       )}
       <div className="pose-guide-controls" aria-label="Pose Guide controls">
