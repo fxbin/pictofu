@@ -16,13 +16,13 @@ assert.match(booth, /capture_source:\s*"camera"/, "Camera completion must preser
 assert.match(booth, /capture_source:\s*"upload"/, "Upload completion must preserve bounded capture-source analytics");
 assert.match(analyticsSafety, /"capture_source"/, "capture_source must be explicitly analytics-safe");
 
-assert.match(booth, /updateActiveCrop/, "Uploaded photos must enter the existing Review crop controls");
+assert.match(booth, /updateActiveAdjustment/, "Uploaded photos must enter the shared Review adjustment controls");
 assert.match(booth, /Drag to reposition/, "Review must retain drag-to-reframe UX");
-assert.match(booth, /photoCrops:\s*readySlots\.map\(\(slot\)\s*=>\s*slot\.crop\)/, "Export must pass per-photo crop state into the compositor");
-assert.match(compositor, /resolvePhotoCrop/, "Compositor must keep bounded crop resolution");
-assert.match(compositor, /zoom[^\n]*2\.5|2\.5[^\n]*zoom/, "Compositor must keep bounded zoom semantics");
+assert.match(booth, /photoAdjustments:\s*readySlots\.map\(\(slot\)\s*=>\s*slot\.adjustment\)/, "Export must pass per-photo adjustment state into the compositor");
+assert.match(compositor, /resolvePhotoTransform/, "Compositor must keep bounded transform resolution");
+assert.match(compositor, /zoom:[\s\S]*?2\.5|2\.5[\s\S]*?zoom/, "Compositor must keep bounded zoom semantics");
 
 assert.match(booth, /Replace photo/, "Uploaded photos must support single-photo replacement without restarting the whole set");
 assert.match(booth, /start_booth[^\n]*booth_upload|cta_location:\s*"booth_upload"/, "Upload entry must be measurable as a distinct booth CTA");
 
-console.log("Upload + crop contract checks passed.");
+console.log("Upload + PhotoAdjustment contract checks passed.");
