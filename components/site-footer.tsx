@@ -87,6 +87,7 @@ export function SiteFooter() {
           <Link href="/layouts" prefetch={false}>Layouts</Link>
           <Link href="/online-photobooth" prefetch={false}>Photobooth</Link>
           <Link href="/photo-strip-maker" prefetch={false}>Photo strips</Link>
+          <Link href="/guides" prefetch={false}>Guides</Link>
           <Link href="/about" prefetch={false}>About</Link>
           <Link href="/contact" prefetch={false}>Contact</Link>
           <Link href="/privacy" prefetch={false}>Privacy</Link>
