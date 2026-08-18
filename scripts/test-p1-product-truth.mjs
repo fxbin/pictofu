@@ -13,6 +13,8 @@ const seoExperience = read("components/seo-experience-page.tsx");
 const about = read("app/about/page.tsx");
 const boothPage = read("app/booth/page.tsx");
 const boothClient = read("app/booth/booth-client.tsx");
+const photoSelectionPicker = read("app/booth/photo-selection-picker.tsx");
+const photoSelectionStyles = read("app/booth/photo-selection-picker.module.css");
 const privacy = read("app/privacy/page.tsx");
 const footer = read("components/site-footer.tsx");
 const seoPages = read("lib/seo-pages.ts");
@@ -167,4 +169,39 @@ assert.ok(
   "Booth page must load the progressive disclosure stylesheet.",
 );
 
-console.log("P1 product truth, progressive disclosure, reduced-motion, upload input, and P2 copy contracts passed.");
+assert.ok(
+  photoSelectionPicker.includes("beginOrderDrag") &&
+    photoSelectionPicker.includes("continueOrderDrag") &&
+    photoSelectionPicker.includes("closestOrderPosition"),
+  "Photo final-order rail must support direct pointer drag reordering.",
+);
+assert.ok(
+  photoSelectionPicker.includes('aria-keyshortcuts="ArrowLeft ArrowRight Home End"') &&
+    photoSelectionPicker.includes('event.key === "ArrowLeft"') &&
+    photoSelectionPicker.includes('event.key === "ArrowRight"'),
+  "Drag reorder must retain a keyboard sorting fallback without visible arrow controls.",
+);
+assert.ok(
+  photoSelectionPicker.includes("Drag photos into the order you want") &&
+    !photoSelectionPicker.includes("Move photos left or right") &&
+    !photoSelectionPicker.includes("orderControls"),
+  "Direct manipulation must be the primary ordering UI; visible left/right button controls must stay removed.",
+);
+assert.ok(
+  photoSelectionPicker.includes('if ((event.target as HTMLElement).closest("button")) return;'),
+  "Remove-photo controls must not accidentally start a reorder drag.",
+);
+assert.ok(
+  photoSelectionStyles.includes("touch-action: pan-y"),
+  "Mobile reorder cards must reserve horizontal drag while preserving normal vertical page scrolling.",
+);
+assert.ok(
+  photoSelectionStyles.includes("cursor: grab") && photoSelectionStyles.includes("cursor: grabbing"),
+  "Desktop reorder affordance must communicate direct drag behavior.",
+);
+assert.ok(
+  boothClient.includes("selectedPhotoIndexes.map") && boothClient.includes("exportSlots"),
+  "Final export must continue to derive photo order from the selectedIndexes ordering contract.",
+);
+
+console.log("P1 product truth, progressive disclosure, reduced-motion, direct photo reorder, upload input, and P2 copy contracts passed.");
