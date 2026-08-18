@@ -19,11 +19,20 @@ type FramePickerProps = {
   presetId: string;
   layoutId: string;
   filterId: string;
+  compositionEnabled?: boolean;
   disabled?: boolean;
   onSelect: (id: FrameId) => void;
 };
 
-export function FramePicker({ selectedId, presetId, layoutId, filterId, disabled = false, onSelect }: FramePickerProps) {
+export function FramePicker({
+  selectedId,
+  presetId,
+  layoutId,
+  filterId,
+  compositionEnabled = false,
+  disabled = false,
+  onSelect,
+}: FramePickerProps) {
   const selected = FRAME_STYLES.find((frame) => frame.id === selectedId) ?? FRAME_STYLES[0];
 
   function selectFrame(frameId: FrameId) {
@@ -80,7 +89,7 @@ export function FramePicker({ selectedId, presetId, layoutId, filterId, disabled
         })}
       </div>
 
-      <CompositionEditor presetId={presetId} disabled={disabled} />
+      {compositionEnabled && <CompositionEditor presetId={presetId} disabled={disabled} />}
     </div>
   );
 }
