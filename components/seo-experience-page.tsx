@@ -40,6 +40,7 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
           <Link href="/">Home</Link>
           <Link href="/online-photobooth">Photobooth</Link>
           <Link href="/photo-strip-maker">Photo Strip</Link>
+          <Link href="/guides">Guides</Link>
         </nav>
         <Link className="seo-header__cta" href={`/booth?preset=${preset.id}`}>Start Booth ✦</Link>
       </header>
