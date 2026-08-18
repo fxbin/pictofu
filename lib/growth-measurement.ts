@@ -38,11 +38,21 @@ const GROWTH_DIMENSION_KEYS = [
   "edit_profile",
 ] as const;
 
+const SOURCE_SCOPED_EVENTS = new Set([
+  "capture_completed",
+  "export_completed",
+  "download_clicked",
+  "share_clicked",
+]);
+
 type GrowthDetail = Record<string, unknown>;
 
 function growthDedupeKey(payload: Record<string, string>) {
   if (payload.event_name === "editor_tool_used" && payload.edit_tool) {
     return `pictofu:growth-reached:editor_tool_used:${payload.edit_tool}`;
+  }
+  if (SOURCE_SCOPED_EVENTS.has(payload.event_name) && payload.capture_source) {
+    return `pictofu:growth-reached:${payload.event_name}:${payload.capture_source}`;
   }
   return `pictofu:growth-reached:${payload.event_name}`;
 }
