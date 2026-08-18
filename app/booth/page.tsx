@@ -4,6 +4,7 @@ import { PoseGuideController } from "./pose-guide-controller";
 import "./booth-foundation.css";
 import "./booth-shell.css";
 import "./camera.css";
+import "./pose-guide.css";
 import "./export.css";
 import "./filter-picker.css";
 import "./workspace-modes.css";
