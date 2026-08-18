@@ -64,6 +64,11 @@ assert.match(styles, /touch-action:\s*none/, "Active edit surface must own drag/
 assert.match(styles, /review-stage__control-grid/, "Editor IA must expose a dedicated fine-tune control grid");
 assert.match(styles, /review-transform-tools/, "Rotate/flip controls must have a dedicated mobile-safe toolbar");
 assert.match(styles, /review-straighten-control/, "Straighten control must span the precision control area on wider screens");
+assert.match(styles, /\.review-stage__photo\s*\{[\s\S]*?overflow:\s*visible;/, "Review crop frame must expose transformed source-photo context instead of clipping it away");
+assert.match(styles, /\.review-stage__photo \.photo-preview\s*\{\s*overflow:\s*visible;/, "Shared PhotoPreview must remain unclipped only inside the active Review crop frame");
+assert.match(styles, /\.review-stage__photo::before\s*\{[\s\S]*?content:\s*"Final crop"/, "Review editor must label the truthful final crop frame");
+assert.match(styles, /\.review-stage__photo::after\s*\{[\s\S]*?box-shadow:[\s\S]*?999px/, "Content outside the final crop must remain visible but dimmed");
+assert.match(styles, /\.review-stage\s*\{[\s\S]*?overflow:\s*hidden;/, "Editor stage must bound extreme zoom/context without clipping at the crop frame itself");
 
 for (const ratio of ["auto", "1:1", "4:3", "3:4"]) {
   assert.match(composition, new RegExp(ratio.replace(":", "\\:")), `Composition state must support ${ratio}`);
@@ -100,4 +105,4 @@ assert.match(growth, /capture_source/, "Growth payload must retain bounded camer
 assert.match(growth, /edit_profile/, "Growth payload must retain bounded editor profile");
 assert.doesNotMatch(growth, /stickerId|rotation|panX|panY|filename|blob|base64/i, "First-party growth payload must not include media or transform coordinates/content");
 
-console.log("Photo Editor V2 composition, stickers, transforms, mobile and measurement contract checks passed.");
+console.log("Photo Editor V2 composition, stickers, transforms, full-photo context, mobile and measurement contract checks passed.");
