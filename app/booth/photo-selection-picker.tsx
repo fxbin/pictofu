@@ -1,31 +1,25 @@
-import type { CSSProperties } from "react";
-import type { PhotoCrop } from "@/lib/compositor";
+import { PhotoPreview } from "./photo-preview";
+import type { PhotoAdjustment } from "@/lib/compositor";
 import styles from "./photo-selection-picker.module.css";
 
 export type PhotoSelectionChoice = {
   index: number;
   id: string;
   url: string;
-  crop?: PhotoCrop;
+  width: number;
+  height: number;
+  adjustment: PhotoAdjustment;
 };
 
 type PhotoSelectionPickerProps = {
   photos: PhotoSelectionChoice[];
   selectedIndexes: number[];
   targetCount: number;
+  targetRatio: number;
   filter: string;
   disabled?: boolean;
   onChange: (indexes: number[]) => void;
 };
-
-function previewStyle(crop?: PhotoCrop, filter?: string): CSSProperties {
-  const next = crop ?? { x: 0, y: 0, zoom: 1 };
-  return {
-    objectPosition: `${50 + next.x * 50}% ${50 + next.y * 50}%`,
-    transform: `scale(${next.zoom})`,
-    filter,
-  };
-}
 
 function moveItem(indexes: number[], from: number, to: number) {
   if (to < 0 || to >= indexes.length || from === to) return indexes;
@@ -39,6 +33,7 @@ export function PhotoSelectionPicker({
   photos,
   selectedIndexes,
   targetCount,
+  targetRatio,
   filter,
   disabled,
   onChange,
@@ -69,6 +64,19 @@ export function PhotoSelectionPicker({
 
   function moveSelected(position: number, direction: -1 | 1) {
     onChange(moveItem(selectedIndexes, position, position + direction));
+  }
+
+  function preview(photo: PhotoSelectionChoice) {
+    return (
+      <PhotoPreview
+        url={photo.url}
+        imageWidth={photo.width}
+        imageHeight={photo.height}
+        adjustment={photo.adjustment}
+        targetRatio={targetRatio}
+        filter={filter}
+      />
+    );
   }
 
   return (
@@ -109,8 +117,8 @@ export function PhotoSelectionPicker({
 
               return (
                 <div className={styles.orderCard} key={photo.id}>
-                  <div className={styles.orderPreview}>
-                    <img src={photo.url} alt="" style={previewStyle(photo.crop, filter)} />
+                  <div className={styles.orderPreview} style={{ aspectRatio: String(targetRatio) }}>
+                    {preview(photo)}
                     <span>{position + 1}</span>
                     <button
                       type="button"
@@ -170,7 +178,9 @@ export function PhotoSelectionPicker({
                 aria-pressed={selected}
                 aria-label={`${selected ? "Remove" : "Use"} photo ${photo.index + 1}${selected ? ` in position ${selectedPosition + 1}` : ""}`}
               >
-                <img src={photo.url} alt="" style={previewStyle(photo.crop, filter)} />
+                <span style={{ display: "block", position: "relative", overflow: "hidden", aspectRatio: String(targetRatio), borderRadius: 8 }}>
+                  {preview(photo)}
+                </span>
                 <span>Photo {photo.index + 1}</span>
                 {selected && <b aria-hidden="true">{selectedPosition + 1}</b>}
               </button>

@@ -132,9 +132,10 @@ assert.ok(
 );
 assert.ok(
   (boothClient.includes("Adjust crop or retake in Review photos →") ||
-    boothClient.includes("Adjust crop or replace photos in Review photos →")) &&
+    boothClient.includes("Adjust crop or replace photos in Review photos →") ||
+    boothClient.includes("Adjust individual photos in Photo Editor →")) &&
     boothClient.includes("onClick={returnToReview}"),
-  "Crop plus the correct retake/replace escape hatch must remain reachable from advanced options.",
+  "Photo adjustment plus the correct retake/replace escape hatch must remain reachable from advanced options.",
 );
 assert.ok(
   boothClient.includes('!(workspaceMode === "style" && capturedCount > 0) && templateControls'),
