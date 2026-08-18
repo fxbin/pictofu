@@ -1,0 +1,193 @@
+.sticker-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.sticker-overlay__item {
+  position: absolute;
+  width: max-content;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
+  font-size: clamp(18px, 6.4vw, 28px);
+  line-height: 1;
+  text-shadow:
+    -1px -1px 0 rgba(255,255,255,.92),
+    1px -1px 0 rgba(255,255,255,.92),
+    -1px 1px 0 rgba(255,255,255,.92),
+    1px 1px 0 rgba(255,255,255,.92),
+    0 2px 5px rgba(70, 45, 52, .15);
+  cursor: grab;
+  touch-action: none;
+  pointer-events: auto;
+  transform-origin: center;
+  user-select: none;
+}
+
+.sticker-overlay__item:active {
+  cursor: grabbing;
+}
+
+.sticker-overlay__item.is-selected {
+  outline: 2px dashed rgba(213, 92, 124, .75);
+  outline-offset: 5px;
+  border-radius: 6px;
+}
+
+.sticker-overlay__item:focus-visible {
+  outline: 2px solid #d95f7d;
+  outline-offset: 5px;
+  border-radius: 6px;
+}
+
+.sticker-editor {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.sticker-editor__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sticker-editor__heading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.sticker-editor__heading h2,
+.sticker-editor__heading p {
+  margin: 0;
+}
+
+.sticker-editor__heading p {
+  color: #89767a;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.sticker-editor__heading > button,
+.sticker-editor__delete {
+  min-height: 38px;
+  padding: 0 11px;
+  border: 1px solid #e5cbd2;
+  border-radius: 10px;
+  background: #fff;
+  color: #9b566a;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sticker-pack {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sticker-pack > button {
+  min-height: 72px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  padding: 8px 5px;
+  border: 1px solid #eadde0;
+  border-radius: 13px;
+  background: linear-gradient(145deg, #fff, #fff7fa);
+  color: #6b5a5e;
+  cursor: pointer;
+}
+
+.sticker-pack > button:hover:not(:disabled),
+.sticker-pack > button:focus-visible {
+  border-color: #ef8ba1;
+  background: #fff0f4;
+}
+
+.sticker-pack > button:focus-visible {
+  outline: 2px solid #d95f7d;
+  outline-offset: 2px;
+}
+
+.sticker-pack strong {
+  font-family: ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.sticker-pack span {
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.sticker-editor__active {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid #eadde0;
+  border-radius: 13px;
+  background: #fffafc;
+}
+
+.sticker-editor__active label {
+  display: grid;
+  gap: 6px;
+  color: #68585c;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.sticker-editor__active label > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sticker-editor__active input[type="range"] {
+  width: 100%;
+  min-height: 30px;
+  accent-color: #ef7894;
+}
+
+.sticker-editor__delete {
+  align-self: end;
+}
+
+@media (max-width: 720px) {
+  .sticker-overlay__item {
+    font-size: clamp(17px, 7vw, 25px);
+  }
+
+  .sticker-editor__heading {
+    display: grid;
+  }
+
+  .sticker-editor__heading > button {
+    width: max-content;
+  }
+
+  .sticker-pack {
+    grid-template-columns: repeat(4, minmax(64px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .sticker-editor__active {
+    grid-template-columns: 1fr;
+  }
+
+  .sticker-editor__delete {
+    width: 100%;
+  }
+}
