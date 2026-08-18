@@ -25,6 +25,7 @@ import {
   normalizePhotoAdjustment,
   shotTargetForLayout,
   type PhotoAdjustment,
+  type QuarterRotation,
 } from "@/lib/compositor";
 import { filterCssValue, getFilterStyle } from "@/lib/filter-styles";
 import type { BoothPreset } from "@/lib/presets";
@@ -60,6 +61,11 @@ type AdjustDrag = {
   startX: number;
   startY: number;
   startAdjustment: PhotoAdjustment;
+};
+
+type PinchGesture = {
+  startDistance: number;
+  startZoom: number;
 };
 
 const MAX_UPLOAD_FILE_BYTES = 30 * 1024 * 1024;
@@ -150,6 +156,16 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+function pointerDistance(points: Array<{ x: number; y: number }>) {
+  if (points.length < 2) return 0;
+  return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+}
+
+function nextQuarterRotation(current: QuarterRotation, delta: -90 | 90): QuarterRotation {
+  const normalized = (current + delta + 360) % 360;
+  return normalized as QuarterRotation;
+}
+
 function photoNoun(count: number) {
   return count === 1 ? "photo" : "photos";
 }
@@ -166,6 +182,8 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const savePreviewUrlRef = useRef<string | null>(null);
   const editStartedRef = useRef(false);
   const adjustDragRef = useRef<AdjustDrag | null>(null);
+  const adjustPointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchGestureRef = useRef<PinchGesture | null>(null);
   const templateTrackRef = useRef<HTMLDivElement | null>(null);
   const templateScrollTimerRef = useRef<number | null>(null);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
@@ -269,6 +287,12 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     URL.revokeObjectURL(url);
   }
 
+  function clearGestureState() {
+    adjustDragRef.current = null;
+    pinchGestureRef.current = null;
+    adjustPointersRef.current.clear();
+  }
+
   function clearCaptureSlots() {
     closeSavePreview();
     photoUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
@@ -277,7 +301,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     setActiveRetakeIndex(null);
     setActiveAdjustIndex(null);
     setPhotoSelections({});
-    adjustDragRef.current = null;
+    clearGestureState();
     setReviewMessage(null);
     setUploadMessage(null);
     setExportStatus("idle");
@@ -310,7 +334,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     setFilterId(next.filterId);
     setFrameId(next.frameId);
     setActiveRetakeIndex(null);
-    adjustDragRef.current = null;
+    clearGestureState();
     setExportStatus("idle");
     setExportMessage(null);
 
@@ -392,8 +416,9 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
 
   function selectAdjustSlot(slotIndex: number) {
     if (captureBusy || workspaceMode !== "review" || cameraStatus !== "review" || !captureSlots[slotIndex]) return;
+    clearGestureState();
     setActiveAdjustIndex(slotIndex);
-    setReviewMessage(`Photo ${slotIndex + 1} selected. Drag on the image, then fine-tune position or zoom below.`);
+    setReviewMessage(`Photo ${slotIndex + 1} selected. Drag to reposition, pinch to zoom, or use the precision controls below.`);
   }
 
   function updateSlotAdjustment(slotIndex: number, adjustment: PhotoAdjustment) {
@@ -412,15 +437,40 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     }));
   }
 
+  function rotateActivePhoto(delta: -90 | 90) {
+    if (!activeAdjustSlot) return;
+    updateActiveAdjustment({ rotation: nextQuarterRotation(activeAdjustment.rotation, delta) });
+    setReviewMessage(`Photo ${activeAdjustIndex! + 1} rotated ${delta > 0 ? "right" : "left"}.`);
+  }
+
+  function flipActivePhoto() {
+    if (!activeAdjustSlot) return;
+    updateActiveAdjustment({ flipX: !activeAdjustment.flipX });
+    setReviewMessage(`Photo ${activeAdjustIndex! + 1} horizontal flip ${activeAdjustment.flipX ? "removed" : "applied"}.`);
+  }
+
   function resetActiveAdjustment() {
     if (activeAdjustIndex === null || !activeAdjustSlot) return;
     updateSlotAdjustment(activeAdjustIndex, { ...DEFAULT_PHOTO_ADJUSTMENT });
+    clearGestureState();
     setReviewMessage(`Photo ${activeAdjustIndex + 1} adjustments reset.`);
   }
 
   function handleAdjustPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
     if (activeAdjustIndex === null || !activeAdjustSlot || captureBusy || workspaceMode !== "review" || cameraStatus !== "review") return;
     event.currentTarget.setPointerCapture(event.pointerId);
+    adjustPointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+    const points = Array.from(adjustPointersRef.current.values());
+    if (points.length >= 2) {
+      adjustDragRef.current = null;
+      pinchGestureRef.current = {
+        startDistance: Math.max(1, pointerDistance(points)),
+        startZoom: normalizePhotoAdjustment(activeAdjustSlot.adjustment).zoom,
+      };
+      return;
+    }
+
     adjustDragRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -430,8 +480,20 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   }
 
   function handleAdjustPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!adjustPointersRef.current.has(event.pointerId) || activeAdjustIndex === null) return;
+    adjustPointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const points = Array.from(adjustPointersRef.current.values());
+
+    if (points.length >= 2 && pinchGestureRef.current) {
+      event.preventDefault();
+      const distance = Math.max(1, pointerDistance(points));
+      const ratio = distance / pinchGestureRef.current.startDistance;
+      updateActiveAdjustment({ zoom: clamp(pinchGestureRef.current.startZoom * ratio, 1, 2.5) });
+      return;
+    }
+
     const drag = adjustDragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId || activeAdjustIndex === null) return;
+    if (!drag || drag.pointerId !== event.pointerId) return;
     const rect = event.currentTarget.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     const deltaX = ((event.clientX - drag.startX) / rect.width) * 2;
@@ -444,27 +506,35 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   }
 
   function handleAdjustPointerEnd(event: ReactPointerEvent<HTMLDivElement>) {
-    if (adjustDragRef.current?.pointerId !== event.pointerId) return;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-    adjustDragRef.current = null;
-    if (activeAdjustIndex !== null) setReviewMessage(`Photo ${activeAdjustIndex + 1} position updated.`);
+    adjustPointersRef.current.delete(event.pointerId);
+    const wasPinching = Boolean(pinchGestureRef.current);
+
+    if (adjustPointersRef.current.size < 2) pinchGestureRef.current = null;
+    if (adjustDragRef.current?.pointerId === event.pointerId) adjustDragRef.current = null;
+
+    if (adjustPointersRef.current.size === 0 && activeAdjustIndex !== null) {
+      setReviewMessage(`Photo ${activeAdjustIndex + 1} ${wasPinching ? "zoom" : "position"} updated.`);
+    }
   }
 
   function continueToStyle() {
     if (!capturedCount) return;
+    clearGestureState();
     setWorkspaceMode("style");
     setReviewMessage(null);
   }
 
   function returnToReview() {
     if (!capturedCount) return;
+    clearGestureState();
     if (activeAdjustIndex === null || !captureSlots[activeAdjustIndex]) {
       const firstCapturedIndex = captureSlots.findIndex(Boolean);
       setActiveAdjustIndex(firstCapturedIndex >= 0 ? firstCapturedIndex : null);
     }
     setCameraStatus("review");
     setWorkspaceMode("review");
-    setReviewMessage("Review your photos. Select any photo to adjust or replace it.");
+    setReviewMessage("Review your photos. Drag, pinch or use the controls to make each frame feel right.");
   }
 
   async function startCamera(nextFacingMode: FacingMode = facingMode) {
@@ -594,6 +664,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       });
       setPhotoSelections({});
       window.setTimeout(() => revokePhotoUrl(existingSlot.url), 0);
+      clearGestureState();
       setActiveAdjustIndex(targetIndex);
       setCameraStatus("review");
       setWorkspaceMode("review");
@@ -701,7 +772,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       setCameraStatus("review");
       setActiveAdjustIndex(0);
       setWorkspaceMode("review");
-      setReviewMessage("Your photos are ready. Select any photo to adjust it, then continue when everything looks good.");
+      setReviewMessage("Your photos are ready. Drag to reposition, pinch to zoom, then rotate or straighten if needed.");
       emitProductEvent("capture_completed", { shot_count: preset.shotCount, layout_id: layoutId, capture_source: "camera" });
     } catch {
       setCountdown(null);
@@ -726,6 +797,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     setCameraError(null);
     setActiveRetakeIndex(slotIndex);
     setActiveAdjustIndex(slotIndex);
+    clearGestureState();
     setWorkspaceMode("capture");
     setReviewMessage(`Retaking photo ${slotIndex + 1}…`);
 
@@ -1108,7 +1180,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
                 <div>
                   <span>Photo Editor</span>
                   <h1 id="capture-review-title">Frame every photo your way</h1>
-                  <p>Choose a photo, drag it to reposition, then use the controls below for precise framing. Every photo keeps its own adjustments.</p>
+                  <p>Drag to reposition, pinch to zoom, rotate a quarter-turn, or straighten a slightly tilted photo. Every photo keeps its own adjustments.</p>
                 </div>
                 <button type="button" className="review-workspace__retake-all" onClick={restartCapture} disabled={captureBusy}>Start over</button>
               </div>
@@ -1142,7 +1214,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
                 <div className="review-stage" aria-label={`Adjust photo ${activeAdjustIndex + 1}`}>
                   <div className="review-stage__meta">
                     <strong>Photo {activeAdjustIndex + 1} of {capturedCount}</strong>
-                    <span>Drag directly on the photo</span>
+                    <span>Drag · pinch to zoom</span>
                   </div>
 
                   <div
@@ -1152,6 +1224,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
                     onPointerMove={handleAdjustPointerMove}
                     onPointerUp={handleAdjustPointerEnd}
                     onPointerCancel={handleAdjustPointerEnd}
+                    onLostPointerCapture={handleAdjustPointerEnd}
                   >
                     <PhotoPreview
                       url={activeAdjustSlot.url}
@@ -1161,7 +1234,13 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
                       targetRatio={activeCellRatio}
                       alt={`Adjust framing for photo ${activeAdjustIndex + 1}`}
                     />
-                    <span>Drag to reposition</span>
+                    <span>Drag · pinch to zoom</span>
+                  </div>
+
+                  <div className="review-transform-tools" aria-label="Rotate and flip photo">
+                    <button type="button" onClick={() => rotateActivePhoto(-90)} disabled={captureBusy} aria-label="Rotate photo left 90 degrees"><strong>↶</strong><span>Rotate left</span></button>
+                    <button type="button" onClick={() => rotateActivePhoto(90)} disabled={captureBusy} aria-label="Rotate photo right 90 degrees"><strong>↷</strong><span>Rotate right</span></button>
+                    <button type="button" className={activeAdjustment.flipX ? "is-selected" : ""} onClick={flipActivePhoto} disabled={captureBusy} aria-pressed={activeAdjustment.flipX} aria-label="Flip photo horizontally"><strong>⇋</strong><span>Flip</span></button>
                   </div>
 
                   <div className="review-stage__control-grid" aria-label="Fine tune photo framing">
@@ -1177,11 +1256,15 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
                       <span>Vertical <strong>{Math.round(activeAdjustment.panY * 100)}</strong></span>
                       <input type="range" min="-1" max="1" step="0.05" value={activeAdjustment.panY} onChange={(event) => updateActiveAdjustment({ panY: Number(event.target.value) })} disabled={captureBusy} />
                     </label>
+                    <label className="review-straighten-control">
+                      <span>Straighten <strong>{activeAdjustment.straighten.toFixed(1)}°</strong></span>
+                      <input type="range" min="-15" max="15" step="0.5" value={activeAdjustment.straighten} onChange={(event) => updateActiveAdjustment({ straighten: Number(event.target.value) })} disabled={captureBusy} />
+                    </label>
                   </div>
 
                   <div className="review-stage__utility-row">
-                    <span>Non-destructive · preview matches the current layout crop</span>
-                    <button type="button" className="review-reset" onClick={resetActiveAdjustment} disabled={captureBusy}>Reset photo</button>
+                    <span>Non-destructive · safe-cover keeps rotated corners filled</span>
+                    <button type="button" className="review-reset" onClick={resetActiveAdjustment} disabled={captureBusy}>Reset all</button>
                   </div>
                 </div>
               )}
