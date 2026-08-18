@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { GUIDES } from "@/lib/guides";
 import { SEO_EXPERIENCES } from "@/lib/seo-pages";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -12,6 +13,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: "https://pictofu.com/layouts",
       changeFrequency: "weekly",
       priority: 0.9,
+    },
+    {
+      url: "https://pictofu.com/guides",
+      changeFrequency: "weekly",
+      priority: 0.85,
     },
     {
       url: "https://pictofu.com/about",
@@ -32,6 +38,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `https://pictofu.com/${experience.slug}`,
       changeFrequency: "weekly" as const,
       priority: 0.8,
+    })),
+    ...GUIDES.map((guide) => ({
+      url: `https://pictofu.com/guides/${guide.slug}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.72,
     })),
   ];
 }
