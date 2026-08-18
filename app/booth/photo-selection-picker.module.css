@@ -76,8 +76,31 @@
 }
 
 .orderCard {
+  position: relative;
   display: grid;
   gap: 5px;
+  padding: 3px;
+  border-radius: 12px;
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  transition: transform 140ms ease, opacity 140ms ease, background 140ms ease, box-shadow 140ms ease;
+}
+
+.orderCard:hover {
+  background: rgba(255, 242, 246, .7);
+}
+
+.orderCard:active {
+  cursor: grabbing;
+}
+
+.orderCardDragging {
+  z-index: 3;
+  opacity: .78;
+  background: #fff1f5;
+  box-shadow: 0 9px 22px rgba(109, 65, 80, .16);
+  transform: scale(1.035);
 }
 
 .orderCard > strong {
@@ -107,9 +130,10 @@
   height: 100%;
   display: block;
   object-fit: cover;
+  pointer-events: none;
 }
 
-.orderPreview > span {
+.positionBadge {
   position: absolute;
   left: 6px;
   bottom: 6px;
@@ -123,6 +147,26 @@
   font-size: 10px;
   font-weight: 900;
   box-shadow: 0 3px 10px rgba(255,111,143,.3);
+  pointer-events: none;
+}
+
+.dragHandle {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  min-width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(255,255,255,.84);
+  color: #765f68;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(55, 39, 45, .12);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
 }
 
 .removeButton {
@@ -170,25 +214,14 @@
   font-size: 9px;
 }
 
-.orderControls {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 4px;
+.orderHint {
+  margin: 0;
+  color: #aa8d96;
+  font-size: 9px;
+  line-height: 1.4;
+  text-align: right;
 }
 
-.orderControls button {
-  min-height: 26px;
-  padding: 0;
-  border: 1px solid #eadce1;
-  border-radius: 8px;
-  background: #fff;
-  color: #775f68;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.orderControls button:disabled,
 .removeButton:disabled {
   cursor: not-allowed;
   opacity: .35;
@@ -267,10 +300,16 @@
 }
 
 .choice:focus-visible,
-.orderControls button:focus-visible,
+.orderCard:focus-visible,
 .removeButton:focus-visible {
   outline: 3px solid rgba(117, 91, 191, .32);
   outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orderCard {
+    transition: none;
+  }
 }
 
 @media (max-width: 390px) {
@@ -302,14 +341,20 @@
     gap: 6px;
   }
 
-  .orderPreview > span,
+  .positionBadge,
   .choice > b {
     width: 20px;
     height: 20px;
     font-size: 9px;
   }
 
-  .orderControls button {
-    min-height: 24px;
+  .dragHandle {
+    min-width: 20px;
+    height: 20px;
+    font-size: 13px;
+  }
+
+  .orderHint {
+    text-align: left;
   }
 }
