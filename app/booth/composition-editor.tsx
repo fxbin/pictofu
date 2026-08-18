@@ -64,9 +64,8 @@ export function CompositionEditor({ presetId, disabled = false }: CompositionEdi
   }, [presetId]);
 
   useEffect(() => {
-    const target = document.querySelector<HTMLElement>(".result-strip");
-    setOverlayTarget(target);
-  });
+    setOverlayTarget(document.querySelector<HTMLElement>(".result-strip"));
+  }, [presetId]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -78,10 +77,6 @@ export function CompositionEditor({ presetId, disabled = false }: CompositionEdi
       delete root.dataset.pictofuPhotoRatio;
       root.style.removeProperty("--pictofu-editor-ratio");
     }
-    return () => {
-      delete root.dataset.pictofuPhotoRatio;
-      root.style.removeProperty("--pictofu-editor-ratio");
-    };
   }, [composition.photoRatio]);
 
   const activeSticker = activeStickerId
@@ -189,6 +184,7 @@ export function CompositionEditor({ presetId, disabled = false }: CompositionEdi
             onPointerMove={(event) => handlePointerMove(event, sticker.id)}
             onPointerUp={handlePointerEnd}
             onPointerCancel={handlePointerEnd}
+            onLostPointerCapture={handlePointerEnd}
             aria-pressed={selected}
             aria-label={`${definition.label} sticker. Drag to reposition.`}
           >
