@@ -14,9 +14,10 @@
     "test:growth": "node scripts/test-growth-measurement.mjs",
     "test:upload": "node scripts/test-upload-flow.mjs",
     "test:editor": "node scripts/test-editor-v2.mjs",
+    "test:guides": "node scripts/test-guides.mjs",
     "verify:p0": "npm run verify:release-policy && npm run test:p0",
     "verify:p1": "npm run verify:p0 && npm run test:p1",
-    "verify:growth": "npm run verify:p1 && npm run test:growth && npm run test:upload && npm run test:editor"
+    "verify:growth": "npm run verify:p1 && npm run test:growth && npm run test:upload && npm run test:editor && npm run test:guides"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
@@ -26,8 +27,8 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
+    "@types/react": "^20.0.0",
+    "@types/react-dom": "^19.2.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.2.11",
     "typescript": "^5.9.0"
