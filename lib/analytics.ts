@@ -17,6 +17,7 @@ export type ProductEventName =
   | "capture_completed"
   | "retake_single"
   | "edit_started"
+  | "editor_tool_used"
   | "style_changed"
   | "frame_selected"
   | "export_started"
@@ -208,8 +209,6 @@ export function emitProductEvent(name: ProductEventName, properties: SafeEventPr
   const detail = buildEventDetail(normalizedName, enrichedProperties);
   dispatchEventDetail(detail);
 
-  // Keep export_completed as the core funnel metric while exposing a dedicated
-  // frame-aware PNG event for Frames V2 preference analysis.
   if (normalizedName === "export_completed" && enrichedProperties.format === "png") {
     dispatchEventDetail(buildEventDetail("export_png", enrichedProperties));
   }
