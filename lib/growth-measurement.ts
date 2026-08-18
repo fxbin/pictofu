@@ -6,7 +6,7 @@ const GROWTH_ENDPOINT =
 // Supabase legacy anon JWTs are public client credentials. Authorization only permits
 // invoking the JWT-protected Edge Function; the database table/RPC remain service-role only.
 const GROWTH_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzd3pkZHZwcm55anJyZ3B6Y3NncCIsInJlZiI6InN3emRkdnBybnlqcnJncHpjc2dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2NjA2NjEsImV4cCI6MjEwMjIzNjY2MX0.TO1Z4xZGBTkYR-uB2wp1RQQI7xik3DF91HPgWgbzdJk";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3emRkdnBybnlqcnJncHpjc2dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2NjA2NjEsImV4cCI6MjEwMjIzNjY2MX0.TO1Z4xZGBTkYR-uB2wp1RQQI7xik3DF91HPgWgbzdJk";
 
 const GROWTH_EVENT_NAMES = new Set([
   "landing_view",
