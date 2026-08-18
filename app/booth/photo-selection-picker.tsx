@@ -1,3 +1,8 @@
+import { useRef, useState } from "react";
+import type {
+  KeyboardEvent as ReactKeyboardEvent,
+  PointerEvent as ReactPointerEvent,
+} from "react";
 import { PhotoPreview } from "./photo-preview";
 import type { PhotoAdjustment } from "@/lib/compositor";
 import styles from "./photo-selection-picker.module.css";
@@ -21,6 +26,16 @@ type PhotoSelectionPickerProps = {
   onChange: (indexes: number[]) => void;
 };
 
+type OrderDrag = {
+  pointerId: number;
+  photoIndex: number;
+  currentPosition: number;
+  startX: number;
+  startY: number;
+  activated: boolean;
+  indexes: number[];
+};
+
 function moveItem(indexes: number[], from: number, to: number) {
   if (to < 0 || to >= indexes.length || from === to) return indexes;
   const next = [...indexes];
@@ -38,6 +53,10 @@ export function PhotoSelectionPicker({
   disabled,
   onChange,
 }: PhotoSelectionPickerProps) {
+  const orderRailRef = useRef<HTMLDivElement | null>(null);
+  const orderDragRef = useRef<OrderDrag | null>(null);
+  const [draggingPhotoIndex, setDraggingPhotoIndex] = useState<number | null>(null);
+
   if (photos.length <= 1 || targetCount < 1) return null;
 
   const selectedPhotos = selectedIndexes
@@ -62,8 +81,104 @@ export function PhotoSelectionPicker({
     onChange([...selectedIndexes, index]);
   }
 
-  function moveSelected(position: number, direction: -1 | 1) {
-    onChange(moveItem(selectedIndexes, position, position + direction));
+  function moveSelected(indexes: number[], position: number, nextPosition: number) {
+    const next = moveItem(indexes, position, nextPosition);
+    if (next === indexes) return indexes;
+    onChange(next);
+    return next;
+  }
+
+  function closestOrderPosition(clientX: number, clientY: number) {
+    const cards = Array.from(
+      orderRailRef.current?.querySelectorAll<HTMLElement>("[data-order-position]") ?? [],
+    );
+    let closestPosition = -1;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
+    cards.forEach((card) => {
+      const position = Number(card.dataset.orderPosition);
+      if (!Number.isInteger(position)) return;
+      const rect = card.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const distance = Math.hypot(clientX - centerX, clientY - centerY);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestPosition = position;
+      }
+    });
+
+    return closestPosition;
+  }
+
+  function beginOrderDrag(
+    event: ReactPointerEvent<HTMLDivElement>,
+    photoIndex: number,
+    position: number,
+  ) {
+    if (disabled || event.button !== 0) return;
+    if ((event.target as HTMLElement).closest("button")) return;
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    orderDragRef.current = {
+      pointerId: event.pointerId,
+      photoIndex,
+      currentPosition: position,
+      startX: event.clientX,
+      startY: event.clientY,
+      activated: false,
+      indexes: [...selectedIndexes],
+    };
+  }
+
+  function continueOrderDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = orderDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    if (!drag.activated) {
+      const deltaX = event.clientX - drag.startX;
+      const deltaY = event.clientY - drag.startY;
+      if (Math.hypot(deltaX, deltaY) < 6) return;
+      if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+      drag.activated = true;
+      setDraggingPhotoIndex(drag.photoIndex);
+    }
+
+    event.preventDefault();
+    const nextPosition = closestOrderPosition(event.clientX, event.clientY);
+    if (nextPosition < 0 || nextPosition === drag.currentPosition) return;
+
+    drag.indexes = moveSelected(drag.indexes, drag.currentPosition, nextPosition);
+    drag.currentPosition = nextPosition;
+  }
+
+  function endOrderDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = orderDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    orderDragRef.current = null;
+    setDraggingPhotoIndex(null);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }
+
+  function handleOrderKeyDown(
+    event: ReactKeyboardEvent<HTMLDivElement>,
+    position: number,
+  ) {
+    if (disabled || event.target !== event.currentTarget) return;
+
+    let nextPosition = position;
+    if (event.key === "ArrowLeft") nextPosition = position - 1;
+    if (event.key === "ArrowRight") nextPosition = position + 1;
+    if (event.key === "Home") nextPosition = 0;
+    if (event.key === "End") nextPosition = selectedPhotos.length - 1;
+    if (nextPosition === position) return;
+
+    const next = moveItem(selectedIndexes, position, nextPosition);
+    if (next === selectedIndexes) return;
+    event.preventDefault();
+    onChange(next);
   }
 
   function preview(photo: PhotoSelectionChoice) {
@@ -101,9 +216,9 @@ export function PhotoSelectionPicker({
         <div className={styles.orderSection}>
           <div className={styles.sectionLabel}>
             <strong>Final order</strong>
-            <span>Move photos left or right</span>
+            <span>Drag photos into the order you want</span>
           </div>
-          <div className={styles.orderRail}>
+          <div className={styles.orderRail} ref={orderRailRef} role="list">
             {Array.from({ length: targetCount }).map((_, position) => {
               const photo = selectedPhotos[position];
               if (!photo) {
@@ -115,11 +230,27 @@ export function PhotoSelectionPicker({
                 );
               }
 
+              const dragging = draggingPhotoIndex === photo.index;
               return (
-                <div className={styles.orderCard} key={photo.id}>
+                <div
+                  className={`${styles.orderCard} ${dragging ? styles.orderCardDragging : ""}`}
+                  key={photo.id}
+                  data-order-position={position}
+                  role="listitem"
+                  tabIndex={disabled ? -1 : 0}
+                  aria-label={`Photo ${photo.index + 1}, final position ${position + 1}. Drag to reorder or use left and right arrow keys.`}
+                  aria-keyshortcuts="ArrowLeft ArrowRight Home End"
+                  onPointerDown={(event) => beginOrderDrag(event, photo.index, position)}
+                  onPointerMove={continueOrderDrag}
+                  onPointerUp={endOrderDrag}
+                  onPointerCancel={endOrderDrag}
+                  onLostPointerCapture={endOrderDrag}
+                  onKeyDown={(event) => handleOrderKeyDown(event, position)}
+                >
                   <div className={styles.orderPreview} style={{ aspectRatio: String(targetRatio) }}>
                     {preview(photo)}
-                    <span>{position + 1}</span>
+                    <span className={styles.dragHandle} aria-hidden="true">⠿</span>
+                    <span className={styles.positionBadge}>{position + 1}</span>
                     <button
                       type="button"
                       className={styles.removeButton}
@@ -131,28 +262,11 @@ export function PhotoSelectionPicker({
                     </button>
                   </div>
                   <strong>Photo {photo.index + 1}</strong>
-                  <div className={styles.orderControls}>
-                    <button
-                      type="button"
-                      onClick={() => moveSelected(position, -1)}
-                      disabled={disabled || position === 0}
-                      aria-label={`Move photo ${photo.index + 1} left`}
-                    >
-                      ←
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveSelected(position, 1)}
-                      disabled={disabled || position === selectedPhotos.length - 1}
-                      aria-label={`Move photo ${photo.index + 1} right`}
-                    >
-                      →
-                    </button>
-                  </div>
                 </div>
               );
             })}
           </div>
+          <p className={styles.orderHint}>Drag to reorder · keyboard: ← →</p>
         </div>
       )}
 
