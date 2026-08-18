@@ -5,6 +5,14 @@ const booth = fs.readFileSync("app/booth/booth-client.tsx", "utf8");
 const compositor = fs.readFileSync("lib/compositor.ts", "utf8");
 const preview = fs.readFileSync("app/booth/photo-preview.tsx", "utf8");
 const styles = fs.readFileSync("app/booth/workspace-modes.css", "utf8");
+const compositionStyles = fs.readFileSync("app/booth/sticker-editor.css", "utf8");
+const compositionEditor = fs.readFileSync("app/booth/composition-editor.tsx", "utf8");
+const composition = fs.readFileSync("lib/editor-composition.ts", "utf8");
+const stickers = fs.readFileSync("lib/stickers.ts", "utf8");
+const framePicker = fs.readFileSync("app/booth/frame-picker.tsx", "utf8");
+const analytics = fs.readFileSync("lib/analytics.ts", "utf8");
+const analyticsSafety = fs.readFileSync("lib/analytics-safety.ts", "utf8");
+const growth = fs.readFileSync("lib/growth-measurement.ts", "utf8");
 
 for (const field of ["panX", "panY", "zoom", "rotation", "straighten", "flipX"]) {
   assert.match(compositor, new RegExp(`\\b${field}\\b`), `PhotoAdjustment must include ${field}`);
@@ -49,9 +57,47 @@ assert.match(booth, /onPointerCancel=\{handleAdjustPointerEnd\}/, "Pointer cance
 assert.match(booth, /type="range" min="1" max="2\.5"/, "Visible slider fallback must remain available when pinch is unavailable");
 
 assert.match(preview, /resolvePhotoTransform/, "DOM preview must reuse compositor transform geometry");
+assert.match(preview, /subscribeEditorComposition/, "Preview must observe canonical composition state");
+assert.match(preview, /ratioValue\(composition\.photoRatio\)/, "Preview must consume selected composition ratio");
+assert.match(preview, /editor_tool_used/, "Photo adjustment preview must expose bounded tool reach");
 assert.match(styles, /touch-action:\s*none/, "Active edit surface must own drag/pinch gestures without page-scroll fights inside the surface");
 assert.match(styles, /review-stage__control-grid/, "Editor IA must expose a dedicated fine-tune control grid");
 assert.match(styles, /review-transform-tools/, "Rotate/flip controls must have a dedicated mobile-safe toolbar");
 assert.match(styles, /review-straighten-control/, "Straighten control must span the precision control area on wider screens");
 
-console.log("Photo Editor V2 transform + mobile gesture contract checks passed.");
+for (const ratio of ["auto", "1:1", "4:3", "3:4"]) {
+  assert.match(composition, new RegExp(ratio.replace(":", "\\:")), `Composition state must support ${ratio}`);
+}
+assert.match(composition, /stickers:\s*StickerInstance\[\]/, "Composition state must own sticker instances");
+assert.match(composition, /setCompositionPreset/, "Preset changes must have an explicit sticker lifecycle rule");
+assert.match(compositor, /getEditorCompositionSnapshot/, "Final Canvas must consume canonical composition state");
+assert.match(compositor, /layoutGeometry\([^\)]*photoRatio/, "Ratio must drive real compositor geometry");
+assert.match(compositor, /drawSticker/, "Final PNG compositor must draw stickers");
+assert.match(framePicker, /<CompositionEditor/, "Style workspace must mount the canonical composition editor");
+assert.match(compositionEditor, /Photo ratio/, "Ratio control must be visible");
+assert.match(compositionEditor, /Stickers/, "Preset-aware sticker control must be visible where supported");
+assert.match(compositionEditor, /setCompositionStickers/, "Sticker controls must update canonical composition state");
+assert.match(compositionEditor, /onPointerMove/, "Sticker V1 must support drag reposition");
+assert.match(compositionEditor, /Delete sticker/, "Sticker V1 must support individual delete");
+assert.match(compositionEditor, />Clear</, "Sticker V1 must support clear all");
+assert.match(compositionStyles, /data-pictofu-photo-ratio/, "Selected ratio must affect DOM preview geometry");
+assert.match(compositionStyles, /\.result-strip\s*\{\s*position:\s*relative/, "Sticker overlay must have a stable positioned strip owner");
+
+for (const pack of ["korean-date", "couple-date", "y2k-summer", "best-friends"]) {
+  assert.match(stickers, new RegExp(pack), `Sticker registry must include ${pack}`);
+}
+assert.doesNotMatch(stickers, /https?:\/\//, "Sticker V1 must not depend on an external CDN/marketplace");
+
+assert.match(analyticsSafety, /"edit_tool"/, "Analytics safety allowlist must explicitly bound edit_tool");
+assert.match(analyticsSafety, /"edit_profile"/, "Analytics safety allowlist must explicitly bound edit_profile");
+assert.match(analytics, /\| "editor_tool_used"/, "Product analytics must expose dedicated editor_tool_used event");
+assert.match(analytics, /EDIT_PROFILE_KEY/, "Downstream funnel must retain a bounded editor profile locally");
+assert.match(analytics, /withEditProfile/, "Export/share events must receive only the bounded edit profile");
+assert.match(growth, /editor_tool_used/, "First-party aggregate must accept editor tool reach");
+assert.match(growth, /editor_tool_used:\$\{payload\.edit_tool\}/, "Tool reach must dedupe per bounded tool per browser session");
+assert.match(growth, /SOURCE_SCOPED_EVENTS/, "Source-attributed funnel stages must be deduped by capture source");
+assert.match(growth, /capture_source/, "Growth payload must retain bounded camera/upload/mixed attribution");
+assert.match(growth, /edit_profile/, "Growth payload must retain bounded editor profile");
+assert.doesNotMatch(growth, /stickerId|rotation|panX|panY|filename|blob|base64/i, "First-party growth payload must not include media or transform coordinates/content");
+
+console.log("Photo Editor V2 composition, stickers, transforms, mobile and measurement contract checks passed.");
