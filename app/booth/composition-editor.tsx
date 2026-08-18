@@ -8,6 +8,7 @@ import {
   getEditorCompositionServerSnapshot,
   getEditorCompositionSnapshot,
   ratioValue,
+  resetEditorComposition,
   setCompositionPhotoRatio,
   setCompositionPreset,
   setCompositionStickers,
@@ -55,16 +56,18 @@ export function CompositionEditor({ presetId, disabled = false }: CompositionEdi
   const pack = useMemo(() => stickerPackForPreset(presetId), [presetId]);
   const [activeStickerId, setActiveStickerId] = useState<string | null>(null);
   const [overlayTarget, setOverlayTarget] = useState<HTMLElement | null>(null);
+  const [hasPhotos, setHasPhotos] = useState(false);
   const dragRef = useRef<StickerDrag | null>(null);
 
   useEffect(() => {
+    const strip = document.querySelector<HTMLElement>(".result-strip");
+    const nextHasPhotos = Boolean(strip?.querySelector(".result-strip__photo.has-photo"));
+    setHasPhotos(nextHasPhotos);
+    setOverlayTarget(nextHasPhotos ? strip : null);
+    if (!nextHasPhotos) resetEditorComposition();
     setCompositionPreset(presetId);
     setActiveStickerId(null);
     dragRef.current = null;
-  }, [presetId]);
-
-  useEffect(() => {
-    setOverlayTarget(document.querySelector<HTMLElement>(".result-strip"));
   }, [presetId]);
 
   useEffect(() => {
@@ -195,6 +198,8 @@ export function CompositionEditor({ presetId, disabled = false }: CompositionEdi
     </div>,
     overlayTarget,
   ) : null;
+
+  if (!hasPhotos) return null;
 
   return (
     <div className="composition-editor">
