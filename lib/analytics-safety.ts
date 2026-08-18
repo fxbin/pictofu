@@ -8,6 +8,8 @@ export const SAFE_ANALYTICS_PROPERTY_KEYS: ReadonlySet<string> = new Set([
   "cta_location",
   "facing_mode",
   "capture_source",
+  "edit_tool",
+  "edit_profile",
   "error_class",
   "layout_id",
   "shot_target",
