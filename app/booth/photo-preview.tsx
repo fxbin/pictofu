@@ -1,4 +1,14 @@
+"use client";
+
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { CSSProperties } from "react";
+import { emitProductEvent, type EditTool } from "@/lib/analytics";
+import {
+  getEditorCompositionServerSnapshot,
+  getEditorCompositionSnapshot,
+  ratioValue,
+  subscribeEditorComposition,
+} from "@/lib/editor-composition";
 import {
   normalizePhotoAdjustment,
   resolvePhotoTransform,
@@ -16,25 +26,43 @@ type PhotoPreviewProps = {
   className?: string;
 };
 
-export function PhotoPreview({
-  url,
-  imageWidth,
-  imageHeight,
-  adjustment,
-  targetRatio,
-  alt = "",
-  filter,
-  className,
-}: PhotoPreviewProps) {
+function changedTools(previous: PhotoAdjustment, next: PhotoAdjustment): EditTool[] {
+  const tools: EditTool[] = [];
+  if (previous.panX !== next.panX || previous.panY !== next.panY) tools.push("pan");
+  if (previous.zoom !== next.zoom) tools.push("zoom");
+  if (previous.rotation !== next.rotation) tools.push("rotate");
+  if (previous.straighten !== next.straighten) tools.push("straighten");
+  if (previous.flipX !== next.flipX) tools.push("flip");
+  return tools;
+}
+
+export function PhotoPreview({ url, imageWidth, imageHeight, adjustment, targetRatio, alt = "", filter, className }: PhotoPreviewProps) {
+  const composition = useSyncExternalStore(
+    subscribeEditorComposition,
+    getEditorCompositionSnapshot,
+    getEditorCompositionServerSnapshot,
+  );
+  const currentAdjustment = normalizePhotoAdjustment(adjustment);
+  const { panX, panY, zoom, rotation, straighten, flipX } = currentAdjustment;
+  const previousAdjustment = useRef(currentAdjustment);
+
+  useEffect(() => {
+    const previous = previousAdjustment.current;
+    const next: PhotoAdjustment = { panX, panY, zoom, rotation, straighten, flipX };
+    previousAdjustment.current = next;
+    changedTools(previous, next).forEach((tool) => emitProductEvent("editor_tool_used", { edit_tool: tool }));
+  }, [panX, panY, zoom, rotation, straighten, flipX]);
+
+  const customRatio = ratioValue(composition.photoRatio);
+  const effectiveRatio = customRatio ?? targetRatio;
   const viewportHeight = 100;
-  const viewportWidth = Math.max(0.1, targetRatio) * viewportHeight;
-  const next = normalizePhotoAdjustment(adjustment);
+  const viewportWidth = Math.max(0.1, effectiveRatio) * viewportHeight;
   const transform = resolvePhotoTransform(
     imageWidth,
     imageHeight,
     viewportWidth,
     viewportHeight,
-    next,
+    currentAdjustment,
   );
 
   const outerStyle: CSSProperties = {
@@ -44,7 +72,6 @@ export function PhotoPreview({
     top: "50%",
     transform: `translate(-50%, -50%) rotate(${transform.angleDegrees}deg) scaleX(${transform.flipX ? -1 : 1})`,
   };
-
   const innerStyle: CSSProperties = {
     transform: `translate(${(-transform.panX / transform.drawWidth) * 100}%, ${(-transform.panY / transform.drawHeight) * 100}%)`,
   };

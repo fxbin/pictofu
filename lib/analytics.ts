@@ -17,6 +17,7 @@ export type ProductEventName =
   | "capture_completed"
   | "retake_single"
   | "edit_started"
+  | "editor_tool_used"
   | "style_changed"
   | "frame_selected"
   | "export_started"
@@ -27,10 +28,30 @@ export type ProductEventName =
   | "share_clicked"
   | "web_vital";
 
+export type EditTool =
+  | "crop"
+  | "pan"
+  | "zoom"
+  | "rotate"
+  | "straighten"
+  | "flip"
+  | "sticker"
+  | "ratio";
+
 type CaptureSource = "camera" | "upload" | "mixed";
+type EditProfile =
+  | "none"
+  | "photo"
+  | "sticker"
+  | "ratio"
+  | "photo_sticker"
+  | "photo_ratio"
+  | "sticker_ratio"
+  | "mixed";
 
 const ACQUISITION_CONTEXT_KEY = "pictofu:acquisition_context";
 const CAPTURE_SOURCE_KEY = "pictofu:capture_source";
+const EDIT_PROFILE_KEY = "pictofu:edit_profile";
 
 function deviceClass(width: number) {
   if (width < 768) return "mobile";
@@ -64,7 +85,6 @@ function sanitizeProperties(properties: SafeEventProperties) {
 
 function storeAcquisitionContext(name: ProductEventName, properties: SafeEventProperties) {
   if (name !== "landing_view") return;
-
   try {
     if (window.sessionStorage.getItem(ACQUISITION_CONTEXT_KEY)) return;
     const context = sanitizeProperties({
@@ -118,12 +138,10 @@ function storeCaptureSource(source: CaptureSource) {
 function trackCaptureSource(name: ProductEventName, properties: SafeEventProperties) {
   const incoming = normalizeCaptureSource(properties.capture_source);
   if (!incoming || incoming === "mixed") return;
-
   if (name === "capture_started" || name === "capture_completed") {
     storeCaptureSource(incoming);
     return;
   }
-
   if (name === "retake_single") {
     const current = readCaptureSource();
     storeCaptureSource(current && current !== incoming ? "mixed" : incoming);
@@ -137,10 +155,77 @@ function withCaptureSource(name: ProductEventName, properties: SafeEventProperti
   return captureSource ? { ...properties, capture_source: captureSource } : properties;
 }
 
-function normalizeEvent(name: ProductEventName, properties: SafeEventProperties): ProductEventName {
-  if (name === "camera_error" && properties.error_class === "canvas_export_failed") {
-    return "export_error";
+function normalizeEditTool(value: unknown): EditTool | undefined {
+  return ["crop", "pan", "zoom", "rotate", "straighten", "flip", "sticker", "ratio"].includes(String(value))
+    ? value as EditTool
+    : undefined;
+}
+
+function normalizeEditProfile(value: unknown): EditProfile | undefined {
+  return ["none", "photo", "sticker", "ratio", "photo_sticker", "photo_ratio", "sticker_ratio", "mixed"].includes(String(value))
+    ? value as EditProfile
+    : undefined;
+}
+
+function readEditProfile(): EditProfile {
+  try {
+    return normalizeEditProfile(window.sessionStorage.getItem(EDIT_PROFILE_KEY)) ?? "none";
+  } catch {
+    return "none";
   }
+}
+
+function storeEditProfile(profile: EditProfile) {
+  try {
+    window.sessionStorage.setItem(EDIT_PROFILE_KEY, profile);
+  } catch {
+    // Editor profile is only a bounded aggregate dimension.
+  }
+}
+
+function profileBits(profile: EditProfile) {
+  return {
+    photo: profile === "photo" || profile === "photo_sticker" || profile === "photo_ratio" || profile === "mixed",
+    sticker: profile === "sticker" || profile === "photo_sticker" || profile === "sticker_ratio" || profile === "mixed",
+    ratio: profile === "ratio" || profile === "photo_ratio" || profile === "sticker_ratio" || profile === "mixed",
+  };
+}
+
+function mergeEditProfile(profile: EditProfile, tool: EditTool): EditProfile {
+  const bits = profileBits(profile);
+  if (["crop", "pan", "zoom", "rotate", "straighten", "flip"].includes(tool)) bits.photo = true;
+  if (tool === "sticker") bits.sticker = true;
+  if (tool === "ratio") bits.ratio = true;
+  const count = Number(bits.photo) + Number(bits.sticker) + Number(bits.ratio);
+  if (count === 0) return "none";
+  if (count === 3) return "mixed";
+  if (bits.photo && bits.sticker) return "photo_sticker";
+  if (bits.photo && bits.ratio) return "photo_ratio";
+  if (bits.sticker && bits.ratio) return "sticker_ratio";
+  if (bits.photo) return "photo";
+  if (bits.sticker) return "sticker";
+  return "ratio";
+}
+
+function trackEditProfile(name: ProductEventName, properties: SafeEventProperties) {
+  if (name === "capture_started") {
+    storeEditProfile("none");
+    return;
+  }
+  if (name !== "editor_tool_used") return;
+  const tool = normalizeEditTool(properties.edit_tool);
+  if (!tool) return;
+  storeEditProfile(mergeEditProfile(readEditProfile(), tool));
+}
+
+function withEditProfile(name: ProductEventName, properties: SafeEventProperties): SafeEventProperties {
+  if (normalizeEditProfile(properties.edit_profile)) return properties;
+  if (!["export_started", "export_completed", "download_clicked", "share_clicked"].includes(name)) return properties;
+  return { ...properties, edit_profile: readEditProfile() };
+}
+
+function normalizeEvent(name: ProductEventName, properties: SafeEventProperties): ProductEventName {
+  if (name === "camera_error" && properties.error_class === "canvas_export_failed") return "export_error";
   return name;
 }
 
@@ -149,10 +234,9 @@ function getSessionId() {
   try {
     const existing = window.sessionStorage.getItem(key);
     if (existing) return existing;
-    const value =
-      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    const value = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
     window.sessionStorage.setItem(key, value);
     return value;
   } catch {
@@ -190,7 +274,6 @@ function buildEventDetail(name: ProductEventName, properties: SafeEventPropertie
 function dispatchEventDetail(detail: ReturnType<typeof buildEventDetail>) {
   countGrowthStage(detail);
   window.dispatchEvent(new CustomEvent("pictofu:analytics", { detail }));
-
   if (process.env.NODE_ENV === "development") {
     // Never add captured photo data, Blob URLs, base64 or camera frame content here.
     console.info("[PicToFu event]", detail);
@@ -203,13 +286,13 @@ export function emitProductEvent(name: ProductEventName, properties: SafeEventPr
 
   storeAcquisitionContext(name, properties);
   trackCaptureSource(name, properties);
+  trackEditProfile(name, properties);
   const normalizedName = normalizeEvent(name, properties);
-  const enrichedProperties = withCaptureSource(normalizedName, properties);
+  const withSource = withCaptureSource(normalizedName, properties);
+  const enrichedProperties = withEditProfile(normalizedName, withSource);
   const detail = buildEventDetail(normalizedName, enrichedProperties);
   dispatchEventDetail(detail);
 
-  // Keep export_completed as the core funnel metric while exposing a dedicated
-  // frame-aware PNG event for Frames V2 preference analysis.
   if (normalizedName === "export_completed" && enrichedProperties.format === "png") {
     dispatchEventDetail(buildEventDetail("export_png", enrichedProperties));
   }

@@ -7,6 +7,7 @@ import "./export.css";
 import "./filter-picker.css";
 import "./workspace-modes.css";
 import "./progressive-disclosure.css";
+import "./sticker-editor.css";
 import "./mobile-viewport.css";
 import { getPreset } from "@/lib/presets";
 

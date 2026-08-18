@@ -2,6 +2,7 @@
 
 import { emitProductEvent } from "@/lib/analytics";
 import { FRAME_STYLES, type FrameCategory, type FrameId } from "@/lib/frame-styles";
+import { CompositionEditor } from "./composition-editor";
 
 const FRAME_GROUPS: readonly {
   id: FrameCategory;
@@ -22,21 +23,13 @@ type FramePickerProps = {
   onSelect: (id: FrameId) => void;
 };
 
-export function FramePicker({
-  selectedId,
-  presetId,
-  layoutId,
-  filterId,
-  disabled = false,
-  onSelect,
-}: FramePickerProps) {
+export function FramePicker({ selectedId, presetId, layoutId, filterId, disabled = false, onSelect }: FramePickerProps) {
   const selected = FRAME_STYLES.find((frame) => frame.id === selectedId) ?? FRAME_STYLES[0];
 
   function selectFrame(frameId: FrameId) {
     if (disabled || frameId === selectedId) return;
     const frame = FRAME_STYLES.find((item) => item.id === frameId);
     if (!frame) return;
-
     emitProductEvent("frame_selected", {
       frame_id: frame.id,
       frame_group: frame.category,
@@ -76,10 +69,7 @@ export function FramePicker({
                       aria-pressed={selectedFrame}
                       aria-label={`${frame.label}${selectedFrame ? ", selected" : ""}`}
                     >
-                      <span className="frame-choice__preview" aria-hidden="true">
-                        <i />
-                        <b>✓</b>
-                      </span>
+                      <span className="frame-choice__preview" aria-hidden="true"><i /><b>✓</b></span>
                       <span className="frame-choice__label">{frame.label}</span>
                     </button>
                   );
@@ -89,6 +79,8 @@ export function FramePicker({
           );
         })}
       </div>
+
+      <CompositionEditor presetId={presetId} disabled={disabled} />
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import { filterCssValue, type FilterId } from "@/lib/filter-styles";
 import { getFrameStyle, type FrameId } from "@/lib/frame-styles";
 import type { BoothPreset } from "@/lib/presets";
+import { getEditorCompositionSnapshot, type PhotoRatio } from "@/lib/editor-composition";
+import { getStickerDefinition, normalizeStickerInstance, type StickerInstance } from "@/lib/stickers";
 
 type LayoutId = BoothPreset["layoutId"];
 
@@ -38,6 +40,8 @@ export type ComposeStripInput = {
   layoutId: LayoutId;
   filterId: FilterId;
   frameId: FrameId;
+  photoRatio?: PhotoRatio;
+  stickers?: StickerInstance[];
 };
 
 export type ComposeStripResult = {
@@ -71,7 +75,10 @@ export function shotTargetForLayout(layoutId: LayoutId): number {
   }
 }
 
-export function cellAspectRatioForLayout(layoutId: LayoutId): number {
+export function cellAspectRatioForLayout(layoutId: LayoutId, photoRatio: PhotoRatio = "auto"): number {
+  if (photoRatio === "1:1") return 1;
+  if (photoRatio === "4:3") return 4 / 3;
+  if (photoRatio === "3:4") return 3 / 4;
   if (layoutId === "grid-4" || layoutId === "polaroid") return 1;
   return 1 / 0.72;
 }
@@ -99,9 +106,7 @@ function normalizeQuarterRotation(value: number): QuarterRotation {
   return normalized === 90 || normalized === 180 || normalized === 270 ? normalized : 0;
 }
 
-export function normalizePhotoAdjustment(
-  adjustment?: Partial<PhotoAdjustment>,
-): PhotoAdjustment {
+export function normalizePhotoAdjustment(adjustment?: Partial<PhotoAdjustment>): PhotoAdjustment {
   return {
     panX: clamp(finiteOr(adjustment?.panX ?? 0, 0), -1, 1),
     panY: clamp(finiteOr(adjustment?.panY ?? 0, 0), -1, 1),
@@ -117,11 +122,7 @@ export function adjustmentFromCrop(crop?: PhotoCrop): PhotoAdjustment {
   return normalizePhotoAdjustment({ panX: crop.x, panY: crop.y, zoom: crop.zoom });
 }
 
-/**
- * Resolve the transformed image geometry needed to cover a viewport without blank corners.
- * The same helper is consumed by Canvas export and the DOM preview so both surfaces share
- * one transform contract.
- */
+/** Resolve transformed image geometry needed to cover a viewport without blank corners. */
 export function resolvePhotoTransform(
   imageWidth: number,
   imageHeight: number,
@@ -138,22 +139,14 @@ export function resolvePhotoTransform(
   const angle = (angleDegrees * Math.PI) / 180;
   const cosine = Math.abs(Math.cos(angle));
   const sine = Math.abs(Math.sin(angle));
-
-  // Inverse-rotate the destination viewport and cover its bounding box. This is
-  // intentionally conservative: it may crop a little more at fine angles, but it
-  // guarantees the rounded destination cell never exposes an empty corner.
   const requiredLocalWidth = safeViewportWidth * cosine + safeViewportHeight * sine;
   const requiredLocalHeight = safeViewportWidth * sine + safeViewportHeight * cosine;
-  const coverScale = Math.max(
-    requiredLocalWidth / safeImageWidth,
-    requiredLocalHeight / safeImageHeight,
-  );
+  const coverScale = Math.max(requiredLocalWidth / safeImageWidth, requiredLocalHeight / safeImageHeight);
   const scale = coverScale * next.zoom;
   const drawWidth = safeImageWidth * scale;
   const drawHeight = safeImageHeight * scale;
   const availableX = Math.max(0, (drawWidth - requiredLocalWidth) / 2);
   const availableY = Math.max(0, (drawHeight - requiredLocalHeight) / 2);
-
   return {
     angleDegrees,
     drawWidth,
@@ -167,36 +160,18 @@ export function resolvePhotoTransform(
 function defaultCoverCrop(imageWidth: number, imageHeight: number, rect: Rect): SourceCrop {
   const sourceRatio = imageWidth / imageHeight;
   const targetRatio = rect.width / rect.height;
-
   if (sourceRatio > targetRatio) {
     const sourceWidth = imageHeight * targetRatio;
-    return {
-      sx: (imageWidth - sourceWidth) / 2,
-      sy: 0,
-      sw: sourceWidth,
-      sh: imageHeight,
-    };
+    return { sx: (imageWidth - sourceWidth) / 2, sy: 0, sw: sourceWidth, sh: imageHeight };
   }
-
   const sourceHeight = imageWidth / targetRatio;
-  return {
-    sx: 0,
-    sy: (imageHeight - sourceHeight) / 2,
-    sw: imageWidth,
-    sh: sourceHeight,
-  };
+  return { sx: 0, sy: (imageHeight - sourceHeight) / 2, sw: imageWidth, sh: sourceHeight };
 }
 
 /** Compatibility helper retained for source contracts and old callers. */
-export function resolvePhotoCrop(
-  imageWidth: number,
-  imageHeight: number,
-  rect: Rect,
-  crop?: PhotoCrop,
-): SourceCrop {
+export function resolvePhotoCrop(imageWidth: number, imageHeight: number, rect: Rect, crop?: PhotoCrop): SourceCrop {
   const base = defaultCoverCrop(imageWidth, imageHeight, rect);
   if (!crop) return base;
-
   const zoom = clamp(Number.isFinite(crop.zoom) ? crop.zoom : 1, 1, 2.5);
   const panX = clamp(Number.isFinite(crop.x) ? crop.x : 0, -1, 1);
   const panY = clamp(Number.isFinite(crop.y) ? crop.y : 0, -1, 1);
@@ -206,7 +181,6 @@ export function resolvePhotoCrop(
   const centeredSy = (imageHeight - sh) / 2;
   const maxOffsetX = Math.max(0, centeredSx);
   const maxOffsetY = Math.max(0, centeredSy);
-
   return {
     sx: clamp(centeredSx + panX * maxOffsetX, 0, imageWidth - sw),
     sy: clamp(centeredSy + panY * maxOffsetY, 0, imageHeight - sh),
@@ -224,21 +198,12 @@ function drawRoundedPhoto(
   adjustment?: PhotoAdjustment,
 ) {
   const radius = Math.min(34, rect.width * 0.035);
-  const next = normalizePhotoAdjustment(adjustment);
-  const transform = resolvePhotoTransform(
-    image.naturalWidth,
-    image.naturalHeight,
-    rect.width,
-    rect.height,
-    next,
-  );
-
+  const transform = resolvePhotoTransform(image.naturalWidth, image.naturalHeight, rect.width, rect.height, adjustment);
   context.save();
   context.fillStyle = cellColor;
   context.beginPath();
   context.roundRect(rect.x - 8, rect.y - 8, rect.width + 16, rect.height + 16, radius + 6);
   context.fill();
-
   context.beginPath();
   context.roundRect(rect.x, rect.y, rect.width, rect.height, radius);
   context.clip();
@@ -247,50 +212,45 @@ function drawRoundedPhoto(
   context.rotate((transform.angleDegrees * Math.PI) / 180);
   context.scale(transform.flipX ? -1 : 1, 1);
   context.translate(-transform.panX, -transform.panY);
-  context.drawImage(
-    image,
-    -transform.drawWidth / 2,
-    -transform.drawHeight / 2,
-    transform.drawWidth,
-    transform.drawHeight,
-  );
+  context.drawImage(image, -transform.drawWidth / 2, -transform.drawHeight / 2, transform.drawWidth, transform.drawHeight);
   context.restore();
 }
 
-function layoutGeometry(layoutId: LayoutId, photoCount: number) {
+function layoutGeometry(layoutId: LayoutId, photoCount: number, photoRatio: PhotoRatio = "auto") {
   const count = Math.max(1, Math.min(photoCount, shotTargetForLayout(layoutId)));
-
+  const ratio = cellAspectRatioForLayout(layoutId, photoRatio);
   if (layoutId === "grid-4") {
     const width = 1600;
     const margin = 58;
     const gap = 34;
-    const cell = Math.floor((width - margin * 2 - gap) / 2);
+    const cellWidth = Math.floor((width - margin * 2 - gap) / 2);
+    const cellHeight = Math.round(cellWidth / ratio);
     const footer = 130;
     const rows = Math.ceil(count / 2);
-    const height = margin + rows * cell + Math.max(0, rows - 1) * gap + footer;
+    const height = margin + rows * cellHeight + Math.max(0, rows - 1) * gap + footer;
     const rects = Array.from({ length: count }, (_, index) => ({
-      x: margin + (index % 2) * (cell + gap),
-      y: margin + Math.floor(index / 2) * (cell + gap),
-      width: cell,
-      height: cell,
+      x: margin + (index % 2) * (cellWidth + gap),
+      y: margin + Math.floor(index / 2) * (cellHeight + gap),
+      width: cellWidth,
+      height: cellHeight,
     }));
     return { width, height, rects, footer };
   }
-
   if (layoutId === "polaroid") {
     const width = 1200;
     const margin = 64;
     const footer = 250;
-    const rects = [{ x: margin, y: margin, width: width - margin * 2, height: width - margin * 2 }];
-    return { width, height: margin + rects[0].height + footer, rects, footer };
+    const cellWidth = width - margin * 2;
+    const cellHeight = Math.round(cellWidth / ratio);
+    const rects = [{ x: margin, y: margin, width: cellWidth, height: cellHeight }];
+    return { width, height: margin + cellHeight + footer, rects, footer };
   }
-
   const width = 1080;
   const margin = 48;
   const gap = 28;
   const footer = 120;
   const cellWidth = width - margin * 2;
-  const cellHeight = Math.round(cellWidth * 0.72);
+  const cellHeight = Math.round(cellWidth / ratio);
   const height = margin + count * cellHeight + Math.max(0, count - 1) * gap + footer;
   const rects = Array.from({ length: count }, (_, index) => ({
     x: margin,
@@ -301,14 +261,7 @@ function layoutGeometry(layoutId: LayoutId, photoCount: number) {
   return { width, height, rects, footer };
 }
 
-function drawHeart(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  size: number,
-  color: string,
-  alpha = 0.5,
-) {
+function drawHeart(context: CanvasRenderingContext2D, x: number, y: number, size: number, color: string, alpha = 0.5) {
   context.save();
   context.translate(x, y);
   context.scale(size / 24, size / 24);
@@ -325,14 +278,7 @@ function drawHeart(
   context.restore();
 }
 
-function drawSparkle(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  radius: number,
-  color: string,
-  alpha = 0.55,
-) {
+function drawSparkle(context: CanvasRenderingContext2D, x: number, y: number, radius: number, color: string, alpha = 0.55) {
   context.save();
   context.translate(x, y);
   context.globalAlpha = alpha;
@@ -340,25 +286,15 @@ function drawSparkle(
   context.lineWidth = Math.max(2, radius * 0.12);
   context.lineCap = "round";
   context.beginPath();
-  context.moveTo(0, -radius);
-  context.lineTo(0, radius);
-  context.moveTo(-radius, 0);
-  context.lineTo(radius, 0);
-  context.moveTo(-radius * 0.55, -radius * 0.55);
-  context.lineTo(radius * 0.55, radius * 0.55);
-  context.moveTo(radius * 0.55, -radius * 0.55);
-  context.lineTo(-radius * 0.55, radius * 0.55);
+  context.moveTo(0, -radius); context.lineTo(0, radius);
+  context.moveTo(-radius, 0); context.lineTo(radius, 0);
+  context.moveTo(-radius * 0.55, -radius * 0.55); context.lineTo(radius * 0.55, radius * 0.55);
+  context.moveTo(radius * 0.55, -radius * 0.55); context.lineTo(-radius * 0.55, radius * 0.55);
   context.stroke();
   context.restore();
 }
 
-function drawFilmPerforations(
-  context: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  color: string,
-  alpha: number,
-) {
+function drawFilmPerforations(context: CanvasRenderingContext2D, width: number, height: number, color: string, alpha: number) {
   context.save();
   context.fillStyle = color;
   context.globalAlpha = alpha;
@@ -375,12 +311,7 @@ function drawFilmPerforations(
   context.restore();
 }
 
-function paintFrameSurface(
-  context: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  frameId: FrameId,
-) {
+function paintFrameSurface(context: CanvasRenderingContext2D, width: number, height: number, frameId: FrameId) {
   const frame = getFrameStyle(frameId);
   if (frameId === "chrome") {
     const gradient = context.createLinearGradient(0, 0, width, height);
@@ -391,104 +322,53 @@ function paintFrameSurface(
     gradient.addColorStop(0.82, "#d8d1ee");
     gradient.addColorStop(1, "#ffffff");
     context.fillStyle = gradient;
-  } else {
-    context.fillStyle = frame.background;
-  }
+  } else context.fillStyle = frame.background;
   context.fillRect(0, 0, width, height);
 }
 
-function drawFrameDecorations(
-  context: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  frameId: FrameId,
-) {
+function drawFrameDecorations(context: CanvasRenderingContext2D, width: number, height: number, frameId: FrameId) {
   const frame = getFrameStyle(frameId);
-
   if (frameId === "white") {
-    context.save();
-    context.strokeStyle = frame.ink;
-    context.globalAlpha = 0.13;
-    context.lineWidth = Math.max(2, width * 0.002);
-    context.strokeRect(18, 18, width - 36, height - 36);
-    context.restore();
-    return;
+    context.save(); context.strokeStyle = frame.ink; context.globalAlpha = 0.13; context.lineWidth = Math.max(2, width * 0.002); context.strokeRect(18, 18, width - 36, height - 36); context.restore(); return;
   }
-
-  if (frameId === "pink") {
-    drawHeart(context, 25, 26, 22, frame.ink, 0.38);
-    drawHeart(context, width - 25, 48, 17, frame.ink, 0.28);
-    drawHeart(context, 25, height - 86, 16, frame.ink, 0.26);
-    return;
-  }
-
-  if (frameId === "lilac") {
-    drawSparkle(context, 25, 25, 11, frame.ink, 0.42);
-    drawSparkle(context, width - 26, 54, 9, frame.ink, 0.34);
-    drawSparkle(context, 25, height - 88, 8, frame.ink, 0.28);
-    return;
-  }
-
+  if (frameId === "pink") { drawHeart(context,25,26,22,frame.ink,.38); drawHeart(context,width-25,48,17,frame.ink,.28); drawHeart(context,25,height-86,16,frame.ink,.26); return; }
+  if (frameId === "lilac") { drawSparkle(context,25,25,11,frame.ink,.42); drawSparkle(context,width-26,54,9,frame.ink,.34); drawSparkle(context,25,height-88,8,frame.ink,.28); return; }
   if (frameId === "mint") {
-    context.save();
-    context.strokeStyle = frame.ink;
-    context.globalAlpha = 0.28;
-    context.lineWidth = Math.max(2, width * 0.0025);
-    context.beginPath();
-    context.arc(24, 30, 10, 0.1, Math.PI * 1.65);
-    context.arc(width - 25, 62, 8, Math.PI * 0.3, Math.PI * 1.9);
-    context.arc(27, height - 86, 7, Math.PI * 0.05, Math.PI * 1.45);
-    context.stroke();
-    context.restore();
-    return;
+    context.save(); context.strokeStyle = frame.ink; context.globalAlpha=.28; context.lineWidth=Math.max(2,width*.0025); context.beginPath();
+    context.arc(24,30,10,.1,Math.PI*1.65); context.arc(width-25,62,8,Math.PI*.3,Math.PI*1.9); context.arc(27,height-86,7,Math.PI*.05,Math.PI*1.45); context.stroke(); context.restore(); return;
   }
-
-  if (frameId === "black") {
-    drawFilmPerforations(context, width, height, "#f5efe6", 0.62);
-    return;
-  }
-
+  if (frameId === "black") { drawFilmPerforations(context,width,height,"#f5efe6",.62); return; }
   if (frameId === "film") {
-    drawFilmPerforations(context, width, height, "#51392a", 0.42);
-    context.save();
-    context.strokeStyle = "#5d402c";
-    context.globalAlpha = 0.13;
-    context.lineWidth = 2;
-    for (let y = 35; y < height - 80; y += 83) {
-      context.beginPath();
-      context.moveTo(31, y);
-      context.lineTo(width - 31, y + 5);
-      context.stroke();
-    }
-    context.restore();
-    return;
+    drawFilmPerforations(context,width,height,"#51392a",.42); context.save(); context.strokeStyle="#5d402c"; context.globalAlpha=.13; context.lineWidth=2;
+    for (let y=35;y<height-80;y+=83) { context.beginPath(); context.moveTo(31,y); context.lineTo(width-31,y+5); context.stroke(); } context.restore(); return;
   }
-
   if (frameId === "chrome") {
-    context.save();
-    context.globalAlpha = 0.2;
-    const band = context.createLinearGradient(0, 0, width, 0);
-    band.addColorStop(0, "rgba(255,255,255,0)");
-    band.addColorStop(0.5, "#ffffff");
-    band.addColorStop(1, "rgba(255,255,255,0)");
-    context.fillStyle = band;
-    context.translate(width * 0.12, 0);
-    context.rotate(-0.16);
-    context.fillRect(0, -height * 0.1, width * 0.13, height * 1.3);
-    context.fillRect(width * 0.57, -height * 0.1, width * 0.08, height * 1.3);
-    context.restore();
-    drawSparkle(context, 26, 27, 12, frame.ink, 0.42);
-    drawSparkle(context, width - 27, 55, 9, frame.ink, 0.34);
+    context.save(); context.globalAlpha=.2; const band=context.createLinearGradient(0,0,width,0); band.addColorStop(0,"rgba(255,255,255,0)"); band.addColorStop(.5,"#ffffff"); band.addColorStop(1,"rgba(255,255,255,0)"); context.fillStyle=band; context.translate(width*.12,0); context.rotate(-.16); context.fillRect(0,-height*.1,width*.13,height*1.3); context.fillRect(width*.57,-height*.1,width*.08,height*1.3); context.restore(); drawSparkle(context,26,27,12,frame.ink,.42); drawSparkle(context,width-27,55,9,frame.ink,.34);
   }
 }
 
-function drawBranding(
-  context: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  frameId: FrameId,
-  layoutId: LayoutId,
-) {
+function drawSticker(context: CanvasRenderingContext2D, width: number, height: number, sticker: StickerInstance) {
+  const definition = getStickerDefinition(sticker.stickerId);
+  if (!definition) return;
+  const next = normalizeStickerInstance(sticker);
+  const baseSize = Math.max(38, Math.min(width, height) * 0.075);
+  const size = baseSize * next.scale;
+  context.save();
+  context.translate(next.x * width, next.y * height);
+  context.rotate((next.rotation * Math.PI) / 180);
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.font = `${definition.weight === "bold" ? 900 : 700} ${size}px ui-rounded, system-ui, sans-serif`;
+  context.lineJoin = "round";
+  context.lineWidth = Math.max(3, size * 0.085);
+  context.strokeStyle = "rgba(255,255,255,.92)";
+  context.fillStyle = definition.tone;
+  context.strokeText(definition.glyph, 0, 0);
+  context.fillText(definition.glyph, 0, 0);
+  context.restore();
+}
+
+function drawBranding(context: CanvasRenderingContext2D, width: number, height: number, frameId: FrameId, layoutId: LayoutId) {
   const frame = getFrameStyle(frameId);
   const baseline = height - (layoutId === "polaroid" ? 105 : 55);
   context.save();
@@ -503,18 +383,16 @@ function drawBranding(
 }
 
 export async function composePhotoStrip(input: ComposeStripInput): Promise<ComposeStripResult> {
-  if (input.photoUrls.length === 0) {
-    throw new Error("Capture at least one photo before exporting.");
-  }
-
+  if (input.photoUrls.length === 0) throw new Error("Capture at least one photo before exporting.");
   const target = shotTargetForLayout(input.layoutId);
   const urls = input.photoUrls.slice(0, target);
-  if (urls.length < target) {
-    throw new Error(`This layout needs ${target} captured photo${target === 1 ? "" : "s"}.`);
-  }
+  if (urls.length < target) throw new Error(`This layout needs ${target} captured photo${target === 1 ? "" : "s"}.`);
 
+  const composition = getEditorCompositionSnapshot();
+  const photoRatio = input.photoRatio ?? composition.photoRatio;
+  const stickers = input.stickers ?? composition.stickers;
   const images = await Promise.all(urls.map(loadImage));
-  const geometry = layoutGeometry(input.layoutId, images.length);
+  const geometry = layoutGeometry(input.layoutId, images.length, photoRatio);
   const canvas = document.createElement("canvas");
   canvas.width = geometry.width;
   canvas.height = geometry.height;
@@ -524,27 +402,15 @@ export async function composePhotoStrip(input: ComposeStripInput): Promise<Compo
   const frame = getFrameStyle(input.frameId);
   paintFrameSurface(context, canvas.width, canvas.height, input.frameId);
   drawFrameDecorations(context, canvas.width, canvas.height, input.frameId);
-
   images.forEach((image, index) => {
-    const adjustment = input.photoAdjustments?.[index]
-      ?? adjustmentFromCrop(input.photoCrops?.[index]);
-    drawRoundedPhoto(
-      context,
-      image,
-      geometry.rects[index],
-      input.filterId,
-      frame.cell,
-      adjustment,
-    );
+    const adjustment = input.photoAdjustments?.[index] ?? adjustmentFromCrop(input.photoCrops?.[index]);
+    drawRoundedPhoto(context, image, geometry.rects[index], input.filterId, frame.cell, adjustment);
   });
+  [...stickers].map(normalizeStickerInstance).sort((a,b)=>a.zIndex-b.zIndex).forEach((sticker)=>drawSticker(context,canvas.width,canvas.height,sticker));
   drawBranding(context, canvas.width, canvas.height, input.frameId, input.layoutId);
 
   const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (nextBlob) => (nextBlob ? resolve(nextBlob) : reject(new Error("PNG export failed."))),
-      "image/png",
-    );
+    canvas.toBlob((nextBlob) => (nextBlob ? resolve(nextBlob) : reject(new Error("PNG export failed."))), "image/png");
   });
-
   return { blob, width: canvas.width, height: canvas.height };
 }

@@ -14,6 +14,7 @@ const GROWTH_EVENT_NAMES = new Set([
   "camera_error",
   "capture_completed",
   "edit_started",
+  "editor_tool_used",
   "export_completed",
   "export_error",
   "download_clicked",
@@ -33,17 +34,32 @@ const GROWTH_DIMENSION_KEYS = [
   "referrer_class",
   "device_class",
   "capture_source",
+  "edit_tool",
+  "edit_profile",
 ] as const;
+
+const SOURCE_SCOPED_EVENTS = new Set([
+  "capture_completed",
+  "export_completed",
+  "download_clicked",
+  "share_clicked",
+]);
 
 type GrowthDetail = Record<string, unknown>;
 
-function growthDedupeKey(eventName: string) {
-  return `pictofu:growth-reached:${eventName}`;
+function growthDedupeKey(payload: Record<string, string>) {
+  if (payload.event_name === "editor_tool_used" && payload.edit_tool) {
+    return `pictofu:growth-reached:editor_tool_used:${payload.edit_tool}`;
+  }
+  if (SOURCE_SCOPED_EVENTS.has(payload.event_name) && payload.capture_source) {
+    return `pictofu:growth-reached:${payload.event_name}:${payload.capture_source}`;
+  }
+  return `pictofu:growth-reached:${payload.event_name}`;
 }
 
-function shouldCountGrowthStage(eventName: string) {
+function shouldCountGrowthStage(payload: Record<string, string>) {
   try {
-    const key = growthDedupeKey(eventName);
+    const key = growthDedupeKey(payload);
     if (window.sessionStorage.getItem(key)) return false;
     window.sessionStorage.setItem(key, "1");
     return true;
@@ -68,7 +84,7 @@ function growthPayload(detail: GrowthDetail) {
 export function countGrowthStage(detail: GrowthDetail) {
   if (typeof window === "undefined") return;
   const payload = growthPayload(detail);
-  if (!payload || !shouldCountGrowthStage(payload.event_name)) return;
+  if (!payload || !shouldCountGrowthStage(payload)) return;
 
   void fetch(GROWTH_ENDPOINT, {
     method: "POST",
