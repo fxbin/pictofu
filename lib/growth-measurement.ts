@@ -32,6 +32,7 @@ const GROWTH_DIMENSION_KEYS = [
   "share_marker",
   "referrer_class",
   "device_class",
+  "capture_source",
 ] as const;
 
 type GrowthDetail = Record<string, unknown>;
