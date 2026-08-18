@@ -43,14 +43,15 @@ export function PhotoPreview({ url, imageWidth, imageHeight, adjustment, targetR
     getEditorCompositionServerSnapshot,
   );
   const currentAdjustment = normalizePhotoAdjustment(adjustment);
+  const { panX, panY, zoom, rotation, straighten, flipX } = currentAdjustment;
   const previousAdjustment = useRef(currentAdjustment);
 
   useEffect(() => {
     const previous = previousAdjustment.current;
-    const next = normalizePhotoAdjustment(adjustment);
+    const next: PhotoAdjustment = { panX, panY, zoom, rotation, straighten, flipX };
     previousAdjustment.current = next;
     changedTools(previous, next).forEach((tool) => emitProductEvent("editor_tool_used", { edit_tool: tool }));
-  }, [adjustment?.panX, adjustment?.panY, adjustment?.zoom, adjustment?.rotation, adjustment?.straighten, adjustment?.flipX]);
+  }, [panX, panY, zoom, rotation, straighten, flipX]);
 
   const customRatio = ratioValue(composition.photoRatio);
   const effectiveRatio = customRatio ?? targetRatio;
