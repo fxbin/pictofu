@@ -141,12 +141,14 @@
 }
 
 .review-stage {
+  position: relative;
   display: grid;
   gap: 14px;
+  overflow: hidden;
   padding: 16px;
   border: 1px solid #eadadd;
   border-radius: 22px;
-  background: linear-gradient(145deg, #fffaf8, #fff7fa);
+  background: linear-gradient(145deg, #f6f0ee, #eee6e4);
 }
 
 .review-stage__meta {
@@ -165,18 +167,61 @@
   font-size: 13px;
 }
 
-.review-stage__photo {
-  width: min(100%, 780px);
-  min-height: 280px;
-  max-height: 620px;
+.review-stage__meta,
+.review-transform-tools,
+.review-stage__control-grid,
+.review-stage__utility-row {
   position: relative;
-  overflow: hidden;
+  z-index: 8;
+}
+
+.review-stage__photo {
+  width: min(62%, 460px);
+  min-height: 0;
+  max-height: none;
+  position: relative;
+  overflow: visible;
   justify-self: center;
-  border-radius: 18px;
-  background: #ede5e2;
-  box-shadow: 0 14px 38px rgba(70, 46, 51, .12);
+  margin: 138px auto;
+  border-radius: 7px;
+  background: transparent;
+  box-shadow: none;
   touch-action: none;
   cursor: grab;
+  isolation: isolate;
+}
+
+.review-stage__photo .photo-preview {
+  overflow: visible;
+}
+
+.review-stage__photo::before {
+  content: "Final crop";
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 6;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .92);
+  color: #8d5362;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .04em;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(44, 28, 33, .12);
+}
+
+.review-stage__photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border: 2px solid rgba(255, 255, 255, .96);
+  border-radius: 7px;
+  box-shadow: 0 0 0 999px rgba(36, 29, 31, .46), 0 0 0 3px rgba(201, 93, 121, .34);
+  clip-path: inset(-138px -190px);
+  pointer-events: none;
 }
 
 .review-stage__photo:active {
@@ -188,14 +233,15 @@
   left: 50%;
   bottom: 12px;
   transform: translateX(-50%);
-  z-index: 3;
+  z-index: 7;
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(52, 43, 45, .72);
+  background: rgba(52, 43, 45, .76);
   color: #fff;
   font-size: 10px;
   font-weight: 750;
   pointer-events: none;
+  white-space: nowrap;
 }
 
 .review-transform-tools {
@@ -442,10 +488,23 @@
   }
 
   .review-stage__photo {
-    width: 100%;
-    min-height: 230px;
-    max-height: 58dvh;
-    border-radius: 14px;
+    width: min(68%, 280px);
+    min-height: 0;
+    max-height: none;
+    margin: 80px auto;
+    border-radius: 6px;
+  }
+
+  .review-stage__photo::after {
+    border-radius: 6px;
+    clip-path: inset(-80px -105px);
+  }
+
+  .review-stage__photo::before {
+    top: 6px;
+    left: 6px;
+    padding: 4px 6px;
+    font-size: 8px;
   }
 
   .review-transform-tools {
@@ -508,6 +567,10 @@
 
   .review-workspace__top p {
     grid-column: 1 / -1;
+  }
+
+  .review-stage__photo {
+    width: min(72%, 250px);
   }
 
   .review-workspace__sticky-actions {
