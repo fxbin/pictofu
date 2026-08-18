@@ -19,9 +19,12 @@ import {
   type CameraErrorClass,
 } from "@/lib/camera";
 import {
+  cellAspectRatioForLayout,
   composePhotoStrip,
+  DEFAULT_PHOTO_ADJUSTMENT,
+  normalizePhotoAdjustment,
   shotTargetForLayout,
-  type PhotoCrop,
+  type PhotoAdjustment,
 } from "@/lib/compositor";
 import { filterCssValue, getFilterStyle } from "@/lib/filter-styles";
 import type { BoothPreset } from "@/lib/presets";
@@ -29,6 +32,7 @@ import { PRESETS } from "@/lib/presets";
 import { buildMakeYoursUrl } from "@/lib/share-links";
 import { FilterPicker } from "./filter-picker";
 import { FramePicker } from "./frame-picker";
+import { PhotoPreview } from "./photo-preview";
 import { PhotoSelectionPicker } from "./photo-selection-picker";
 
 type SupportState = "checking" | "supported" | "unsupported";
@@ -46,18 +50,18 @@ type CaptureSlot = {
   source: "camera" | "upload";
   blob: Blob;
   url: string;
-  crop?: PhotoCrop;
-  transform?: { rotation: number; mirrorX: boolean };
+  width: number;
+  height: number;
+  adjustment: PhotoAdjustment;
 };
 
 type AdjustDrag = {
   pointerId: number;
   startX: number;
   startY: number;
-  startCrop: PhotoCrop;
+  startAdjustment: PhotoAdjustment;
 };
 
-const DEFAULT_CROP: PhotoCrop = { x: 0, y: 0, zoom: 1 };
 const MAX_UPLOAD_FILE_BYTES = 30 * 1024 * 1024;
 
 const LAYOUTS: { id: LayoutId; label: string }[] = [
@@ -83,11 +87,15 @@ function sleep(milliseconds: number) {
   return new Promise<void>((resolve) => window.setTimeout(resolve, milliseconds));
 }
 
-function imageUrlIsDecodable(url: string) {
-  return new Promise<boolean>((resolve) => {
+function imageUrlSize(url: string) {
+  return new Promise<{ width: number; height: number } | null>((resolve) => {
     const image = new Image();
-    image.onload = () => resolve(Boolean(image.naturalWidth && image.naturalHeight));
-    image.onerror = () => resolve(false);
+    image.onload = () => resolve(
+      image.naturalWidth && image.naturalHeight
+        ? { width: image.naturalWidth, height: image.naturalHeight }
+        : null,
+    );
+    image.onerror = () => resolve(null);
     image.src = url;
   });
 }
@@ -142,18 +150,6 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function normalizedCrop(crop?: PhotoCrop): PhotoCrop {
-  return crop ?? DEFAULT_CROP;
-}
-
-function cropPreviewStyle(crop?: PhotoCrop) {
-  const next = normalizedCrop(crop);
-  return {
-    objectPosition: `${50 + next.x * 50}% ${50 + next.y * 50}%`,
-    transform: `scale(${next.zoom})`,
-  };
-}
-
 function photoNoun(count: number) {
   return count === 1 ? "photo" : "photos";
 }
@@ -200,6 +196,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const capturedCount = captureSlots.reduce((total, slot) => total + (slot ? 1 : 0), 0);
   const canFlip = cameraStatus === "ready" && !captureBusy;
   const selectedLayoutTarget = shotTargetForLayout(layoutId);
+  const activeCellRatio = cellAspectRatioForLayout(layoutId);
   const availablePhotoIndexes = captureSlots.flatMap((slot, index) => slot ? [index] : []);
   const storedPhotoSelection = photoSelections[layoutId];
   const selectedPhotoIndexes = storedPhotoSelection === undefined
@@ -207,9 +204,16 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     : storedPhotoSelection.filter((index) => Boolean(captureSlots[index])).slice(0, selectedLayoutTarget);
   const exportSlots = selectedPhotoIndexes.map((index) => captureSlots[index] ?? null);
   const exportReady = exportSlots.length === selectedLayoutTarget && exportSlots.every((slot) => slot !== null) && !captureBusy && exportStatus !== "working";
-  const photoChoices = captureSlots.flatMap((slot, index) => slot ? [{ index, id: slot.slotId, url: slot.url, crop: slot.crop }] : []);
+  const photoChoices = captureSlots.flatMap((slot, index) => slot ? [{
+    index,
+    id: slot.slotId,
+    url: slot.url,
+    width: slot.width,
+    height: slot.height,
+    adjustment: slot.adjustment,
+  }] : []);
   const activeAdjustSlot = activeAdjustIndex === null ? null : captureSlots[activeAdjustIndex] ?? null;
-  const activeCrop = normalizedCrop(activeAdjustSlot?.crop);
+  const activeAdjustment = normalizePhotoAdjustment(activeAdjustSlot?.adjustment);
   const filterThumbnailUrl = captureSlots.find((slot): slot is CaptureSlot => slot !== null)?.url ?? null;
   const selectedLayoutLabel = LAYOUTS.find((layout) => layout.id === layoutId)?.label ?? layoutId;
   const selectedFilterLabel = getFilterStyle(filterId).label;
@@ -315,8 +319,8 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       setCameraStatus("review");
       setReviewMessage(
         capturedCount >= required
-          ? `${next.name} applied. Your ${capturedCount} ${photoNoun(capturedCount)} and framing stayed intact.`
-          : `${next.name} needs ${required} photos. Your ${capturedCount} ${photoNoun(capturedCount)} and framing are preserved; return to Review or Start over when you want a complete set.`,
+          ? `${next.name} applied. Your ${capturedCount} ${photoNoun(capturedCount)} and adjustments stayed intact.`
+          : `${next.name} needs ${required} photos. Your ${capturedCount} ${photoNoun(capturedCount)} and adjustments are preserved; return to Review or Start over when you want a complete set.`,
       );
       return;
     }
@@ -389,31 +393,29 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   function selectAdjustSlot(slotIndex: number) {
     if (captureBusy || workspaceMode !== "review" || cameraStatus !== "review" || !captureSlots[slotIndex]) return;
     setActiveAdjustIndex(slotIndex);
-    setReviewMessage(`Photo ${slotIndex + 1} selected. Drag directly on the photo to reframe it.`);
+    setReviewMessage(`Photo ${slotIndex + 1} selected. Drag on the image, then fine-tune position or zoom below.`);
   }
 
-  function updateSlotCrop(slotIndex: number, crop: PhotoCrop) {
+  function updateSlotAdjustment(slotIndex: number, adjustment: PhotoAdjustment) {
     closeSavePreview();
     beginEditIfNeeded();
-    setCaptureSlots((current) => current.map((slot, index) => index === slotIndex && slot ? { ...slot, crop } : slot));
+    setCaptureSlots((current) => current.map((slot, index) => index === slotIndex && slot ? { ...slot, adjustment } : slot));
     setExportStatus("idle");
     setExportMessage(null);
   }
 
-  function updateActiveCrop(partial: Partial<PhotoCrop>) {
+  function updateActiveAdjustment(partial: Partial<PhotoAdjustment>) {
     if (activeAdjustIndex === null || !activeAdjustSlot) return;
-    const current = normalizedCrop(activeAdjustSlot.crop);
-    updateSlotCrop(activeAdjustIndex, {
-      x: clamp(partial.x ?? current.x, -1, 1),
-      y: clamp(partial.y ?? current.y, -1, 1),
-      zoom: clamp(partial.zoom ?? current.zoom, 1, 2.5),
-    });
+    updateSlotAdjustment(activeAdjustIndex, normalizePhotoAdjustment({
+      ...activeAdjustSlot.adjustment,
+      ...partial,
+    }));
   }
 
-  function resetActiveCrop() {
+  function resetActiveAdjustment() {
     if (activeAdjustIndex === null || !activeAdjustSlot) return;
-    updateSlotCrop(activeAdjustIndex, { ...DEFAULT_CROP });
-    setReviewMessage(`Photo ${activeAdjustIndex + 1} framing reset.`);
+    updateSlotAdjustment(activeAdjustIndex, { ...DEFAULT_PHOTO_ADJUSTMENT });
+    setReviewMessage(`Photo ${activeAdjustIndex + 1} adjustments reset.`);
   }
 
   function handleAdjustPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
@@ -423,7 +425,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
-      startCrop: normalizedCrop(activeAdjustSlot.crop),
+      startAdjustment: normalizePhotoAdjustment(activeAdjustSlot.adjustment),
     };
   }
 
@@ -434,18 +436,18 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     if (!rect.width || !rect.height) return;
     const deltaX = ((event.clientX - drag.startX) / rect.width) * 2;
     const deltaY = ((event.clientY - drag.startY) / rect.height) * 2;
-    updateSlotCrop(activeAdjustIndex, {
-      ...drag.startCrop,
-      x: clamp(drag.startCrop.x - deltaX, -1, 1),
-      y: clamp(drag.startCrop.y - deltaY, -1, 1),
-    });
+    updateSlotAdjustment(activeAdjustIndex, normalizePhotoAdjustment({
+      ...drag.startAdjustment,
+      panX: clamp(drag.startAdjustment.panX - deltaX, -1, 1),
+      panY: clamp(drag.startAdjustment.panY - deltaY, -1, 1),
+    }));
   }
 
   function handleAdjustPointerEnd(event: ReactPointerEvent<HTMLDivElement>) {
     if (adjustDragRef.current?.pointerId !== event.pointerId) return;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     adjustDragRef.current = null;
-    if (activeAdjustIndex !== null) setReviewMessage(`Photo ${activeAdjustIndex + 1} framing updated.`);
+    if (activeAdjustIndex !== null) setReviewMessage(`Photo ${activeAdjustIndex + 1} position updated.`);
   }
 
   function continueToStyle() {
@@ -462,7 +464,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     }
     setCameraStatus("review");
     setWorkspaceMode("review");
-    setReviewMessage("Review your photos. Select any frame to adjust or replace it.");
+    setReviewMessage("Review your photos. Select any photo to adjust or replace it.");
   }
 
   async function startCamera(nextFacingMode: FacingMode = facingMode) {
@@ -528,8 +530,8 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     if (file.type && !file.type.startsWith("image/")) return null;
 
     const url = URL.createObjectURL(file);
-    const decodable = await imageUrlIsDecodable(url);
-    if (!decodable) {
+    const size = await imageUrlSize(url);
+    if (!size) {
       URL.revokeObjectURL(url);
       return null;
     }
@@ -539,7 +541,9 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       source: "upload",
       blob: file,
       url,
-      crop: { ...DEFAULT_CROP },
+      width: size.width,
+      height: size.height,
+      adjustment: { ...DEFAULT_PHOTO_ADJUSTMENT },
     };
   }
 
@@ -593,7 +597,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       setActiveAdjustIndex(targetIndex);
       setCameraStatus("review");
       setWorkspaceMode("review");
-      setReviewMessage(`Photo ${targetIndex + 1} replaced from your device. Its framing reset; every other photo stayed untouched.`);
+      setReviewMessage(`Photo ${targetIndex + 1} replaced from your device. Its adjustments reset; every other photo stayed untouched.`);
       emitProductEvent("retake_single", {
         shot_index: targetIndex + 1,
         shot_count: capturedCount,
@@ -617,8 +621,8 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     const skippedCount = selectedFiles.length - prepared.length;
     setReviewMessage(
       skippedCount > 0
-        ? `${prepared.length} ${photoNoun(prepared.length)} added from your device. ${skippedCount} selected ${photoNoun(skippedCount)} could not be used. Adjust the framing before you continue.`
-        : `${prepared.length} ${photoNoun(prepared.length)} added from your device. Adjust the framing before you continue.`,
+        ? `${prepared.length} ${photoNoun(prepared.length)} added from your device. ${skippedCount} selected ${photoNoun(skippedCount)} could not be used. Adjust each photo before you continue.`
+        : `${prepared.length} ${photoNoun(prepared.length)} added from your device. Adjust each photo before you continue.`,
     );
     emitProductEvent("capture_started", {
       layout_id: layoutId,
@@ -653,7 +657,15 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     });
     const url = URL.createObjectURL(blob);
     photoUrlsRef.current.push(url);
-    return { slotId, source: "camera", blob, url };
+    return {
+      slotId,
+      source: "camera",
+      blob,
+      url,
+      width,
+      height,
+      adjustment: { ...DEFAULT_PHOTO_ADJUSTMENT },
+    };
   }
 
   async function runCountdown() {
@@ -689,7 +701,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       setCameraStatus("review");
       setActiveAdjustIndex(0);
       setWorkspaceMode("review");
-      setReviewMessage("Your photos are ready. Select any frame to adjust it, then continue when everything looks good.");
+      setReviewMessage("Your photos are ready. Select any photo to adjust it, then continue when everything looks good.");
       emitProductEvent("capture_completed", { shot_count: preset.shotCount, layout_id: layoutId, capture_source: "camera" });
     } catch {
       setCountdown(null);
@@ -728,7 +740,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       });
       window.setTimeout(() => revokePhotoUrl(existingSlot.url), 0);
       emitProductEvent("retake_single", { shot_index: slotIndex + 1, shot_count: preset.shotCount, capture_source: "camera" });
-      setReviewMessage(`Photo ${slotIndex + 1} replaced. Its framing reset; every other photo stayed untouched.`);
+      setReviewMessage(`Photo ${slotIndex + 1} replaced. Its adjustments reset; every other photo stayed untouched.`);
     } catch {
       setReviewMessage(`Photo ${slotIndex + 1} could not be retaken. Your previous shot is still safe.`);
       emitProductEvent("camera_error", { error_class: "retake_failed" });
@@ -778,7 +790,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       if (readySlots.length !== selectedLayoutTarget) throw new Error("One or more photos are unavailable.");
       const result = await composePhotoStrip({
         photoUrls: readySlots.map((slot) => slot.url),
-        photoCrops: readySlots.map((slot) => slot.crop),
+        photoAdjustments: readySlots.map((slot) => slot.adjustment),
         layoutId,
         filterId,
         frameId,
@@ -958,6 +970,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
         photos={photoChoices}
         selectedIndexes={selectedPhotoIndexes}
         targetCount={selectedLayoutTarget}
+        targetRatio={activeCellRatio}
         filter={filterCssValue(filterId)}
         disabled={captureBusy}
         onChange={choosePhotoSelection}
@@ -1004,7 +1017,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     : cameraError
       ? cameraErrorMessage(cameraError)
       : cameraStatus === "review"
-        ? `${capturedCount} ${photoNoun(capturedCount)} ready. Review framing, then style and share.`
+        ? `${capturedCount} ${photoNoun(capturedCount)} ready. Review each photo, then style and share.`
         : cameraStatus === "ready"
           ? `Camera ready. PicToFu will take ${preset.shotCount} ${photoNoun(preset.shotCount)} with a 3-second countdown.`
           : "Enable your camera or upload photos when you’re ready. Photos stay on this device.";
@@ -1014,7 +1027,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     : `${Math.min(capturedCount + 1, preset.shotCount)}/${preset.shotCount}`;
 
   const headerStatus = workspaceMode === "review"
-    ? "Review your photos"
+    ? "Edit your photos"
     : workspaceMode === "style"
       ? "Style & export"
       : activeRetakeIndex !== null
@@ -1053,7 +1066,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
               <div className="camera-empty-state">
                 <span className="camera-empty-state__icon" aria-hidden="true">▣</span>
                 <strong>{cameraStatus === "error" ? "Camera needs attention" : "Use camera or your own photos"}</strong>
-                <p>{cameraStatus === "error" ? statusCopy : "Take a fresh set with the camera, or choose photos from this device and crop them before export."}</p>
+                <p>{cameraStatus === "error" ? statusCopy : "Take a fresh set with the camera, or choose photos from this device and adjust them before export."}</p>
               </div>
             )}
             {cameraStatus === "requesting" && <div className="camera-empty-state"><strong>Starting your camera…</strong><p>Your browser may ask for permission.</p></div>}
@@ -1062,7 +1075,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
           </div>
 
           <div className="capture-tray">
-            <button type="button" aria-label="Photo ratio is 3 by 4" disabled={captureBusy}><span>3:4</span><small>Ratio</small></button>
+            <button type="button" aria-label="Photo adjustments are available after capture" disabled><span>✦</span><small>Edit after</small></button>
             <button type="button" aria-label="Countdown is 3 seconds" disabled={captureBusy}><span>3</span><small>Timer</small></button>
             <button className="shutter-button" type="button" onClick={handlePrimaryAction} disabled={captureBusy || supportState === "checking"} aria-label={primaryActionLabel(cameraStatus, capturedCount)}><span /></button>
             <button type="button" aria-label="Flip camera" onClick={flipCamera} disabled={!canFlip}><span>↻</span><small>Flip</small></button>
@@ -1093,9 +1106,9 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
             <section className="review-workspace" aria-labelledby="capture-review-title">
               <div className="review-workspace__top">
                 <div>
-                  <span>Review & Adjust</span>
-                  <h1 id="capture-review-title">Make every frame feel right</h1>
-                  <p>Drag the active photo to reframe it. Your other photos stay untouched.</p>
+                  <span>Photo Editor</span>
+                  <h1 id="capture-review-title">Frame every photo your way</h1>
+                  <p>Choose a photo, drag it to reposition, then use the controls below for precise framing. Every photo keeps its own adjustments.</p>
                 </div>
                 <button type="button" className="review-workspace__retake-all" onClick={restartCapture} disabled={captureBusy}>Start over</button>
               </div>
@@ -1108,11 +1121,19 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
                     key={slot.slotId}
                     onClick={() => selectAdjustSlot(index)}
                     disabled={captureBusy || cameraStatus !== "review"}
-                    aria-label={`Review photo ${index + 1}`}
+                    aria-label={`Edit photo ${index + 1}`}
                     aria-pressed={activeAdjustIndex === index}
                   >
-                    <span className="review-photo-rail__thumb"><img src={slot.url} alt="" style={cropPreviewStyle(slot.crop)} /></span>
-                    <strong>{index + 1}</strong>
+                    <span className="review-photo-rail__thumb">
+                      <PhotoPreview
+                        url={slot.url}
+                        imageWidth={slot.width}
+                        imageHeight={slot.height}
+                        adjustment={slot.adjustment}
+                        targetRatio={0.75}
+                      />
+                    </span>
+                    <strong>Photo {index + 1}</strong>
                   </button>
                 ) : null)}
               </div>
@@ -1121,51 +1142,52 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
                 <div className="review-stage" aria-label={`Adjust photo ${activeAdjustIndex + 1}`}>
                   <div className="review-stage__meta">
                     <strong>Photo {activeAdjustIndex + 1} of {capturedCount}</strong>
-                    <span>Drag to reposition</span>
+                    <span>Drag directly on the photo</span>
                   </div>
 
                   <div
                     className="capture-review__active-photo review-stage__photo"
+                    style={{ aspectRatio: String(activeCellRatio) }}
                     onPointerDown={handleAdjustPointerDown}
                     onPointerMove={handleAdjustPointerMove}
                     onPointerUp={handleAdjustPointerEnd}
                     onPointerCancel={handleAdjustPointerEnd}
                   >
-                    <img
-                      src={activeAdjustSlot.url}
+                    <PhotoPreview
+                      url={activeAdjustSlot.url}
+                      imageWidth={activeAdjustSlot.width}
+                      imageHeight={activeAdjustSlot.height}
+                      adjustment={activeAdjustSlot.adjustment}
+                      targetRatio={activeCellRatio}
                       alt={`Adjust framing for photo ${activeAdjustIndex + 1}`}
-                      style={cropPreviewStyle(activeAdjustSlot.crop)}
-                      draggable={false}
                     />
                     <span>Drag to reposition</span>
                   </div>
 
-                  <div className="review-stage__controls">
-                    <label className="review-zoom-control">
-                      <span>Zoom <strong>{activeCrop.zoom.toFixed(2)}×</strong></span>
-                      <input type="range" min="1" max="2.5" step="0.05" value={activeCrop.zoom} onChange={(event) => updateActiveCrop({ zoom: Number(event.target.value) })} disabled={captureBusy} />
+                  <div className="review-stage__control-grid" aria-label="Fine tune photo framing">
+                    <label>
+                      <span>Zoom <strong>{activeAdjustment.zoom.toFixed(2)}×</strong></span>
+                      <input type="range" min="1" max="2.5" step="0.05" value={activeAdjustment.zoom} onChange={(event) => updateActiveAdjustment({ zoom: Number(event.target.value) })} disabled={captureBusy} />
                     </label>
-                    <button type="button" className="review-reset" onClick={resetActiveCrop} disabled={captureBusy}>Reset framing</button>
+                    <label>
+                      <span>Horizontal <strong>{Math.round(activeAdjustment.panX * 100)}</strong></span>
+                      <input type="range" min="-1" max="1" step="0.05" value={activeAdjustment.panX} onChange={(event) => updateActiveAdjustment({ panX: Number(event.target.value) })} disabled={captureBusy} />
+                    </label>
+                    <label>
+                      <span>Vertical <strong>{Math.round(activeAdjustment.panY * 100)}</strong></span>
+                      <input type="range" min="-1" max="1" step="0.05" value={activeAdjustment.panY} onChange={(event) => updateActiveAdjustment({ panY: Number(event.target.value) })} disabled={captureBusy} />
+                    </label>
                   </div>
 
-                  <details className="review-advanced">
-                    <summary>More adjustments</summary>
-                    <div className="review-advanced__controls">
-                      <label>
-                        <span>Horizontal</span>
-                        <input type="range" min="-1" max="1" step="0.05" value={activeCrop.x} onChange={(event) => updateActiveCrop({ x: Number(event.target.value) })} disabled={captureBusy} />
-                      </label>
-                      <label>
-                        <span>Vertical</span>
-                        <input type="range" min="-1" max="1" step="0.05" value={activeCrop.y} onChange={(event) => updateActiveCrop({ y: Number(event.target.value) })} disabled={captureBusy} />
-                      </label>
-                    </div>
-                  </details>
+                  <div className="review-stage__utility-row">
+                    <span>Non-destructive · preview matches the current layout crop</span>
+                    <button type="button" className="review-reset" onClick={resetActiveAdjustment} disabled={captureBusy}>Reset photo</button>
+                  </div>
                 </div>
               )}
 
               {reviewMessage && <p className="capture-review__message review-workspace__message" aria-live="polite">{reviewMessage}</p>}
-              <p className="capture-review__privacy review-workspace__privacy">Framing is non-destructive and local to each photo. Replacing or retaking one frame resets only that frame.</p>
+              <p className="capture-review__privacy review-workspace__privacy">Adjustments stay local to this browser. Replacing or retaking one photo resets only that photo.</p>
 
               {activeAdjustIndex !== null && activeAdjustSlot && (
                 <div className="review-workspace__sticky-actions">
@@ -1182,7 +1204,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
             <>
               {workspaceMode === "style" && capturedCount > 0 && (
                 <div className="style-workspace__topbar">
-                  <button type="button" onClick={returnToReview}>← Review photos</button>
+                  <button type="button" onClick={returnToReview}>← Edit photos</button>
                   <div><span>Style & Export</span><strong>Your strip is ready — export now or customize it</strong></div>
                 </div>
               )}
@@ -1195,12 +1217,20 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
                 {exportSlots.map((slot, index) => {
                   const sourceIndex = slot ? captureSlots.indexOf(slot) : index;
                   return (
-                    <div className={`result-strip__photo ${slot ? "has-photo" : ""}`} key={slot?.slotId ?? `slot-${index + 1}`}>
+                    <div
+                      className={`result-strip__photo ${slot ? "has-photo" : ""}`}
+                      key={slot?.slotId ?? `slot-${index + 1}`}
+                      style={{ aspectRatio: String(activeCellRatio) }}
+                    >
                       {slot ? (
-                        <img
-                          src={slot.url}
+                        <PhotoPreview
+                          url={slot.url}
+                          imageWidth={slot.width}
+                          imageHeight={slot.height}
+                          adjustment={slot.adjustment}
+                          targetRatio={activeCellRatio}
+                          filter={filterCssValue(filterId)}
                           alt={`Photo ${sourceIndex + 1}`}
-                          style={{ ...cropPreviewStyle(slot.crop), filter: filterCssValue(filterId) }}
                         />
                       ) : <span aria-hidden="true">{index + 1}</span>}
                     </div>
@@ -1240,7 +1270,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
                     <div className="style-disclosure__content">
                       {layoutControls}
                       {photoSelectionControls}
-                      <button type="button" className="style-disclosure__review-link" onClick={returnToReview}>Adjust crop or replace photos in Review photos →</button>
+                      <button type="button" className="style-disclosure__review-link" onClick={returnToReview}>Adjust individual photos in Photo Editor →</button>
                     </div>
                   </details>
                 </section>

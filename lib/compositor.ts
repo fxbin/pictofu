@@ -10,8 +10,30 @@ export type PhotoCrop = {
   zoom: number;
 };
 
+export type QuarterRotation = 0 | 90 | 180 | 270;
+
+export type PhotoAdjustment = {
+  panX: number;
+  panY: number;
+  zoom: number;
+  rotation: QuarterRotation;
+  straighten: number;
+  flipX: boolean;
+};
+
+export const DEFAULT_PHOTO_ADJUSTMENT: PhotoAdjustment = {
+  panX: 0,
+  panY: 0,
+  zoom: 1,
+  rotation: 0,
+  straighten: 0,
+  flipX: false,
+};
+
 export type ComposeStripInput = {
   photoUrls: string[];
+  photoAdjustments?: Array<PhotoAdjustment | undefined>;
+  /** @deprecated Compatibility input for pre-Editor-V2 callers. */
   photoCrops?: Array<PhotoCrop | undefined>;
   layoutId: LayoutId;
   filterId: FilterId;
@@ -27,6 +49,15 @@ export type ComposeStripResult = {
 type Rect = { x: number; y: number; width: number; height: number };
 type SourceCrop = { sx: number; sy: number; sw: number; sh: number };
 
+export type ResolvedPhotoTransform = {
+  angleDegrees: number;
+  drawWidth: number;
+  drawHeight: number;
+  panX: number;
+  panY: number;
+  flipX: boolean;
+};
+
 export function shotTargetForLayout(layoutId: LayoutId): number {
   switch (layoutId) {
     case "strip-3":
@@ -40,6 +71,11 @@ export function shotTargetForLayout(layoutId: LayoutId): number {
   }
 }
 
+export function cellAspectRatioForLayout(layoutId: LayoutId): number {
+  if (layoutId === "grid-4" || layoutId === "polaroid") return 1;
+  return 1 / 0.72;
+}
+
 async function loadImage(url: string): Promise<HTMLImageElement> {
   return await new Promise((resolve, reject) => {
     const image = new Image();
@@ -51,6 +87,81 @@ async function loadImage(url: string): Promise<HTMLImageElement> {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+function finiteOr(value: number, fallback: number) {
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function normalizeQuarterRotation(value: number): QuarterRotation {
+  const rounded = Math.round(finiteOr(value, 0) / 90) * 90;
+  const normalized = ((rounded % 360) + 360) % 360;
+  return normalized === 90 || normalized === 180 || normalized === 270 ? normalized : 0;
+}
+
+export function normalizePhotoAdjustment(
+  adjustment?: Partial<PhotoAdjustment>,
+): PhotoAdjustment {
+  return {
+    panX: clamp(finiteOr(adjustment?.panX ?? 0, 0), -1, 1),
+    panY: clamp(finiteOr(adjustment?.panY ?? 0, 0), -1, 1),
+    zoom: clamp(finiteOr(adjustment?.zoom ?? 1, 1), 1, 2.5),
+    rotation: normalizeQuarterRotation(adjustment?.rotation ?? 0),
+    straighten: clamp(finiteOr(adjustment?.straighten ?? 0, 0), -15, 15),
+    flipX: Boolean(adjustment?.flipX),
+  };
+}
+
+export function adjustmentFromCrop(crop?: PhotoCrop): PhotoAdjustment {
+  if (!crop) return { ...DEFAULT_PHOTO_ADJUSTMENT };
+  return normalizePhotoAdjustment({ panX: crop.x, panY: crop.y, zoom: crop.zoom });
+}
+
+/**
+ * Resolve the transformed image geometry needed to cover a viewport without blank corners.
+ * The same helper is consumed by Canvas export and the DOM preview so both surfaces share
+ * one transform contract.
+ */
+export function resolvePhotoTransform(
+  imageWidth: number,
+  imageHeight: number,
+  viewportWidth: number,
+  viewportHeight: number,
+  adjustment?: Partial<PhotoAdjustment>,
+): ResolvedPhotoTransform {
+  const next = normalizePhotoAdjustment(adjustment);
+  const safeImageWidth = Math.max(1, finiteOr(imageWidth, 1));
+  const safeImageHeight = Math.max(1, finiteOr(imageHeight, 1));
+  const safeViewportWidth = Math.max(1, finiteOr(viewportWidth, 1));
+  const safeViewportHeight = Math.max(1, finiteOr(viewportHeight, 1));
+  const angleDegrees = next.rotation + next.straighten;
+  const angle = (angleDegrees * Math.PI) / 180;
+  const cosine = Math.abs(Math.cos(angle));
+  const sine = Math.abs(Math.sin(angle));
+
+  // Inverse-rotate the destination viewport and cover its bounding box. This is
+  // intentionally conservative: it may crop a little more at fine angles, but it
+  // guarantees the rounded destination cell never exposes an empty corner.
+  const requiredLocalWidth = safeViewportWidth * cosine + safeViewportHeight * sine;
+  const requiredLocalHeight = safeViewportWidth * sine + safeViewportHeight * cosine;
+  const coverScale = Math.max(
+    requiredLocalWidth / safeImageWidth,
+    requiredLocalHeight / safeImageHeight,
+  );
+  const scale = coverScale * next.zoom;
+  const drawWidth = safeImageWidth * scale;
+  const drawHeight = safeImageHeight * scale;
+  const availableX = Math.max(0, (drawWidth - requiredLocalWidth) / 2);
+  const availableY = Math.max(0, (drawHeight - requiredLocalHeight) / 2);
+
+  return {
+    angleDegrees,
+    drawWidth,
+    drawHeight,
+    panX: next.panX * availableX,
+    panY: next.panY * availableY,
+    flipX: next.flipX,
+  };
 }
 
 function defaultCoverCrop(imageWidth: number, imageHeight: number, rect: Rect): SourceCrop {
@@ -76,14 +187,7 @@ function defaultCoverCrop(imageWidth: number, imageHeight: number, rect: Rect): 
   };
 }
 
-/**
- * Converts normalized Review controls into a safe source rectangle.
- *
- * x/y are normalized to [-1, 1], where 0 is centered and the extremes pan to
- * the furthest valid source edge. zoom is clamped to [1, 2.5]. Because the
- * crop always stays inside the original image, the compositor can never expose
- * an empty canvas area.
- */
+/** Compatibility helper retained for source contracts and old callers. */
 export function resolvePhotoCrop(
   imageWidth: number,
   imageHeight: number,
@@ -117,9 +221,18 @@ function drawRoundedPhoto(
   rect: Rect,
   filterId: FilterId,
   cellColor: string,
-  crop?: PhotoCrop,
+  adjustment?: PhotoAdjustment,
 ) {
   const radius = Math.min(34, rect.width * 0.035);
+  const next = normalizePhotoAdjustment(adjustment);
+  const transform = resolvePhotoTransform(
+    image.naturalWidth,
+    image.naturalHeight,
+    rect.width,
+    rect.height,
+    next,
+  );
+
   context.save();
   context.fillStyle = cellColor;
   context.beginPath();
@@ -130,17 +243,16 @@ function drawRoundedPhoto(
   context.roundRect(rect.x, rect.y, rect.width, rect.height, radius);
   context.clip();
   context.filter = filterCssValue(filterId);
-  const source = resolvePhotoCrop(image.naturalWidth, image.naturalHeight, rect, crop);
+  context.translate(rect.x + rect.width / 2, rect.y + rect.height / 2);
+  context.rotate((transform.angleDegrees * Math.PI) / 180);
+  context.scale(transform.flipX ? -1 : 1, 1);
+  context.translate(-transform.panX, -transform.panY);
   context.drawImage(
     image,
-    source.sx,
-    source.sy,
-    source.sw,
-    source.sh,
-    rect.x,
-    rect.y,
-    rect.width,
-    rect.height,
+    -transform.drawWidth / 2,
+    -transform.drawHeight / 2,
+    transform.drawWidth,
+    transform.drawHeight,
   );
   context.restore();
 }
@@ -414,13 +526,15 @@ export async function composePhotoStrip(input: ComposeStripInput): Promise<Compo
   drawFrameDecorations(context, canvas.width, canvas.height, input.frameId);
 
   images.forEach((image, index) => {
+    const adjustment = input.photoAdjustments?.[index]
+      ?? adjustmentFromCrop(input.photoCrops?.[index]);
     drawRoundedPhoto(
       context,
       image,
       geometry.rects[index],
       input.filterId,
       frame.cell,
-      input.photoCrops?.[index],
+      adjustment,
     );
   });
   drawBranding(context, canvas.width, canvas.height, input.frameId, input.layoutId);
