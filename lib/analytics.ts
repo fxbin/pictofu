@@ -27,7 +27,10 @@ export type ProductEventName =
   | "share_clicked"
   | "web_vital";
 
+type CaptureSource = "camera" | "upload" | "mixed";
+
 const ACQUISITION_CONTEXT_KEY = "pictofu:acquisition_context";
+const CAPTURE_SOURCE_KEY = "pictofu:capture_source";
 
 function deviceClass(width: number) {
   if (width < 768) return "mobile";
@@ -90,6 +93,48 @@ function readAcquisitionContext(): SafeEventProperties {
   } catch {
     return {};
   }
+}
+
+function normalizeCaptureSource(value: unknown): CaptureSource | undefined {
+  return value === "camera" || value === "upload" || value === "mixed" ? value : undefined;
+}
+
+function readCaptureSource(): CaptureSource | undefined {
+  try {
+    return normalizeCaptureSource(window.sessionStorage.getItem(CAPTURE_SOURCE_KEY));
+  } catch {
+    return undefined;
+  }
+}
+
+function storeCaptureSource(source: CaptureSource) {
+  try {
+    window.sessionStorage.setItem(CAPTURE_SOURCE_KEY, source);
+  } catch {
+    // Capture source is a bounded optional funnel dimension; storage failure must never block the booth.
+  }
+}
+
+function trackCaptureSource(name: ProductEventName, properties: SafeEventProperties) {
+  const incoming = normalizeCaptureSource(properties.capture_source);
+  if (!incoming || incoming === "mixed") return;
+
+  if (name === "capture_started" || name === "capture_completed") {
+    storeCaptureSource(incoming);
+    return;
+  }
+
+  if (name === "retake_single") {
+    const current = readCaptureSource();
+    storeCaptureSource(current && current !== incoming ? "mixed" : incoming);
+  }
+}
+
+function withCaptureSource(name: ProductEventName, properties: SafeEventProperties): SafeEventProperties {
+  if (normalizeCaptureSource(properties.capture_source)) return properties;
+  if (!["export_started", "export_completed", "download_clicked", "share_clicked"].includes(name)) return properties;
+  const captureSource = readCaptureSource();
+  return captureSource ? { ...properties, capture_source: captureSource } : properties;
 }
 
 function normalizeEvent(name: ProductEventName, properties: SafeEventProperties): ProductEventName {
@@ -157,13 +202,15 @@ export function emitProductEvent(name: ProductEventName, properties: SafeEventPr
   if (name === "start_booth" && !shouldEmitStartBooth()) return;
 
   storeAcquisitionContext(name, properties);
+  trackCaptureSource(name, properties);
   const normalizedName = normalizeEvent(name, properties);
-  const detail = buildEventDetail(normalizedName, properties);
+  const enrichedProperties = withCaptureSource(normalizedName, properties);
+  const detail = buildEventDetail(normalizedName, enrichedProperties);
   dispatchEventDetail(detail);
 
   // Keep export_completed as the core funnel metric while exposing a dedicated
   // frame-aware PNG event for Frames V2 preference analysis.
-  if (normalizedName === "export_completed" && properties.format === "png") {
-    dispatchEventDetail(buildEventDetail("export_png", properties));
+  if (normalizedName === "export_completed" && enrichedProperties.format === "png") {
+    dispatchEventDetail(buildEventDetail("export_png", enrichedProperties));
   }
 }
