@@ -81,7 +81,7 @@ function toolLabel(tool: ReviewTool) {
 }
 
 export function MobileReviewDock() {
-  useSyncExternalStore(subscribePhotoFraming, getPhotoFramingVersion, getPhotoFramingServerVersion);
+  const framingVersion = useSyncExternalStore(subscribePhotoFraming, getPhotoFramingVersion, getPhotoFramingServerVersion);
   const [isMobile, setIsMobile] = useState(false);
   const [tool, setTool] = useState<ReviewTool>(null);
   const [snapshot, setSnapshot] = useState<ReviewSnapshot>(EMPTY_SNAPSHOT);
@@ -156,7 +156,7 @@ export function MobileReviewDock() {
 
   const selectedCrop = useMemo(
     () => snapshot.photoUrl ? getPhotoFramingRatio(snapshot.photoUrl) : "auto",
-    [snapshot.photoUrl, getPhotoFramingVersion()],
+    [snapshot.photoUrl, framingVersion],
   );
 
   function chooseTool(next: Exclude<ReviewTool, null>) {
