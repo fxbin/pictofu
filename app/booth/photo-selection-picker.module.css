@@ -84,7 +84,7 @@
   cursor: grab;
   touch-action: pan-y;
   user-select: none;
-  transition: transform 140ms ease, opacity 140ms ease, background 140ms ease, box-shadow 140ms ease;
+  transition: transform 150ms cubic-bezier(.2,.8,.2,1), background 150ms ease, box-shadow 150ms ease, outline-color 150ms ease;
 }
 
 .orderCard:hover {
@@ -95,12 +95,25 @@
   cursor: grabbing;
 }
 
-.orderCardDragging {
-  z-index: 3;
-  opacity: .78;
-  background: #fff1f5;
+.orderCardPressed {
+  z-index: 2;
+  background: #fff8fa;
   box-shadow: 0 9px 22px rgba(109, 65, 80, .16);
-  transform: scale(1.035);
+  transform: translateY(-2px) scale(1.025);
+}
+
+.orderCardDragging {
+  z-index: 5;
+  opacity: 1;
+  background: #fff7fa;
+  outline: 2px solid rgba(255, 111, 143, .58);
+  outline-offset: 2px;
+  box-shadow: 0 18px 38px rgba(109, 65, 80, .28), 0 6px 14px rgba(255, 111, 143, .22);
+  transform: translateY(-6px) scale(1.06);
+}
+
+.orderCardDropTarget .orderPreview {
+  box-shadow: inset 0 0 0 3px rgba(255, 111, 143, .88), 0 10px 24px rgba(109, 65, 80, .2);
 }
 
 .orderCard > strong {
@@ -123,6 +136,7 @@
 .orderPreview {
   background: #f3e9e7;
   box-shadow: 0 5px 14px rgba(78, 52, 62, .1);
+  transition: box-shadow 150ms ease;
 }
 
 .orderPreview img {
@@ -152,27 +166,63 @@
 
 .dragHandle {
   position: absolute;
-  top: 7px;
-  left: 7px;
-  min-width: 24px;
-  height: 24px;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  background: rgba(255,255,255,.84);
-  color: #765f68;
-  font-size: 15px;
+  top: 6px;
+  left: 6px;
+  min-width: 52px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 8px;
+  border: 1px solid rgba(229, 203, 210, .92);
+  border-radius: 9px;
+  background: rgba(255,255,255,.94);
+  color: #8f5062;
   font-weight: 900;
   line-height: 1;
-  box-shadow: 0 2px 8px rgba(55, 39, 45, .12);
-  backdrop-filter: blur(6px);
+  box-shadow: 0 3px 10px rgba(55, 39, 45, .18);
+  backdrop-filter: blur(8px);
   pointer-events: none;
+}
+
+.dragHandle b {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.dragHandle small {
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.dropTargetBadge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 3;
+  min-width: max-content;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, .75);
+  border-radius: 999px;
+  background: rgba(113, 58, 76, .9);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: .01em;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 6px 18px rgba(63, 35, 44, .25);
+  backdrop-filter: blur(8px);
 }
 
 .removeButton {
   position: absolute;
-  top: 5px;
   right: 5px;
+  bottom: 5px;
   width: 24px;
   height: 24px;
   display: grid;
@@ -216,10 +266,21 @@
 
 .orderHint {
   margin: 0;
-  color: #aa8d96;
+  padding: 6px 8px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .58);
+  color: #8f717a;
   font-size: 9px;
+  font-weight: 700;
   line-height: 1.4;
-  text-align: right;
+  text-align: center;
+  transition: background 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.orderHintActive {
+  background: #fff0f4;
+  color: #a54f67;
+  transform: translateY(-1px);
 }
 
 .removeButton:disabled {
@@ -307,7 +368,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .orderCard {
+  .orderCard,
+  .orderPreview,
+  .orderHint {
     transition: none;
   }
 }
@@ -349,9 +412,22 @@
   }
 
   .dragHandle {
-    min-width: 20px;
-    height: 20px;
-    font-size: 13px;
+    min-width: 48px;
+    height: 26px;
+    padding-inline: 6px;
+  }
+
+  .dragHandle b {
+    font-size: 14px;
+  }
+
+  .dragHandle small {
+    font-size: 7px;
+  }
+
+  .dropTargetBadge {
+    padding: 5px 7px;
+    font-size: 7px;
   }
 
   .orderHint {

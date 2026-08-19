@@ -182,10 +182,10 @@ assert.ok(
   "Drag reorder must retain a keyboard sorting fallback without visible arrow controls.",
 );
 assert.ok(
-  photoSelectionPicker.includes("Drag photos into the order you want") &&
+  photoSelectionPicker.includes("Hold and drag a photo to reorder") &&
     !photoSelectionPicker.includes("Move photos left or right") &&
     !photoSelectionPicker.includes("orderControls"),
-  "Direct manipulation must be the primary ordering UI; visible left/right button controls must stay removed.",
+  "Direct manipulation must remain the primary ordering UI with explicit drag guidance and no visible left/right controls.",
 );
 assert.ok(
   photoSelectionPicker.includes('if ((event.target as HTMLElement).closest("button")) return;'),
