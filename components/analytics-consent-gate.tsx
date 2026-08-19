@@ -46,9 +46,9 @@ const DENIED_CONSENT = {
 } as const;
 
 function consentLabel(consent: AnalyticsConsent) {
-  if (consent === "granted") return "Allowed";
-  if (consent === "denied") return "Off";
-  return "Optional";
+  if (consent === "granted") return "Cookies allowed";
+  if (consent === "denied") return "Cookieless";
+  return "Optional cookies";
 }
 
 export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsConsentGateProps) {
@@ -61,8 +61,7 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
   const [runtimeReady, setRuntimeReady] = useState(false);
   const initializedRef = useRef(false);
   const analyticsAllowed = consent === "granted";
-  const wantsGoogle = configured && analyticsAllowed;
-  const googleEnabled = wantsGoogle && runtimeReady;
+  const googleEnabled = configured && runtimeReady;
 
   useEffect(() => {
     if (!analyticsAllowed) return;
@@ -70,7 +69,7 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
   }, [analyticsAllowed]);
 
   useEffect(() => {
-    if (!wantsGoogle) return;
+    if (!configured) return;
 
     if (!initializedRef.current) {
       window.dataLayer = window.dataLayer ?? [];
@@ -80,9 +79,20 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
           window.dataLayer?.push(args);
         });
 
-      window.gtag("consent", "default", GRANTED_CONSENT);
+      // Advanced Consent Mode: Google measurement can initialize in a storage-denied
+      // state. Analytics cookies remain unavailable until the visitor explicitly grants
+      // analytics storage, while advertising-related storage always stays denied.
+      window.gtag("consent", "default", DENIED_CONSENT);
+      if (readAnalyticsConsent() === "granted") {
+        window.gtag("consent", "update", GRANTED_CONSENT);
+      }
+      window.gtag("set", "ads_data_redaction", true);
       window.gtag("js", new Date());
-      window.gtag("config", measurementId, { send_page_view: false });
+      window.gtag("config", measurementId, {
+        send_page_view: false,
+        allow_google_signals: false,
+        allow_ad_personalization_signals: false,
+      });
       initializedRef.current = true;
     }
 
@@ -113,24 +123,27 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
     document.head.appendChild(script);
 
     return () => script.removeEventListener("load", markReady);
-  }, [measurementId, wantsGoogle]);
+  }, [configured, measurementId]);
+
+  useEffect(() => {
+    if (!configured || !initializedRef.current || !window.gtag) return;
+    window.gtag(
+      "consent",
+      "update",
+      consent === "granted" ? GRANTED_CONSENT : DENIED_CONSENT,
+    );
+  }, [configured, consent]);
 
   function allowAnalytics() {
+    window.gtag?.("consent", "update", GRANTED_CONSENT);
     persistAnalyticsConsent("granted");
     setSettingsOpen(false);
   }
 
   function declineAnalytics() {
     clearRetentionMeasurement();
-
-    if (consent === "granted") {
-      window.gtag?.("consent", "update", DENIED_CONSENT);
-      clearAccessibleGaCookies();
-      persistAnalyticsConsent("denied");
-      window.location.reload();
-      return;
-    }
-
+    window.gtag?.("consent", "update", DENIED_CONSENT);
+    clearAccessibleGaCookies();
     persistAnalyticsConsent("denied");
     setSettingsOpen(false);
   }
@@ -142,7 +155,7 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
     <>
       <AnalyticsBridge enabled={googleEnabled} />
 
-      {googleEnabled && (
+      {googleEnabled && analyticsAllowed && (
         <Suspense fallback={null}>
           <LazyAnalyticsWebVitals />
         </Suspense>
@@ -151,18 +164,20 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
       {showPanel && (
         <section className={styles.banner} aria-label="Analytics privacy settings">
           <div className={styles.titleRow}>
-            <strong>Optional analytics</strong>
+            <strong>Analytics choices</strong>
             <span className={styles.status}>{consentLabel(consent)}</span>
           </div>
           <p className={styles.copy}>
-            If you allow analytics, PicToFu can remember a browser-local cohort marker for approximate D1/D7/D30 return measurement and can load Google Analytics when configured. The retention store receives only aggregate cohort dimensions, not a user or session identifier, IP address, or photo media.
+            PicToFu uses privacy-minimized aggregate measurement to understand the product. {configured
+              ? "Google Analytics can also receive limited cookieless measurement pings while analytics storage is denied. Allow analytics to enable Google Analytics cookies and browser-local D1/D7/D30 return measurement."
+              : "Allow analytics to enable browser-local D1/D7/D30 return measurement."} Photos, filenames, and a PicToFu user or session ID are not sent as analytics fields.
           </p>
           <div className={styles.actions}>
             <button className={styles.primary} type="button" onClick={allowAnalytics}>
               {consent === "granted" ? "Keep analytics" : "Allow analytics"}
             </button>
             <button className={styles.secondary} type="button" onClick={declineAnalytics}>
-              {consent === "granted" ? "Turn off analytics" : consent === "denied" ? "Keep off" : "No thanks"}
+              {consent === "granted" ? "Use cookieless mode" : consent === "denied" ? "Keep cookieless" : "Keep cookieless"}
             </button>
             <Link className={styles.privacyLink} href="/privacy" prefetch={false}>Privacy</Link>
           </div>
