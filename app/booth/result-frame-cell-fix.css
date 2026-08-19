@@ -1,0 +1,25 @@
+/*
+ * Result-preview photo slots must use the selected Frame's `cell` surface.
+ * These values mirror `lib/frame-styles.ts`; the framing regression contract
+ * verifies the mapping stays synchronized with the Frame registry.
+ *
+ * Keep the preview root plus transform/pan compositor layers opaque. Mobile
+ * browsers may promote rotated layers to separate compositor surfaces; if a
+ * nested layer stays transparent it can expose a black backing surface even
+ * though the strip frame itself is light.
+ */
+.result-strip--white { --result-photo-surface: #f8f7f5; }
+.result-strip--cream { --result-photo-surface: #fffaf5; }
+.result-strip--black { --result-photo-surface: #282828; }
+.result-strip--pink { --result-photo-surface: #fff8fa; }
+.result-strip--lilac { --result-photo-surface: #fbf8ff; }
+.result-strip--mint { --result-photo-surface: #f8fffc; }
+.result-strip--chrome { --result-photo-surface: #fbfaff; }
+.result-strip--film { --result-photo-surface: #f7ecdc; }
+
+.result-strip__photo,
+.result-strip__photo .photo-preview,
+.result-strip__photo .photo-preview__transform,
+.result-strip__photo .photo-preview__pan {
+  background-color: var(--result-photo-surface, #f8f7f5);
+}
