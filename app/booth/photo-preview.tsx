@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import type { CSSProperties } from "react";
 import { emitProductEvent, type EditTool } from "@/lib/analytics";
 import {
@@ -45,7 +45,6 @@ export function PhotoPreview({ url, imageWidth, imageHeight, adjustment, targetR
   const { panX, panY, zoom, rotation, straighten, flipX } = currentAdjustment;
   const previousAdjustment = useRef(currentAdjustment);
   const rootRef = useRef<HTMLSpanElement | null>(null);
-  const [ownsFrameGeometry, setOwnsFrameGeometry] = useState(false);
 
   useEffect(() => {
     const previous = previousAdjustment.current;
@@ -62,14 +61,16 @@ export function PhotoPreview({ url, imageWidth, imageHeight, adjustment, targetR
     rotation,
     targetRatio,
   );
+  // Full Review/result previews carry meaningful alt text; decorative selection thumbnails do not.
+  // Only full previews are allowed to replace their host frame's template geometry in Auto/Fit.
+  const ownsFrameGeometry = Boolean(alt);
   const effectiveRatio = customRatio ?? (ownsFrameGeometry ? sourceOwnedRatio : targetRatio);
   const fitMode = framing === "auto" ? "contain" : "cover";
 
   useLayoutEffect(() => {
+    if (!ownsFrameGeometry) return;
     const host = rootRef.current?.parentElement as HTMLElement | null;
-    const ownsGeometry = Boolean(host?.matches(".review-stage__photo, .result-strip__photo"));
-    if (ownsGeometry !== ownsFrameGeometry) setOwnsFrameGeometry(ownsGeometry);
-    if (ownsGeometry && host) {
+    if (host?.matches(".review-stage__photo, .result-strip__photo")) {
       host.style.aspectRatio = String(sourceOwnedRatio);
     }
   });
