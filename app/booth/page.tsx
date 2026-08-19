@@ -4,6 +4,7 @@ import { PhotoFramingController } from "./photo-framing-controller";
 import "./booth-foundation.css";
 import "./booth-shell.css";
 import "./camera.css";
+import "./camera-framing-fix.css";
 import "./photo-framing.css";
 import "./export.css";
 import "./filter-picker.css";
