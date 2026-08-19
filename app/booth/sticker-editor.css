@@ -37,9 +37,6 @@
 .composition-editor__heading h3 { color: #5f5054; font-size: 13px; }
 .composition-editor__heading p { margin-top: 3px; color: #89767a; font-size: 11px; line-height: 1.45; }
 .composition-editor__heading > button, .sticker-editor__delete { min-height: 38px; padding: 0 11px; border: 1px solid #e5cbd2; border-radius: 10px; background: #fff; color: #9b566a; font-size: 10px; font-weight: 800; cursor: pointer; }
-.ratio-picker { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; }
-.ratio-picker button { min-height: 42px; border: 1px solid #eadde0; border-radius: 11px; background: #fff; color: #6b5a5e; font-weight: 800; cursor: pointer; }
-.ratio-picker button.is-selected { border-color: #ef8ba1; background: #fff0f4; color: #a64e65; box-shadow: inset 0 0 0 1px #ef8ba1; }
 .sticker-pack { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; }
 .sticker-pack > button { min-height: 72px; display: grid; place-items: center; align-content: center; gap: 6px; padding: 8px 5px; border: 1px solid #eadde0; border-radius: 13px; background: linear-gradient(145deg,#fff,#fff7fa); color: #6b5a5e; cursor: pointer; }
 .sticker-pack > button:hover:not(:disabled), .sticker-pack > button:focus-visible { border-color: #ef8ba1; background: #fff0f4; }
@@ -52,17 +49,10 @@
 .sticker-editor__active input[type="range"] { width: 100%; min-height: 30px; accent-color: #ef7894; }
 .sticker-editor__delete { align-self: end; }
 
-html[data-pictofu-photo-ratio] .review-stage__photo,
-html[data-pictofu-photo-ratio] .result-strip__photo {
-  aspect-ratio: var(--pictofu-editor-ratio) !important;
-  height: auto !important;
-}
-
 @media (max-width: 720px) {
   .sticker-overlay__item { font-size: clamp(17px,7vw,25px); }
   .composition-editor__heading { display: grid; }
   .composition-editor__heading > button { width: max-content; }
-  .ratio-picker { grid-template-columns: repeat(4,minmax(58px,1fr)); overflow-x: auto; }
   .sticker-pack { grid-template-columns: repeat(4,minmax(64px,1fr)); overflow-x: auto; padding-bottom: 4px; }
   .sticker-editor__active { grid-template-columns: 1fr; }
   .sticker-editor__delete { width: 100%; }
