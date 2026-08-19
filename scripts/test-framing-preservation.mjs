@@ -30,6 +30,8 @@ assert.match(cameraFix, /object-fit:\s*contain/, "Live camera preview must not h
 assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?width:\s*min\(100%,\s*780px\)/, "Review photo must use the available editor width instead of a 62–68% crop window");
 assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?margin:\s*0 auto/, "Review photo must not carry artificial 80–138px crop-context margins");
 assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?overflow:\s*hidden/, "The photo frame itself must clip pan/zoom transforms");
+assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?touch-action:\s*pan-y/, "Full-size mobile Review must preserve native vertical page scrolling over the photo");
+assert.doesNotMatch(cameraFix, /touch-action:\s*none/, "The final Review override must not reintroduce an all-axis mobile scroll lock");
 assert.match(cameraFix, /\.review-stage__photo::before,\s*\.review-stage__photo::after\s*\{[\s\S]*?content:\s*none[\s\S]*?display:\s*none/, "Legacy Final-frame badge and giant outside crop mask must be disabled");
 assert.doesNotMatch(cameraFix, /Final frame/, "Review no longer needs a second nested Final frame metaphor");
 assert.match(page, /camera-framing-fix\.css/, "Booth page must load the camera framing override");
@@ -38,4 +40,4 @@ assert.ok(
   "Framing truth overrides must load after legacy Review crop styles",
 );
 
-console.log("Camera-to-editor source geometry and full-size Review contract checks passed.");
+console.log("Camera-to-editor source geometry, full-size Review and mobile-scroll contract checks passed.");
