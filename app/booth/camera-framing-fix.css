@@ -16,18 +16,32 @@
  * pointer movement and two-pointer pinch still flow to the editor handlers.
  */
 .review-stage__photo {
+  --review-photo-surface: #eee7e4;
   width: min(100%, 780px);
   margin: 0 auto;
   overflow: hidden;
   touch-action: pan-y;
   border-radius: 14px;
-  background: #eee7e4;
+  background: var(--review-photo-surface);
   box-shadow: 0 0 0 1px rgba(221, 198, 203, 0.95), 0 12px 30px rgba(75, 53, 58, 0.12);
 }
 
 .review-stage__photo .photo-preview {
   overflow: hidden;
   border-radius: inherit;
+}
+
+/*
+ * Keep every Review preview layer opaque with the same neutral photo surface.
+ * The rotated transform/pan spans are promoted to compositor layers on mobile;
+ * leaving those layers transparent can expose a black backing surface while a
+ * 90°/270° transform is active even though the host frame itself is neutral.
+ * This is preview-only CSS, so the Canvas compositor/export path stays untouched.
+ */
+.review-stage__photo .photo-preview,
+.review-stage__photo .photo-preview__transform,
+.review-stage__photo .photo-preview__pan {
+  background-color: var(--review-photo-surface);
 }
 
 .review-stage__photo::before,
