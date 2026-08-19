@@ -139,10 +139,15 @@ assert.ok(
   "First-party retention must only run after analytics consent and must clear local cohort state when analytics is declined.",
 );
 assert.ok(
-  analyticsConsent.includes('ANALYTICS_CONSENT_STORAGE_KEY = "pictofu.analytics-consent.v2"') &&
-    analyticsConsent.includes('LEGACY_ANALYTICS_CONSENT_STORAGE_KEY = "pictofu.analytics-consent.v1"') &&
-    analyticsConsent.includes("removeItem(LEGACY_ANALYTICS_CONSENT_STORAGE_KEY)"),
-  "The expanded analytics purpose must use a new consent version instead of silently reusing the older GA-only choice.",
+  analyticsConsent.includes('ANALYTICS_CONSENT_STORAGE_KEY = "pictofu.analytics-consent.v3"') &&
+    analyticsConsent.includes('"pictofu.analytics-consent.v2"') &&
+    analyticsConsent.includes('"pictofu.analytics-consent.v1"') &&
+    analyticsConsent.includes("for (const key of LEGACY_ANALYTICS_CONSENT_STORAGE_KEYS)"),
+  "Advanced Consent Mode must use a fresh consent version so prior Basic-Consent choices are not silently reinterpreted.",
+);
+assert.ok(
+  analyticsConsent.includes('domainAttributes.push("; Domain=pictofu.com")'),
+  "Revoking analytics must attempt to clear GA cookies set at both host and PicToFu domain scope.",
 );
 assert.ok(
   bridge.includes("session_id: _sessionId") &&
