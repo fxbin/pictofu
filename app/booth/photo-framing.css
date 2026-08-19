@@ -90,6 +90,21 @@
   font-weight: 750;
 }
 
+.review-stage__photo:has(.photo-preview[data-photo-framing="1:1"]),
+.result-strip__photo:has(.photo-preview[data-photo-framing="1:1"]) {
+  aspect-ratio: 1 !important;
+}
+
+.review-stage__photo:has(.photo-preview[data-photo-framing="4:3"]),
+.result-strip__photo:has(.photo-preview[data-photo-framing="4:3"]) {
+  aspect-ratio: 4 / 3 !important;
+}
+
+.review-stage__photo:has(.photo-preview[data-photo-framing="3:4"]),
+.result-strip__photo:has(.photo-preview[data-photo-framing="3:4"]) {
+  aspect-ratio: 3 / 4 !important;
+}
+
 .result-strip--layout-grid-4 .result-strip__photo.has-photo {
   align-self: center;
   width: 100%;
