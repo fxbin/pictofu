@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BoothClient } from "./booth-client";
+import { MobileReviewDock } from "./mobile-review-dock";
 import { PhotoFramingController } from "./photo-framing-controller";
 import "./booth-foundation.css";
 import "./booth-shell.css";
@@ -12,6 +13,7 @@ import "./progressive-disclosure.css";
 import "./sticker-editor.css";
 import "./mobile-viewport.css";
 import "./camera-framing-fix.css";
+import "./mobile-review-dock.css";
 import { getPreset } from "@/lib/presets";
 
 export const metadata: Metadata = {
@@ -34,6 +36,7 @@ export default async function BoothPage({ searchParams }: BoothPageProps) {
     <>
       <BoothClient initialPreset={preset} />
       <PhotoFramingController />
+      <MobileReviewDock />
     </>
   );
 }
