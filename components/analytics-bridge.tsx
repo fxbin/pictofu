@@ -22,6 +22,13 @@ const LANDING_PRESET_BY_PATH: Record<string, string> = {
   "/graduation-photobooth": "graduation",
 };
 
+const MAX_PENDING_GOOGLE_EVENTS = 32;
+
+type PendingGoogleEvent = {
+  name: string;
+  parameters: Record<string, unknown>;
+};
+
 function referrerClass() {
   const referrer = document.referrer;
   if (!referrer) return "direct";
@@ -48,23 +55,62 @@ function acquisitionParameters() {
   };
 }
 
-export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
+function googleEventFromDetail(detail: Record<string, unknown>): PendingGoogleEvent | null {
+  const eventName = detail.event_name;
+  if (typeof eventName !== "string") return null;
+
+  const {
+    event_name: _eventName,
+    session_id: _sessionId,
+    timestamp: _timestamp,
+    ...parameters
+  } = detail;
+  void _eventName;
+  void _sessionId;
+  void _timestamp;
+  return { name: eventName, parameters };
+}
+
+export function AnalyticsBridge({
+  configured,
+  enabled,
+}: {
+  configured: boolean;
+  enabled: boolean;
+}) {
   const lastLandingPath = useRef<string | null>(null);
+  const pendingGoogleEvents = useRef<PendingGoogleEvent[]>([]);
 
   useEffect(() => {
     function forwardToGoogle(event: Event) {
       if (!(event instanceof CustomEvent)) return;
-      const detail = event.detail as Record<string, unknown>;
-      const eventName = detail.event_name;
-      if (typeof eventName !== "string" || !enabled || !window.gtag) return;
+      const googleEvent = googleEventFromDetail(event.detail as Record<string, unknown>);
+      if (!googleEvent) return;
 
-      const { event_name: _eventName, ...parameters } = detail;
-      void _eventName;
-      window.gtag("event", eventName, parameters);
+      if (enabled && window.gtag) {
+        window.gtag("event", googleEvent.name, googleEvent.parameters);
+        return;
+      }
+
+      // Product events can happen before gtag.js finishes loading. Keep a small bounded
+      // in-memory queue so the first landing/start signals are not lost from GA4 when
+      // Advanced Consent Mode is configured. If the tag is blocked, the queue simply dies
+      // with the page and the independent aggregate funnel remains the source of truth.
+      if (configured && pendingGoogleEvents.current.length < MAX_PENDING_GOOGLE_EVENTS) {
+        pendingGoogleEvents.current.push(googleEvent);
+      }
     }
 
     window.addEventListener("pictofu:analytics", forwardToGoogle);
     return () => window.removeEventListener("pictofu:analytics", forwardToGoogle);
+  }, [configured, enabled]);
+
+  useEffect(() => {
+    if (!enabled || !window.gtag || pendingGoogleEvents.current.length === 0) return;
+    const pending = pendingGoogleEvents.current.splice(0, MAX_PENDING_GOOGLE_EVENTS);
+    for (const event of pending) {
+      window.gtag("event", event.name, event.parameters);
+    }
   }, [enabled]);
 
   useEffect(() => {
@@ -73,7 +119,7 @@ export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
     if (enabled && window.gtag) {
       window.gtag("event", "page_view", {
         page_path: pathname,
-        page_location: window.location.href,
+        page_location: `${window.location.origin}${pathname}`,
         page_title: document.title,
       });
     }

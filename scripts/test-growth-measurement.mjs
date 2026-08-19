@@ -110,16 +110,27 @@ assert.ok(
 );
 
 assert.ok(
-  consentGate.includes('const wantsGoogle = configured && analyticsAllowed') &&
-    consentGate.includes('if (!wantsGoogle) return;') &&
+  consentGate.includes("const googleEnabled = configured && runtimeReady") &&
+    !consentGate.includes("const wantsGoogle = configured && analyticsAllowed") &&
+    consentGate.includes('window.gtag("consent", "default", DENIED_CONSENT)') &&
     consentGate.includes('src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`'),
-  "GA4 must remain explicitly consent-gated.",
+  "GA4 must initialize in Advanced Consent Mode with analytics storage denied by default instead of waiting for a grant to load the tag.",
 );
 assert.ok(
-  consentGate.includes("Optional analytics") &&
-    consentGate.includes("browser-local cohort marker") &&
-    consentGate.includes("not a user or session identifier, IP address, or photo media"),
-  "Consent UI must accurately describe optional first-party retention and GA4.",
+  consentGate.includes('analytics_storage: "denied"') &&
+    consentGate.includes('ad_storage: "denied"') &&
+    consentGate.includes('ad_user_data: "denied"') &&
+    consentGate.includes('ad_personalization: "denied"') &&
+    consentGate.includes('window.gtag("set", "ads_data_redaction", true)') &&
+    consentGate.includes("allow_google_signals: false") &&
+    consentGate.includes("allow_ad_personalization_signals: false"),
+  "Advanced Consent Mode must keep ad storage/personalization disabled and redact ad data.",
+);
+assert.ok(
+  consentGate.includes("Analytics choices") &&
+    consentGate.includes("cookieless measurement pings") &&
+    consentGate.includes("browser-local D1/D7/D30 return measurement"),
+  "Consent UI must accurately distinguish default cookieless GA4 measurement from optional analytics storage and first-party retention.",
 );
 assert.ok(
   consentGate.includes("recordRetentionVisit();") &&
@@ -128,10 +139,28 @@ assert.ok(
   "First-party retention must only run after analytics consent and must clear local cohort state when analytics is declined.",
 );
 assert.ok(
-  analyticsConsent.includes('ANALYTICS_CONSENT_STORAGE_KEY = "pictofu.analytics-consent.v2"') &&
-    analyticsConsent.includes('LEGACY_ANALYTICS_CONSENT_STORAGE_KEY = "pictofu.analytics-consent.v1"') &&
-    analyticsConsent.includes("removeItem(LEGACY_ANALYTICS_CONSENT_STORAGE_KEY)"),
-  "The expanded analytics purpose must use a new consent version instead of silently reusing the older GA-only choice.",
+  analyticsConsent.includes('ANALYTICS_CONSENT_STORAGE_KEY = "pictofu.analytics-consent.v3"') &&
+    analyticsConsent.includes('"pictofu.analytics-consent.v2"') &&
+    analyticsConsent.includes('"pictofu.analytics-consent.v1"') &&
+    analyticsConsent.includes("for (const key of LEGACY_ANALYTICS_CONSENT_STORAGE_KEYS)"),
+  "Advanced Consent Mode must use a fresh consent version so prior Basic-Consent choices are not silently reinterpreted.",
+);
+assert.ok(
+  analyticsConsent.includes('domainAttributes.push("; Domain=pictofu.com")'),
+  "Revoking analytics must attempt to clear GA cookies set at both host and PicToFu domain scope.",
+);
+assert.ok(
+  bridge.includes("session_id: _sessionId") &&
+    bridge.includes("timestamp: _timestamp") &&
+    bridge.includes('page_location: `${window.location.origin}${pathname}`'),
+  "GA4 forwarding must drop PicToFu's internal session/timestamp fields and avoid query strings in explicit page-view locations.",
+);
+assert.ok(
+  consentGate.includes("<AnalyticsBridge configured={configured} enabled={googleEnabled} />") &&
+    bridge.includes("MAX_PENDING_GOOGLE_EVENTS = 32") &&
+    bridge.includes("pendingGoogleEvents.current.push(googleEvent)") &&
+    bridge.includes("pendingGoogleEvents.current.splice(0, MAX_PENDING_GOOGLE_EVENTS)"),
+  "GA4 must keep a bounded in-memory queue so landing/start events emitted before gtag.js is ready can be flushed without persistent identifiers.",
 );
 
 for (const bucket of ["new_browser", "rolling_d1", "rolling_d7", "rolling_d30"]) {
@@ -211,8 +240,11 @@ assert.ok(
     privacy.includes("without a PicToFu media-upload request") &&
     privacy.includes("Optional first-party rolling retention") &&
     privacy.includes("browser-local retention cohort record") &&
-    privacy.includes("Google Analytics 4 (GA4) is optional"),
-  "Privacy policy must accurately distinguish local photo processing, aggregate growth counters, optional retention, and optional GA4.",
+    privacy.includes("analytics storage denied by default") &&
+    privacy.includes("limited cookieless measurement pings") &&
+    privacy.includes("Google signals") &&
+    privacy.includes("page-view URLs sent by PicToFu omit query strings"),
+  "Privacy policy must accurately distinguish local photo processing, aggregate counters, optional retention, and GA4 Advanced Consent Mode.",
 );
 
-console.log("Growth aggregate observability, consent, local upload, Pose Guide attribution, and retention privacy contracts passed.");
+console.log("Growth aggregate observability, GA4 Advanced Consent Mode, local upload, Pose Guide attribution, and retention privacy contracts passed.");

@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   },
 };
 
-const LAST_UPDATED = "August 17, 2026";
+const LAST_UPDATED = "August 19, 2026";
 
 export default function PrivacyPage() {
   return (
@@ -106,27 +106,30 @@ export default function PrivacyPage() {
 
           <h3>Google Analytics 4</h3>
           <p>
-            Google Analytics 4 (GA4) is optional and is not required for the photobooth to function. When GA4 is configured, PicToFu uses the same visible analytics-consent choice: the Google Analytics tag is not loaded until you choose <strong>Allow analytics</strong>. If you decline, the core photobooth and the privacy-minimized aggregate funnel counters remain usable without GA4 or first-party rolling retention.
+            Google Analytics 4 (GA4) is additional measurement and is not required for the photobooth to function. When GA4 is configured, PicToFu uses Google Consent Mode with analytics storage denied by default. In that denied state, Google Analytics cookies are not read or written, but Google can receive limited cookieless measurement pings for basic measurement and modeling.
           </p>
           <p>
-            After analytics consent is granted, GA4 can collect usage information such as user and session statistics, approximate geolocation, browser/device information, page views, and structured product events. Google Analytics can use a first-party identifier such as the <code>_ga</code> cookie when analytics storage is allowed. Advertising storage, ad personalization, and remarketing remain disabled in the current setup.
+            If you choose <strong>Allow analytics</strong>, analytics storage is updated to granted and GA4 can use first-party analytics cookies such as <code>_ga</code>, along with page views and structured product events. PicToFu keeps advertising storage, ad user data, ad personalization, Google signals, and ad-personalization signals disabled in the current setup. PicToFu also strips its internal analytics session marker and event timestamp before forwarding structured product events to Google, and page-view URLs sent by PicToFu omit query strings.
           </p>
           <p>
-            You can reopen PicToFu&apos;s Privacy settings and change the analytics choice. If a previously granted choice is revoked, PicToFu clears the browser-local PicToFu retention cohort record, stores the denied state, clears accessible GA cookies, and reloads the page so the next page lifecycle starts without loading the Google Analytics tag.
+            You can reopen PicToFu&apos;s Privacy settings and change the analytics choice. If a previously granted choice is revoked, PicToFu clears the browser-local retention cohort record, updates Google Consent Mode back to analytics-storage denied, clears accessible GA cookies, and continues only with the storage-denied measurement behavior described above.
           </p>
         </section>
 
         <section>
           <h2>5. Cookies and local browser storage</h2>
           <p>
-            The core PicToFu booth does not require an account cookie or a cloud photo-session cookie. PicToFu stores your analytics consent choice in first-party browser storage so it can be remembered on later visits. If analytics is allowed, PicToFu also stores the small retention cohort record described above in local storage. The browser-local acquisition context and one-per-session growth-stage markers are kept in session storage and contain no photo media; the session identifier used by optional analytics is not sent to the aggregate growth or retention counters.
+            The core PicToFu booth does not require an account cookie or a cloud photo-session cookie. PicToFu stores your analytics choice in first-party browser storage so it can be remembered on later visits. If analytics is allowed, PicToFu also stores the small retention cohort record described above in local storage and GA4 may set first-party analytics cookies. When analytics storage is denied, PicToFu keeps GA4 in storage-denied Consent Mode and clears accessible GA analytics cookies when you explicitly switch from allowed analytics to cookieless mode.
+          </p>
+          <p>
+            The browser-local acquisition context and one-per-session growth-stage markers are kept in session storage and contain no photo media. PicToFu&apos;s internal analytics session marker is not included in the aggregate growth or retention payloads and is stripped before structured product events are forwarded to Google Analytics.
           </p>
         </section>
 
         <section>
           <h2>6. Third-party infrastructure</h2>
           <p>
-            PicToFu uses third-party infrastructure to deliver and understand the website. Vercel hosts and serves the application and may provide aggregated traffic analytics. Supabase hosts the privacy-minimized daily product-funnel counters and aggregate retention counters. Google Analytics may provide additional optional product and acquisition measurement only after the analytics consent gate allows it. Those providers process limited technical information under their own terms and privacy documentation.
+            PicToFu uses third-party infrastructure to deliver and understand the website. Vercel hosts and serves the application and may provide aggregated traffic analytics. Supabase hosts the privacy-minimized daily product-funnel counters and aggregate retention counters. Google Analytics may provide additional acquisition and product measurement using Consent Mode; GA analytics cookies and PicToFu&apos;s browser-local rolling retention are enabled only after you choose <strong>Allow analytics</strong>.
           </p>
           <p>
             PicToFu does not authorize these measurement services to receive captured or device-selected photo bytes as part of the current analytics contract.
@@ -156,7 +159,7 @@ export default function PrivacyPage() {
             Depending on where you live, privacy law may give you rights concerning personal information, which can include access, correction, deletion, restriction, objection, portability, or withdrawal of consent. PicToFu currently has no user account or cloud photo library, so many requests involving photos can be resolved directly by clearing the browser session or deleting files you saved to your own device.
           </p>
           <p>
-            You can reopen the visible Privacy settings control to allow, decline, or withdraw optional analytics. The preference and any PicToFu retention cohort marker are stored in your browser rather than in a PicToFu user account.
+            You can reopen the visible Privacy settings control to allow analytics storage or keep Google Analytics in cookieless storage-denied mode. The preference and any PicToFu retention cohort marker are stored in your browser rather than in a PicToFu user account.
           </p>
         </section>
 
