@@ -84,7 +84,7 @@ export function PhotoFramingController() {
           <span>Per-photo</span>
           <strong id="photo-framing-title">Framing</strong>
         </div>
-        <small>Fit keeps the whole photo · ratios crop only this photo</small>
+        <small>Fit keeps the whole photo · Only this photo changes</small>
       </div>
       <div className="photo-framing-control__options" role="group" aria-label="Choose framing for this photo">
         {FRAMING_OPTIONS.map((option) => (
