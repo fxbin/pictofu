@@ -14,6 +14,7 @@ import "./progressive-disclosure.css";
 import "./sticker-editor.css";
 import "./mobile-viewport.css";
 import "./camera-framing-fix.css";
+import "./result-frame-cell-fix.css";
 import "./mobile-review-dock.css";
 import "./mobile-style-dock.css";
 import { getPreset } from "@/lib/presets";
