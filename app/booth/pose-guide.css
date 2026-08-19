@@ -1,0 +1,207 @@
+.pose-guide-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  color: rgba(255, 255, 255, .86);
+}
+
+.pose-guide-overlay__art {
+  position: absolute;
+  inset: 5% 8% 13%;
+  display: grid;
+  place-items: center;
+  opacity: .6;
+  filter: drop-shadow(0 2px 8px rgba(31, 22, 25, .4));
+  transform-origin: center;
+}
+
+.pose-guide-overlay__art.is-mirrored {
+  transform: scaleX(-1);
+}
+
+.pose-guide-overlay__art svg {
+  width: min(74%, 360px);
+  height: 100%;
+  overflow: visible;
+}
+
+.pose-guide-overlay__copy {
+  position: absolute;
+  left: 50%;
+  bottom: 82px;
+  width: min(86%, 430px);
+  transform: translateX(-50%);
+  display: grid;
+  gap: 3px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, .28);
+  border-radius: 15px;
+  background: rgba(31, 24, 27, .46);
+  box-shadow: 0 10px 30px rgba(23, 17, 19, .16);
+  text-align: center;
+  backdrop-filter: blur(12px);
+}
+
+.pose-guide-overlay__copy > span {
+  color: rgba(255, 255, 255, .78);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.pose-guide-overlay__copy strong {
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.pose-guide-overlay__copy small {
+  color: rgba(255, 255, 255, .88);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.pose-guide-controls {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  z-index: 6;
+  width: min(92%, 520px);
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: minmax(116px, .9fr) minmax(120px, 1fr) minmax(104px, .8fr);
+  align-items: stretch;
+  gap: 7px;
+  padding: 7px;
+  border: 1px solid rgba(255, 255, 255, .3);
+  border-radius: 16px;
+  background: rgba(39, 30, 33, .5);
+  box-shadow: 0 10px 30px rgba(24, 17, 19, .2);
+  backdrop-filter: blur(14px);
+}
+
+.pose-guide-controls button,
+.pose-guide-controls__current {
+  min-width: 0;
+  min-height: 44px;
+  border-radius: 11px;
+}
+
+.pose-guide-controls button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, .22);
+  background: rgba(255, 255, 255, .1);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pose-guide-controls button.is-enabled {
+  border-color: rgba(255, 215, 226, .68);
+  background: rgba(255, 228, 235, .2);
+}
+
+.pose-guide-controls button:hover,
+.pose-guide-controls button:focus-visible {
+  background: rgba(255, 255, 255, .18);
+}
+
+.pose-guide-controls button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.pose-guide-controls button span {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.pose-guide-controls button strong {
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pose-guide-controls__current {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1px;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, .9);
+  color: #58454b;
+  text-align: center;
+}
+
+.pose-guide-controls__current span {
+  color: #a85e71;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .05em;
+}
+
+.pose-guide-controls__current strong {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .pose-guide-overlay__art {
+    inset: 6% 2% 16%;
+  }
+
+  .pose-guide-overlay__art svg {
+    width: min(88%, 340px);
+  }
+
+  .pose-guide-overlay__copy {
+    bottom: 78px;
+    width: min(90%, 390px);
+    padding: 9px 11px;
+  }
+
+  .pose-guide-overlay__copy small {
+    display: none;
+  }
+
+  .pose-guide-controls {
+    bottom: 10px;
+    width: calc(100% - 20px);
+    grid-template-columns: minmax(96px, .85fr) minmax(100px, 1fr) minmax(92px, .8fr);
+    gap: 5px;
+    padding: 5px;
+    border-radius: 14px;
+  }
+
+  .pose-guide-controls button,
+  .pose-guide-controls__current {
+    min-height: 46px;
+  }
+
+  .pose-guide-controls button {
+    padding: 7px 6px;
+  }
+
+  .pose-guide-controls button strong,
+  .pose-guide-controls__current strong {
+    font-size: 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pose-guide-overlay,
+  .pose-guide-controls {
+    transition: none;
+  }
+}

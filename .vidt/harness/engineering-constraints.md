@@ -1,4 +1,4 @@
-# PicTofu Engineering Constraints
+# PicToFu Engineering Constraints
 
 Status: active for MVP v0.1
 
@@ -21,6 +21,18 @@ Protect the fastest path to a measurable, mobile-first photobooth MVP without ac
 11. **No premature frameworks** — avoid state libraries, design-system packages, databases and image SDKs unless the current slice proves a need.
 12. **No destructive Git automation** — no force push, hard reset, or clean operations.
 
+## Pose Guide V1 slice constraints
+
+1. **Static guidance only** — no AI pose detection, body tracking, scoring, biometric inference, external pose CDN, or user pose upload.
+2. **Preview-only overlay** — Pose Guide exists only in the live camera DOM. `captureFrame()` must continue drawing only the `<video>` element into its offscreen canvas, and `composePhotoStrip()` must remain unaware of pose UI.
+3. **No second capture owner** — pose state may select guidance, but it must not own photos, camera stream, countdown, capture slots, editor transforms, layout, or export state.
+4. **Mirror coherence** — front-camera guidance must visually match the mirrored live preview; rear-camera guidance must stay unmirrored.
+5. **Overlay priority** — countdown and capture flash stay visually above pose artwork.
+6. **Bounded packs** — V1 supports only Classic Booth, Korean Date, Couple Date, and Best Friends. Unsupported presets show no Pose Guide controls rather than fake generic guidance.
+7. **Safe controls** — turning guidance on/off or choosing the next pose must not restart the camera, reset captured photos, or interrupt the current stream.
+8. **Privacy-safe measurement** — analytics may contain only bounded pose-guide enums/booleans/profile values. Never send image media, body landmarks, pose coordinates, raw geometry, filenames, free text, or new user/session identifiers to aggregate growth measurement.
+9. **Truthful release evidence** — production claims require executable compile/type/static-generation evidence and Booth route smoke; physical-device camera/touch acceptance must remain explicit when not actually performed.
+
 ## Supported baseline
 
 - Node.js >= 20.9 (Next.js requirement)
@@ -41,6 +53,14 @@ Every user-visible PR must, when the environment permits, show evidence for:
 - camera permission denied state
 
 Camera capture/export changes additionally require real-browser manual evidence before a production-ready claim.
+
+Pose Guide additionally requires:
+
+- preset registry contract
+- overlay DOM-only isolation from capture/export
+- deterministic shot/retake pose progression
+- on/off and next-pose state safety
+- analytics allowlist/privacy contract
 
 ## Change-control triggers
 
