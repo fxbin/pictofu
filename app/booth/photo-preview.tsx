@@ -85,6 +85,19 @@ export function PhotoPreview({ url, imageWidth, imageHeight, adjustment, targetR
     currentAdjustment,
     fitMode,
   );
+  // Probe each normalized pan axis at its maximum value. resolvePhotoTransform already
+  // clamps movement to real geometric overflow, so a zero probe means the UI control
+  // would be a no-op for the current framing/zoom/rotation state.
+  const panCapacity = resolvePhotoTransform(
+    imageWidth,
+    imageHeight,
+    viewportWidth,
+    viewportHeight,
+    { ...currentAdjustment, panX: 1, panY: 1 },
+    fitMode,
+  );
+  const canPanX = Math.abs(panCapacity.panX) > 0.01;
+  const canPanY = Math.abs(panCapacity.panY) > 0.01;
 
   const outerStyle: CSSProperties = {
     width: `${(transform.drawWidth / viewportWidth) * 100}%`,
@@ -104,6 +117,8 @@ export function PhotoPreview({ url, imageWidth, imageHeight, adjustment, targetR
       data-photo-framing={framing}
       data-photo-fit={fitMode}
       data-frame-geometry={ownsFrameGeometry ? "source" : "host"}
+      data-can-pan-x={canPanX ? "true" : "false"}
+      data-can-pan-y={canPanY ? "true" : "false"}
       aria-hidden={alt ? undefined : true}
     >
       <span className="photo-preview__transform" style={outerStyle}>
