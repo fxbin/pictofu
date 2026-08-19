@@ -35,3 +35,27 @@
   content: none;
   display: none;
 }
+
+/*
+ * A pan slider must not look broken when geometry has no overflow on that axis.
+ * PhotoPreview exposes real transform capacity and the framing companion applies
+ * semantic `disabled` state; these styles explain how movement becomes available.
+ */
+.review-stage__control-grid label[data-pan-unavailable="true"] {
+  opacity: 0.58;
+}
+
+.review-stage__control-grid label[data-pan-unavailable="true"]::after {
+  color: #927d81;
+  font-size: 9px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.review-stage__control-grid label:nth-child(2)[data-pan-unavailable="true"]::after {
+  content: "Zoom in to move left / right";
+}
+
+.review-stage__control-grid label:nth-child(3)[data-pan-unavailable="true"]::after {
+  content: "Zoom in to move up / down";
+}

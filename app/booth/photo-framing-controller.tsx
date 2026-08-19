@@ -24,6 +24,39 @@ function photoUrlIn(element: Element | null) {
   return image?.currentSrc || image?.src || null;
 }
 
+function syncPanControlTruth(stage: HTMLElement | null, activeFrame: HTMLElement | null) {
+  if (!stage || !activeFrame) return;
+  const preview = activeFrame.querySelector<HTMLElement>(".photo-preview");
+  const labels = stage.querySelectorAll<HTMLLabelElement>(".review-stage__control-grid label");
+  const horizontalLabel = labels.item(1);
+  const verticalLabel = labels.item(2);
+  const horizontalInput = horizontalLabel?.querySelector<HTMLInputElement>('input[type="range"]') ?? null;
+  const verticalInput = verticalLabel?.querySelector<HTMLInputElement>('input[type="range"]') ?? null;
+  const canPanX = preview?.dataset.canPanX !== "false";
+  const canPanY = preview?.dataset.canPanY !== "false";
+
+  if (horizontalLabel && horizontalInput) {
+    horizontalLabel.dataset.panUnavailable = canPanX ? "false" : "true";
+    horizontalInput.disabled = !canPanX;
+    horizontalInput.setAttribute(
+      "aria-label",
+      canPanX
+        ? "Move photo left or right"
+        : "Horizontal movement unavailable. Zoom in or choose a crop with horizontal overflow.",
+    );
+  }
+  if (verticalLabel && verticalInput) {
+    verticalLabel.dataset.panUnavailable = canPanY ? "false" : "true";
+    verticalInput.disabled = !canPanY;
+    verticalInput.setAttribute(
+      "aria-label",
+      canPanY
+        ? "Move photo up or down"
+        : "Vertical movement unavailable. Zoom in or choose a crop with vertical overflow.",
+    );
+  }
+}
+
 export function PhotoFramingController() {
   useSyncExternalStore(subscribePhotoFraming, getPhotoFramingVersion, getPhotoFramingServerVersion);
   const [mount, setMount] = useState<HTMLElement | null>(null);
@@ -36,6 +69,7 @@ export function PhotoFramingController() {
       const stage = document.querySelector<HTMLElement>(".review-stage");
       const activeFrame = stage?.querySelector<HTMLElement>(".review-stage__photo") ?? null;
       setActivePhotoUrl(photoUrlIn(activeFrame));
+      syncPanControlTruth(stage, activeFrame);
 
       if (!stage) {
         setMount(null);
@@ -59,12 +93,19 @@ export function PhotoFramingController() {
 
     sync();
     const observer = new MutationObserver(scheduleSync);
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-can-pan-x", "data-can-pan-y"],
+    });
     document.addEventListener("click", scheduleSync, true);
+    document.addEventListener("input", scheduleSync, true);
     return () => {
       if (scheduled) window.cancelAnimationFrame(scheduled);
       observer.disconnect();
       document.removeEventListener("click", scheduleSync, true);
+      document.removeEventListener("input", scheduleSync, true);
     };
   }, []);
 

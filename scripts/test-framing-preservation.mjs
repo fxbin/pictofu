@@ -23,15 +23,28 @@ assert.match(preview, /const effectiveRatio = customRatio \?\? \(ownsFrameGeomet
 assert.match(preview, /const fitMode = framing === "auto" \? "contain" : "cover"/, "Editor preview must use contain for the default framing state");
 assert.match(preview, /resolvePhotoTransform\([\s\S]*?fitMode,\s*\)/, "Editor preview must pass the same fit mode into shared geometry");
 assert.match(preview, /data-photo-fit=\{fitMode\}/, "Preview DOM must expose the resolved fit mode for verification/debugging");
+assert.match(preview, /const panCapacity = resolvePhotoTransform/, "Preview must probe real pan capacity through shared geometry instead of guessing from ratio labels");
+assert.match(preview, /data-can-pan-x=\{canPanX \? "true" : "false"\}/, "Preview must expose horizontal pan availability");
+assert.match(preview, /data-can-pan-y=\{canPanY \? "true" : "false"\}/, "Preview must expose vertical pan availability");
 
 assert.match(controller, /id: "auto", label: "Fit", detail: "Full photo"/, "Default framing control must describe full-photo behavior truthfully");
 assert.match(controller, /Only this photo changes/, "Per-photo scope copy must remain explicit");
+assert.match(controller, /syncPanControlTruth/, "Framing companion must keep pan-control truth synchronized with active photo geometry");
+assert.match(controller, /horizontalInput\.disabled = !canPanX/, "Horizontal slider must be disabled when geometry has no horizontal overflow");
+assert.match(controller, /verticalInput\.disabled = !canPanY/, "Vertical slider must be disabled when geometry has no vertical overflow");
+assert.match(controller, /attributeFilter: \["data-can-pan-x", "data-can-pan-y"\]/, "Pan availability must react to zoom/framing/rotation changes without polling");
+assert.match(controller, /Zoom in or choose a crop with horizontal overflow/, "Unavailable horizontal movement must explain how to make it effective");
+assert.match(controller, /Zoom in or choose a crop with vertical overflow/, "Unavailable vertical movement must explain how to make it effective");
+
 assert.match(cameraFix, /object-fit:\s*contain/, "Live camera preview must not hide source-frame edges");
 assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?width:\s*min\(100%,\s*780px\)/, "Review photo must use the available editor width instead of a 62–68% crop window");
 assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?margin:\s*0 auto/, "Review photo must not carry artificial 80–138px crop-context margins");
 assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?overflow:\s*hidden/, "The photo frame itself must clip pan/zoom transforms");
 assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?touch-action:\s*pan-y/, "Full-size mobile Review must preserve native vertical page scrolling over the photo");
 assert.doesNotMatch(cameraFix, /touch-action:\s*none/, "The final Review override must not reintroduce an all-axis mobile scroll lock");
+assert.match(cameraFix, /label\[data-pan-unavailable="true"\]/, "Unavailable pan sliders must have a visible muted state");
+assert.match(cameraFix, /Zoom in to move left \/ right/, "Horizontal no-op state must explain the prerequisite");
+assert.match(cameraFix, /Zoom in to move up \/ down/, "Vertical no-op state must explain the prerequisite");
 assert.match(cameraFix, /\.review-stage__photo::before,\s*\.review-stage__photo::after\s*\{[\s\S]*?content:\s*none[\s\S]*?display:\s*none/, "Legacy Final-frame badge and giant outside crop mask must be disabled");
 assert.doesNotMatch(cameraFix, /Final frame/, "Review no longer needs a second nested Final frame metaphor");
 assert.match(page, /camera-framing-fix\.css/, "Booth page must load the camera framing override");
@@ -40,4 +53,4 @@ assert.ok(
   "Framing truth overrides must load after legacy Review crop styles",
 );
 
-console.log("Camera-to-editor source geometry, full-size Review and mobile-scroll contract checks passed.");
+console.log("Camera-to-editor source geometry, full-size Review, mobile-scroll and pan-control truth contract checks passed.");
