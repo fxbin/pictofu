@@ -3,7 +3,7 @@ import fs from "node:fs";
 
 const booth = fs.readFileSync("app/booth/booth-client.tsx", "utf8");
 const analyticsSafety = fs.readFileSync("lib/analytics-safety.ts", "utf8");
-const compositor = fs.readFileSync("lib/compositor.ts", "utf8");
+const compositor = fs.readFileSync("lib/compositor-v3.ts", "utf8");
 
 assert.match(booth, /source:\s*"camera"\s*\|\s*"upload"/, "CaptureSlot must keep camera/upload source truth");
 assert.match(booth, /type="file"[^>]*accept="image\/\*"/, "Booth must expose an image-only local file picker");
