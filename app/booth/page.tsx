@@ -34,7 +34,7 @@ export default async function BoothPage({ searchParams }: BoothPageProps) {
   return (
     <>
       <BoothClient initialPreset={preset} />
-      <PhotoFramingController initialPresetId={preset.id} />
+      <PhotoFramingController />
       <PoseGuideController initialPresetId={preset.id} />
     </>
   );
