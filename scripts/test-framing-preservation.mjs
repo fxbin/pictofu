@@ -5,7 +5,13 @@ const compositor = fs.readFileSync("lib/compositor-v3.ts", "utf8");
 const preview = fs.readFileSync("app/booth/photo-preview.tsx", "utf8");
 const controller = fs.readFileSync("app/booth/photo-framing-controller.tsx", "utf8");
 const cameraFix = fs.readFileSync("app/booth/camera-framing-fix.css", "utf8");
+const resultCellFix = fs.readFileSync("app/booth/result-frame-cell-fix.css", "utf8");
+const frameStyles = fs.readFileSync("lib/frame-styles.ts", "utf8");
 const page = fs.readFileSync("app/booth/page.tsx", "utf8");
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 assert.match(compositor, /PhotoFitMode\s*=\s*"cover"\s*\|\s*"contain"/, "Shared compositor must model cover and contain explicitly");
 assert.match(compositor, /containScale/, "Shared transform geometry must calculate contain scaling");
@@ -15,6 +21,11 @@ assert.match(compositor, /resolvePhotoAspectRatio/, "Preview and export must sha
 assert.match(compositor, /const resolvedPhotoRatios = images\.map/, "Export geometry must resolve numeric ratios from the actual source images");
 assert.match(compositor, /layoutGeometry\(input\.layoutId, images\.length, resolvedPhotoRatios\)/, "Final strip geometry must consume source-owned ratios instead of template Auto geometry");
 assert.match(compositor, /photoFramings\[index\] === "auto" \? "contain" : "cover"/, "Auto export framing must preserve the full photo while explicit ratios crop");
+assert.match(
+  compositor,
+  /drawRoundedPhoto\(context, image, geometry\.rects\[index\], input\.filterId, frame\.cell, fitMode, adjustments\[index\]\)/,
+  "Final PNG photo-slot backing must continue to come from the selected Frame cell surface",
+);
 
 assert.match(preview, /resolvePhotoAspectRatio/, "Editor preview must resolve the same source-owned ratio as export");
 assert.match(preview, /\.review-stage__photo, \.result-strip__photo/, "Only true editor/result frame hosts may inherit source-owned geometry");
@@ -53,10 +64,32 @@ assert.match(cameraFix, /Zoom in to move left \/ right/, "Horizontal no-op state
 assert.match(cameraFix, /Zoom in to move up \/ down/, "Vertical no-op state must explain the prerequisite");
 assert.match(cameraFix, /\.review-stage__photo::before,\s*\.review-stage__photo::after\s*\{[\s\S]*?content:\s*none[\s\S]*?display:\s*none/, "Legacy Final-frame badge and giant outside crop mask must be disabled");
 assert.doesNotMatch(cameraFix, /Final frame/, "Review no longer needs a second nested Final frame metaphor");
+
+const frameCells = [...frameStyles.matchAll(/id:\s*"([^"]+)"[\s\S]*?cell:\s*"([^"]+)"/g)]
+  .map(([, id, cell]) => ({ id, cell }));
+assert.equal(frameCells.length, 8, "Frame registry must expose the expected eight result cell surfaces");
+for (const { id, cell } of frameCells) {
+  assert.match(
+    resultCellFix,
+    new RegExp(`\\.result-strip--${escapeRegExp(id)}\\s*\\{\\s*--result-photo-surface:\\s*${escapeRegExp(cell)};?\\s*\\}`),
+    `Result preview ${id} surface must stay synchronized with FrameStyle.cell (${cell})`,
+  );
+}
+assert.match(
+  resultCellFix,
+  /\.result-strip__photo,\s*\.result-strip__photo \.photo-preview,\s*\.result-strip__photo \.photo-preview__transform,\s*\.result-strip__photo \.photo-preview__pan\s*\{[\s\S]*?background-color:\s*var\(--result-photo-surface,\s*#f8f7f5\)/,
+  "Result host/root/transform/pan compositor layers must all use the Frame cell surface",
+);
+
 assert.match(page, /camera-framing-fix\.css/, "Booth page must load the camera framing override");
 assert.ok(
   page.indexOf('import "./camera-framing-fix.css";') > page.indexOf('import "./workspace-modes.css";'),
   "Framing truth overrides must load after legacy Review crop styles",
 );
+assert.match(page, /result-frame-cell-fix\.css/, "Booth page must load the result Frame-cell override");
+assert.ok(
+  page.indexOf('import "./result-frame-cell-fix.css";') > page.indexOf('import "./workspace-modes.css";'),
+  "Result Frame-cell surfaces must load after the legacy result-strip photo background",
+);
 
-console.log("Camera-to-editor source geometry, full-size Review, stable rotation background, mobile-scroll and pan-control truth contract checks passed.");
+console.log("Camera-to-editor source geometry, stable Review rotation background, Frame-cell result surfaces, export backing, mobile-scroll and pan-control truth contract checks passed.");
