@@ -14,6 +14,7 @@ export type PhotoCrop = {
 };
 
 export type QuarterRotation = 0 | 90 | 180 | 270;
+export type PhotoFitMode = "cover" | "contain";
 
 export type PhotoAdjustment = {
   panX: number;
@@ -126,6 +127,7 @@ export function resolvePhotoTransform(
   viewportWidth: number,
   viewportHeight: number,
   adjustment?: Partial<PhotoAdjustment>,
+  fitMode: PhotoFitMode = "cover",
 ): ResolvedPhotoTransform {
   const next = normalizePhotoAdjustment(adjustment);
   const safeImageWidth = Math.max(1, finiteOr(imageWidth, 1));
@@ -139,7 +141,13 @@ export function resolvePhotoTransform(
   const requiredLocalWidth = safeViewportWidth * cosine + safeViewportHeight * sine;
   const requiredLocalHeight = safeViewportWidth * sine + safeViewportHeight * cosine;
   const coverScale = Math.max(requiredLocalWidth / safeImageWidth, requiredLocalHeight / safeImageHeight);
-  const scale = coverScale * next.zoom;
+  const rotatedSourceWidth = safeImageWidth * cosine + safeImageHeight * sine;
+  const rotatedSourceHeight = safeImageWidth * sine + safeImageHeight * cosine;
+  const containScale = Math.min(
+    safeViewportWidth / Math.max(1, rotatedSourceWidth),
+    safeViewportHeight / Math.max(1, rotatedSourceHeight),
+  );
+  const scale = (fitMode === "contain" ? containScale : coverScale) * next.zoom;
   const drawWidth = safeImageWidth * scale;
   const drawHeight = safeImageHeight * scale;
   const availableX = Math.max(0, (drawWidth - requiredLocalWidth) / 2);
@@ -191,10 +199,18 @@ function drawRoundedPhoto(
   rect: Rect,
   filterId: FilterId,
   cellColor: string,
+  fitMode: PhotoFitMode,
   adjustment?: PhotoAdjustment,
 ) {
   const radius = Math.min(34, rect.width * 0.035);
-  const transform = resolvePhotoTransform(image.naturalWidth, image.naturalHeight, rect.width, rect.height, adjustment);
+  const transform = resolvePhotoTransform(
+    image.naturalWidth,
+    image.naturalHeight,
+    rect.width,
+    rect.height,
+    adjustment,
+    fitMode,
+  );
   context.save();
   context.fillStyle = cellColor;
   context.beginPath();
@@ -475,7 +491,8 @@ export async function composePhotoStrip(input: ComposeStripInput): Promise<Compo
   drawFrameDecorations(context, canvas.width, canvas.height, input.frameId);
   images.forEach((image, index) => {
     const adjustment = input.photoAdjustments?.[index] ?? adjustmentFromCrop(input.photoCrops?.[index]);
-    drawRoundedPhoto(context, image, geometry.rects[index], input.filterId, frame.cell, adjustment);
+    const fitMode: PhotoFitMode = photoRatios[index] === "auto" ? "contain" : "cover";
+    drawRoundedPhoto(context, image, geometry.rects[index], input.filterId, frame.cell, fitMode, adjustment);
   });
   [...stickers]
     .map(normalizeStickerInstance)
