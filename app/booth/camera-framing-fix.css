@@ -2,6 +2,32 @@
   object-fit: contain;
 }
 
-.review-stage__photo::before {
-  content: "Final frame";
+/*
+ * Review should edit the photo itself, not a tiny crop window floating inside
+ * a much larger masked stage. The legacy workspace styles intentionally made
+ * the actual photo 62–68% wide with large vertical margins and a giant outside
+ * mask; on mobile this made a tall capture look like a small strip in the
+ * middle of an otherwise empty editor.
+ *
+ * Keep the source-owned aspect ratio from PhotoPreview, but let that frame use
+ * the available editor width and clip transforms directly at its own edge.
+ */
+.review-stage__photo {
+  width: min(100%, 780px);
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #eee7e4;
+  box-shadow: 0 0 0 1px rgba(221, 198, 203, 0.95), 0 12px 30px rgba(75, 53, 58, 0.12);
+}
+
+.review-stage__photo .photo-preview {
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.review-stage__photo::before,
+.review-stage__photo::after {
+  content: none;
+  display: none;
 }
