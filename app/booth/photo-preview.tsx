@@ -4,11 +4,12 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { CSSProperties } from "react";
 import { emitProductEvent, type EditTool } from "@/lib/analytics";
 import {
-  getEditorCompositionServerSnapshot,
-  getEditorCompositionSnapshot,
+  getPhotoFramingRatio,
+  getPhotoFramingServerVersion,
+  getPhotoFramingVersion,
   ratioValue,
-  subscribeEditorComposition,
-} from "@/lib/editor-composition";
+  subscribePhotoFraming,
+} from "@/lib/photo-framing";
 import {
   normalizePhotoAdjustment,
   resolvePhotoTransform,
@@ -37,11 +38,8 @@ function changedTools(previous: PhotoAdjustment, next: PhotoAdjustment): EditToo
 }
 
 export function PhotoPreview({ url, imageWidth, imageHeight, adjustment, targetRatio, alt = "", filter, className }: PhotoPreviewProps) {
-  const composition = useSyncExternalStore(
-    subscribeEditorComposition,
-    getEditorCompositionSnapshot,
-    getEditorCompositionServerSnapshot,
-  );
+  useSyncExternalStore(subscribePhotoFraming, getPhotoFramingVersion, getPhotoFramingServerVersion);
+  const framing = getPhotoFramingRatio(url);
   const currentAdjustment = normalizePhotoAdjustment(adjustment);
   const { panX, panY, zoom, rotation, straighten, flipX } = currentAdjustment;
   const previousAdjustment = useRef(currentAdjustment);
@@ -53,7 +51,7 @@ export function PhotoPreview({ url, imageWidth, imageHeight, adjustment, targetR
     changedTools(previous, next).forEach((tool) => emitProductEvent("editor_tool_used", { edit_tool: tool }));
   }, [panX, panY, zoom, rotation, straighten, flipX]);
 
-  const customRatio = ratioValue(composition.photoRatio);
+  const customRatio = ratioValue(framing);
   const effectiveRatio = customRatio ?? targetRatio;
   const viewportHeight = 100;
   const viewportWidth = Math.max(0.1, effectiveRatio) * viewportHeight;
@@ -77,7 +75,7 @@ export function PhotoPreview({ url, imageWidth, imageHeight, adjustment, targetR
   };
 
   return (
-    <span className={`photo-preview ${className ?? ""}`} aria-hidden={alt ? undefined : true}>
+    <span className={`photo-preview ${className ?? ""}`} data-photo-framing={framing} aria-hidden={alt ? undefined : true}>
       <span className="photo-preview__transform" style={outerStyle}>
         <span className="photo-preview__pan" style={innerStyle}>
           <img src={url} alt={alt} draggable={false} style={{ filter }} />
