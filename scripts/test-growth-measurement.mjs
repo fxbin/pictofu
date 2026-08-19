@@ -10,7 +10,6 @@ const consentGate = read("components/analytics-consent-gate.tsx");
 const analyticsConsent = read("lib/analytics-consent.ts");
 const analytics = read("lib/analytics.ts");
 const growth = read("lib/growth-measurement.ts");
-const poseProfile = read("lib/pose-guide-measurement.ts");
 const retention = read("lib/retention-measurement.ts");
 const safety = read("lib/analytics-safety.ts");
 const privacy = read("app/privacy/page.tsx");
@@ -52,25 +51,9 @@ for (const dimension of [
 }
 
 assert.ok(
-  growth.includes("pose_guide_profile") &&
-    growth.includes("readPoseGuideProfile()") &&
-    growth.includes('payload.capture_source === "upload"'),
-  "Camera outcomes must carry bounded Pose Guide attribution while upload-only outcomes remain none.",
+  !growth.includes("pose_guide_profile") && !growth.includes("readPoseGuideProfile"),
+  "Removed Pose Guide must not return as a growth payload dimension or browser profile dependency.",
 );
-for (const value of ["none", "guided", "customized", "disabled"]) {
-  assert.ok(poseProfile.includes(`"${value}"`), `Pose Guide profile must stay bounded to ${value}.`);
-}
-for (const forbiddenPoseField of [
-  "body_landmark",
-  "pose_coordinates",
-  "raw_pose",
-  "camera_frame",
-  "base64",
-  "filename",
-  "free_text",
-]) {
-  assert.ok(!poseProfile.includes(forbiddenPoseField), `Pose Guide attribution must not contain ${forbiddenPoseField}.`);
-}
 
 assert.ok(!growth.includes("detail.session_id"), "Growth payload must never copy the analytics session id.");
 assert.ok(!growth.includes("detail.timestamp"), "Growth payload must never copy the analytics event timestamp.");
@@ -247,4 +230,4 @@ assert.ok(
   "Privacy policy must accurately distinguish local photo processing, aggregate counters, optional retention, and GA4 Advanced Consent Mode.",
 );
 
-console.log("Growth aggregate observability, GA4 Advanced Consent Mode, local upload, Pose Guide attribution, and retention privacy contracts passed.");
+console.log("Growth aggregate observability, GA4 Advanced Consent Mode, local upload, and retention privacy contracts passed.");
