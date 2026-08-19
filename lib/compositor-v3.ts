@@ -105,6 +105,34 @@ function normalizeQuarterRotation(value: number): QuarterRotation {
   return normalized === 90 || normalized === 180 || normalized === 270 ? normalized : 0;
 }
 
+export function sourceAspectRatioForRotation(
+  imageWidth: number,
+  imageHeight: number,
+  rotation: QuarterRotation | number = 0,
+) {
+  const safeWidth = Math.max(1, finiteOr(imageWidth, 1));
+  const safeHeight = Math.max(1, finiteOr(imageHeight, 1));
+  const normalizedRotation = normalizeQuarterRotation(rotation);
+  return normalizedRotation === 90 || normalizedRotation === 270
+    ? safeHeight / safeWidth
+    : safeWidth / safeHeight;
+}
+
+export function resolvePhotoAspectRatio(
+  imageWidth: number,
+  imageHeight: number,
+  framing: PhotoRatio,
+  rotation: QuarterRotation | number = 0,
+  fallbackRatio = 1,
+) {
+  const explicitRatio = ratioValue(framing);
+  if (explicitRatio) return explicitRatio;
+  const sourceRatio = sourceAspectRatioForRotation(imageWidth, imageHeight, rotation);
+  return Number.isFinite(sourceRatio) && sourceRatio > 0
+    ? sourceRatio
+    : Math.max(0.1, finiteOr(fallbackRatio, 1));
+}
+
 export function normalizePhotoAdjustment(adjustment?: Partial<PhotoAdjustment>): PhotoAdjustment {
   return {
     panX: clamp(finiteOr(adjustment?.panX ?? 0, 0), -1, 1),
@@ -228,9 +256,13 @@ function drawRoundedPhoto(
   context.restore();
 }
 
-function layoutGeometry(layoutId: LayoutId, photoCount: number, photoRatios: PhotoRatio[]) {
+function layoutGeometry(layoutId: LayoutId, photoCount: number, resolvedPhotoRatios: number[]) {
   const count = Math.max(1, Math.min(photoCount, shotTargetForLayout(layoutId)));
-  const ratios = Array.from({ length: count }, (_, index) => cellAspectRatioForLayout(layoutId, photoRatios[index] ?? "auto"));
+  const fallbackRatio = cellAspectRatioForLayout(layoutId);
+  const ratios = Array.from({ length: count }, (_, index) => {
+    const ratio = resolvedPhotoRatios[index];
+    return Number.isFinite(ratio) && ratio > 0 ? ratio : fallbackRatio;
+  });
 
   if (layoutId === "grid-4") {
     const width = 1600;
@@ -474,12 +506,23 @@ export async function composePhotoStrip(input: ComposeStripInput): Promise<Compo
 
   const composition = getEditorCompositionSnapshot();
   const stickers = input.stickers ?? composition.stickers;
-  const photoRatios = urls.map((url) => {
+  const photoFramings = urls.map((url) => {
     const individual = getPhotoFramingRatio(url);
     return individual === "auto" && input.photoRatio ? input.photoRatio : individual;
   });
   const images = await Promise.all(urls.map(loadImage));
-  const geometry = layoutGeometry(input.layoutId, images.length, photoRatios);
+  const adjustments = images.map((_, index) => (
+    input.photoAdjustments?.[index] ?? adjustmentFromCrop(input.photoCrops?.[index])
+  ));
+  const fallbackRatio = cellAspectRatioForLayout(input.layoutId);
+  const resolvedPhotoRatios = images.map((image, index) => resolvePhotoAspectRatio(
+    image.naturalWidth,
+    image.naturalHeight,
+    photoFramings[index] ?? "auto",
+    adjustments[index].rotation,
+    fallbackRatio,
+  ));
+  const geometry = layoutGeometry(input.layoutId, images.length, resolvedPhotoRatios);
   const canvas = document.createElement("canvas");
   canvas.width = geometry.width;
   canvas.height = geometry.height;
@@ -490,9 +533,8 @@ export async function composePhotoStrip(input: ComposeStripInput): Promise<Compo
   paintFrameSurface(context, canvas.width, canvas.height, input.frameId);
   drawFrameDecorations(context, canvas.width, canvas.height, input.frameId);
   images.forEach((image, index) => {
-    const adjustment = input.photoAdjustments?.[index] ?? adjustmentFromCrop(input.photoCrops?.[index]);
-    const fitMode: PhotoFitMode = photoRatios[index] === "auto" ? "contain" : "cover";
-    drawRoundedPhoto(context, image, geometry.rects[index], input.filterId, frame.cell, fitMode, adjustment);
+    const fitMode: PhotoFitMode = photoFramings[index] === "auto" ? "contain" : "cover";
+    drawRoundedPhoto(context, image, geometry.rects[index], input.filterId, frame.cell, fitMode, adjustments[index]);
   });
   [...stickers]
     .map(normalizeStickerInstance)
