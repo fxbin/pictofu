@@ -11,6 +11,7 @@ import "./workspace-modes.css";
 import "./progressive-disclosure.css";
 import "./sticker-editor.css";
 import "./mobile-viewport.css";
+import "./camera-framing-fix.css";
 import { getPreset } from "@/lib/presets";
 
 export const metadata: Metadata = {

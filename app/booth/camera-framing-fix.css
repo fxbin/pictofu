@@ -1,0 +1,7 @@
+.booth-video {
+  object-fit: contain;
+}
+
+.review-stage__photo::before {
+  content: "Final frame";
+}
