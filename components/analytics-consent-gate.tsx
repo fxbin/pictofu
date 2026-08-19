@@ -153,7 +153,7 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
 
   return (
     <>
-      <AnalyticsBridge enabled={googleEnabled} />
+      <AnalyticsBridge configured={configured} enabled={googleEnabled} />
 
       {googleEnabled && analyticsAllowed && (
         <Suspense fallback={null}>
@@ -177,7 +177,7 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
               {consent === "granted" ? "Keep analytics" : "Allow analytics"}
             </button>
             <button className={styles.secondary} type="button" onClick={declineAnalytics}>
-              {consent === "granted" ? "Use cookieless mode" : consent === "denied" ? "Keep cookieless" : "Keep cookieless"}
+              {consent === "granted" ? "Use cookieless mode" : "Keep cookieless"}
             </button>
             <Link className={styles.privacyLink} href="/privacy" prefetch={false}>Privacy</Link>
           </div>
