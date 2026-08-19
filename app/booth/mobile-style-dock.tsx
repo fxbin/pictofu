@@ -23,6 +23,7 @@ type FilterOption = {
   disabled: boolean;
   background: string;
   imageSrc: string | null;
+  imageFilter: string;
 };
 
 type FrameOption = {
@@ -78,6 +79,7 @@ function readFilters(page: HTMLElement): FilterOption[] {
         disabled: button.disabled,
         background: thumb ? window.getComputedStyle(thumb).background : "linear-gradient(145deg, #d7b4ab, #f6ded4)",
         imageSrc: image?.currentSrc || image?.src || null,
+        imageFilter: image ? window.getComputedStyle(image).filter : "none",
       };
     });
 }
@@ -214,7 +216,7 @@ export function MobileStyleDock() {
               onClick={() => clickSource(".style-disclosure .filter-style-picker__item", option.sourceIndex)}
             >
               <span className="mobile-style-dock__filter-thumb" style={{ background: option.background }} aria-hidden="true">
-                {option.imageSrc && <img src={option.imageSrc} alt="" />}
+                {option.imageSrc && <img src={option.imageSrc} alt="" style={{ filter: option.imageFilter }} />}
               </span>
               <strong>{option.label}</strong>
             </button>
