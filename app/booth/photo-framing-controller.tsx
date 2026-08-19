@@ -13,7 +13,7 @@ import {
 } from "@/lib/photo-framing";
 
 const FRAMING_OPTIONS: readonly { id: PhotoRatio; label: string; detail: string }[] = [
-  { id: "auto", label: "Auto", detail: "Layout" },
+  { id: "auto", label: "Fit", detail: "Full photo" },
   { id: "1:1", label: "Square", detail: "1:1" },
   { id: "4:3", label: "Landscape", detail: "4:3" },
   { id: "3:4", label: "Portrait", detail: "3:4" },
@@ -84,7 +84,7 @@ export function PhotoFramingController() {
           <span>Per-photo</span>
           <strong id="photo-framing-title">Framing</strong>
         </div>
-        <small>Only this photo changes</small>
+        <small>Fit keeps the whole photo · ratios crop only this photo</small>
       </div>
       <div className="photo-framing-control__options" role="group" aria-label="Choose framing for this photo">
         {FRAMING_OPTIONS.map((option) => (
