@@ -19,6 +19,11 @@ assert.match(preview, /data-photo-fit=\{fitMode\}/, "Preview DOM must expose the
 assert.match(controller, /id: "auto", label: "Fit", detail: "Full photo"/, "Default framing control must describe full-photo behavior truthfully");
 assert.match(controller, /Only this photo changes/, "Per-photo scope copy must remain explicit");
 assert.match(cameraFix, /object-fit:\s*contain/, "Live camera preview must not hide source-frame edges");
-assert.match(page, /camera-framing-fix\.css/, "Booth page must load the camera framing override after the base camera styles");
+assert.match(cameraFix, /content:\s*"Final frame"/, "Default Review framing must not claim that an implicit crop already happened");
+assert.match(page, /camera-framing-fix\.css/, "Booth page must load the camera framing override");
+assert.ok(
+  page.indexOf('import "./camera-framing-fix.css";') > page.indexOf('import "./workspace-modes.css";'),
+  "Framing truth overrides must load after legacy Review crop styles",
+);
 
 console.log("Camera-to-editor framing preservation contract checks passed.");
