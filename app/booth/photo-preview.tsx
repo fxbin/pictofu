@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { CSSProperties } from "react";
 import { emitProductEvent, type EditTool } from "@/lib/analytics";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/lib/photo-framing";
 import {
   normalizePhotoAdjustment,
+  resolvePhotoAspectRatio,
   resolvePhotoTransform,
   type PhotoAdjustment,
 } from "@/lib/compositor";
@@ -43,6 +44,8 @@ export function PhotoPreview({ url, imageWidth, imageHeight, adjustment, targetR
   const currentAdjustment = normalizePhotoAdjustment(adjustment);
   const { panX, panY, zoom, rotation, straighten, flipX } = currentAdjustment;
   const previousAdjustment = useRef(currentAdjustment);
+  const rootRef = useRef<HTMLSpanElement | null>(null);
+  const [ownsFrameGeometry, setOwnsFrameGeometry] = useState(false);
 
   useEffect(() => {
     const previous = previousAdjustment.current;
@@ -52,8 +55,25 @@ export function PhotoPreview({ url, imageWidth, imageHeight, adjustment, targetR
   }, [panX, panY, zoom, rotation, straighten, flipX]);
 
   const customRatio = ratioValue(framing);
-  const effectiveRatio = customRatio ?? targetRatio;
+  const sourceOwnedRatio = resolvePhotoAspectRatio(
+    imageWidth,
+    imageHeight,
+    framing,
+    rotation,
+    targetRatio,
+  );
+  const effectiveRatio = customRatio ?? (ownsFrameGeometry ? sourceOwnedRatio : targetRatio);
   const fitMode = framing === "auto" ? "contain" : "cover";
+
+  useLayoutEffect(() => {
+    const host = rootRef.current?.parentElement as HTMLElement | null;
+    const ownsGeometry = Boolean(host?.matches(".review-stage__photo, .result-strip__photo"));
+    if (ownsGeometry !== ownsFrameGeometry) setOwnsFrameGeometry(ownsGeometry);
+    if (ownsGeometry && host) {
+      host.style.aspectRatio = String(sourceOwnedRatio);
+    }
+  });
+
   const viewportHeight = 100;
   const viewportWidth = Math.max(0.1, effectiveRatio) * viewportHeight;
   const transform = resolvePhotoTransform(
@@ -78,9 +98,11 @@ export function PhotoPreview({ url, imageWidth, imageHeight, adjustment, targetR
 
   return (
     <span
+      ref={rootRef}
       className={`photo-preview ${className ?? ""}`}
       data-photo-framing={framing}
       data-photo-fit={fitMode}
+      data-frame-geometry={ownsFrameGeometry ? "source" : "host"}
       aria-hidden={alt ? undefined : true}
     >
       <span className="photo-preview__transform" style={outerStyle}>
