@@ -150,6 +150,13 @@ assert.ok(
     bridge.includes('page_location: `${window.location.origin}${pathname}`'),
   "GA4 forwarding must drop PicToFu's internal session/timestamp fields and avoid query strings in explicit page-view locations.",
 );
+assert.ok(
+  consentGate.includes("<AnalyticsBridge configured={configured} enabled={googleEnabled} />") &&
+    bridge.includes("MAX_PENDING_GOOGLE_EVENTS = 32") &&
+    bridge.includes("pendingGoogleEvents.current.push(googleEvent)") &&
+    bridge.includes("pendingGoogleEvents.current.splice(0, MAX_PENDING_GOOGLE_EVENTS)"),
+  "GA4 must keep a bounded in-memory queue so landing/start events emitted before gtag.js is ready can be flushed without persistent identifiers.",
+);
 
 for (const bucket of ["new_browser", "rolling_d1", "rolling_d7", "rolling_d30"]) {
   assert.ok(retention.includes(`"${bucket}"`), `Retention measurement must include ${bucket}.`);
