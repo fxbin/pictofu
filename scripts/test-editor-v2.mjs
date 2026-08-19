@@ -61,6 +61,7 @@ assert.match(booth, /type="range" min="1" max="2\.5"/, "Visible slider fallback 
 assert.match(preview, /resolvePhotoTransform/, "DOM preview must reuse compositor transform geometry");
 assert.match(preview, /subscribePhotoFraming/, "Preview must observe per-photo framing state");
 assert.match(preview, /getPhotoFramingRatio\(url\)/, "Preview framing must resolve by photo identity rather than one strip-level value");
+assert.match(preview, /data-photo-framing=\{framing\}/, "Photo preview must expose stable per-photo framing state to crop/container CSS");
 assert.match(preview, /editor_tool_used/, "Photo adjustment preview must expose bounded tool reach");
 assert.match(styles, /touch-action:\s*none/, "Active edit surface must own drag/pinch gestures without page-scroll fights inside the surface");
 assert.match(styles, /review-stage__control-grid/, "Editor IA must expose a dedicated fine-tune control grid");
@@ -81,8 +82,10 @@ assert.match(framingController, />Framing</, "Framing control must live in the p
 assert.match(framingController, /Only this photo changes/, "Framing scope must be clear to the user");
 assert.match(framingController, /setPhotoFramingRatio\(activePhotoUrl, ratio\)/, "Framing choice must update only the active photo");
 assert.match(framingController, /editor_tool_used/, "Per-photo framing must retain bounded ratio-tool measurement");
-assert.match(framingController, /result-strip__photo\.has-photo/, "Result preview geometry must follow per-photo framing");
 assert.match(framingStyles, /photo-framing-control__options/, "Per-photo framing must have a mobile-safe option group");
+assert.match(framingStyles, /:has\(\.photo-preview\[data-photo-framing="1:1"\]\)/, "Explicit photo framing must override React layout aspect ratio without imperative DOM geometry");
+assert.match(framingStyles, /:has\(\.photo-preview\[data-photo-framing="4:3"\]\)/, "Landscape framing must drive real Review/result cell geometry");
+assert.match(framingStyles, /:has\(\.photo-preview\[data-photo-framing="3:4"\]\)/, "Portrait framing must drive real Review/result cell geometry");
 assert.match(framingStyles, /result-strip--layout-grid-4/, "Mixed grid framing must retain stable grid alignment");
 assert.match(page, /<PhotoFramingController/, "Booth must mount the per-photo framing companion");
 
