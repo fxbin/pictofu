@@ -27,11 +27,15 @@ assert.match(preview, /data-photo-fit=\{fitMode\}/, "Preview DOM must expose the
 assert.match(controller, /id: "auto", label: "Fit", detail: "Full photo"/, "Default framing control must describe full-photo behavior truthfully");
 assert.match(controller, /Only this photo changes/, "Per-photo scope copy must remain explicit");
 assert.match(cameraFix, /object-fit:\s*contain/, "Live camera preview must not hide source-frame edges");
-assert.match(cameraFix, /content:\s*"Final frame"/, "Default Review framing must not claim that an implicit crop already happened");
+assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?width:\s*min\(100%,\s*780px\)/, "Review photo must use the available editor width instead of a 62–68% crop window");
+assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?margin:\s*0 auto/, "Review photo must not carry artificial 80–138px crop-context margins");
+assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?overflow:\s*hidden/, "The photo frame itself must clip pan/zoom transforms");
+assert.match(cameraFix, /\.review-stage__photo::before,\s*\.review-stage__photo::after\s*\{[\s\S]*?content:\s*none[\s\S]*?display:\s*none/, "Legacy Final-frame badge and giant outside crop mask must be disabled");
+assert.doesNotMatch(cameraFix, /Final frame/, "Review no longer needs a second nested Final frame metaphor");
 assert.match(page, /camera-framing-fix\.css/, "Booth page must load the camera framing override");
 assert.ok(
   page.indexOf('import "./camera-framing-fix.css";') > page.indexOf('import "./workspace-modes.css";'),
   "Framing truth overrides must load after legacy Review crop styles",
 );
 
-console.log("Camera-to-editor source geometry preservation contract checks passed.");
+console.log("Camera-to-editor source geometry and full-size Review contract checks passed.");
