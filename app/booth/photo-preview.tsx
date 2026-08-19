@@ -53,6 +53,7 @@ export function PhotoPreview({ url, imageWidth, imageHeight, adjustment, targetR
 
   const customRatio = ratioValue(framing);
   const effectiveRatio = customRatio ?? targetRatio;
+  const fitMode = framing === "auto" ? "contain" : "cover";
   const viewportHeight = 100;
   const viewportWidth = Math.max(0.1, effectiveRatio) * viewportHeight;
   const transform = resolvePhotoTransform(
@@ -61,6 +62,7 @@ export function PhotoPreview({ url, imageWidth, imageHeight, adjustment, targetR
     viewportWidth,
     viewportHeight,
     currentAdjustment,
+    fitMode,
   );
 
   const outerStyle: CSSProperties = {
@@ -75,7 +77,12 @@ export function PhotoPreview({ url, imageWidth, imageHeight, adjustment, targetR
   };
 
   return (
-    <span className={`photo-preview ${className ?? ""}`} data-photo-framing={framing} aria-hidden={alt ? undefined : true}>
+    <span
+      className={`photo-preview ${className ?? ""}`}
+      data-photo-framing={framing}
+      data-photo-fit={fitMode}
+      aria-hidden={alt ? undefined : true}
+    >
       <span className="photo-preview__transform" style={outerStyle}>
         <span className="photo-preview__pan" style={innerStyle}>
           <img src={url} alt={alt} draggable={false} style={{ filter }} />
