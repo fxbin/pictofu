@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { BoothClient } from "./booth-client";
+import { PhotoFramingController } from "./photo-framing-controller";
 import { PoseGuideController } from "./pose-guide-controller";
 import "./booth-foundation.css";
 import "./booth-shell.css";
 import "./camera.css";
 import "./pose-guide.css";
+import "./photo-framing.css";
 import "./export.css";
 import "./filter-picker.css";
 import "./workspace-modes.css";
@@ -32,6 +34,7 @@ export default async function BoothPage({ searchParams }: BoothPageProps) {
   return (
     <>
       <BoothClient initialPreset={preset} />
+      <PhotoFramingController />
       <PoseGuideController initialPresetId={preset.id} />
     </>
   );
