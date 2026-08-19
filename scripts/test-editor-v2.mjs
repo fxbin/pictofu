@@ -2,14 +2,17 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const booth = fs.readFileSync("app/booth/booth-client.tsx", "utf8");
-const compositor = fs.readFileSync("lib/compositor.ts", "utf8");
+const compositor = fs.readFileSync("lib/compositor-v3.ts", "utf8");
 const preview = fs.readFileSync("app/booth/photo-preview.tsx", "utf8");
 const styles = fs.readFileSync("app/booth/workspace-modes.css", "utf8");
-const compositionStyles = fs.readFileSync("app/booth/sticker-editor.css", "utf8");
+const framingStyles = fs.readFileSync("app/booth/photo-framing.css", "utf8");
+const framingController = fs.readFileSync("app/booth/photo-framing-controller.tsx", "utf8");
+const framing = fs.readFileSync("lib/photo-framing.ts", "utf8");
 const compositionEditor = fs.readFileSync("app/booth/composition-editor.tsx", "utf8");
 const composition = fs.readFileSync("lib/editor-composition.ts", "utf8");
 const stickers = fs.readFileSync("lib/stickers.ts", "utf8");
 const framePicker = fs.readFileSync("app/booth/frame-picker.tsx", "utf8");
+const page = fs.readFileSync("app/booth/page.tsx", "utf8");
 const analytics = fs.readFileSync("lib/analytics.ts", "utf8");
 const analyticsSafety = fs.readFileSync("lib/analytics-safety.ts", "utf8");
 const growth = fs.readFileSync("lib/growth-measurement.ts", "utf8");
@@ -26,14 +29,13 @@ assert.match(compositor, /straighten:[\s\S]*?-15[\s\S]*?15/, "Straighten must re
 assert.match(compositor, /photoAdjustments\?/, "Compositor must accept per-photo adjustment state");
 assert.match(compositor, /photoCrops\?/, "Legacy crop input remains temporarily compatible during Editor V2 migration");
 
-assert.match(booth, /adjustment:\s*PhotoAdjustment/, "CaptureSlot must own one canonical adjustment state");
+assert.match(booth, /adjustment:\s*PhotoAdjustment/, "CaptureSlot must own one canonical transform adjustment state");
 assert.doesNotMatch(booth, /transform\?:\s*\{\s*rotation/, "Unused parallel CaptureSlot transform state must be removed");
 assert.match(booth, /photoAdjustments:\s*readySlots\.map/, "Export must consume canonical PhotoAdjustment state");
 assert.match(booth, /Horizontal/, "Horizontal fine tuning must be visible");
 assert.match(booth, /Vertical/, "Vertical fine tuning must be visible");
 assert.match(booth, /Zoom/, "Zoom must remain visible");
 assert.doesNotMatch(booth, /<summary>More adjustments<\/summary>/, "Core pan controls must not remain hidden behind More adjustments");
-assert.doesNotMatch(booth, /aria-label="Photo ratio is 3 by 4"/, "The old fake Ratio control must be removed");
 assert.match(booth, /Photo adjustments are available after capture/, "Capture tray replacement must describe real behavior truthfully");
 assert.match(booth, /<PhotoPreview/, "Review and strip previews must consume the shared transform-aware preview");
 
@@ -57,8 +59,8 @@ assert.match(booth, /onPointerCancel=\{handleAdjustPointerEnd\}/, "Pointer cance
 assert.match(booth, /type="range" min="1" max="2\.5"/, "Visible slider fallback must remain available when pinch is unavailable");
 
 assert.match(preview, /resolvePhotoTransform/, "DOM preview must reuse compositor transform geometry");
-assert.match(preview, /subscribeEditorComposition/, "Preview must observe canonical composition state");
-assert.match(preview, /ratioValue\(composition\.photoRatio\)/, "Preview must consume selected composition ratio");
+assert.match(preview, /subscribePhotoFraming/, "Preview must observe per-photo framing state");
+assert.match(preview, /getPhotoFramingRatio\(url\)/, "Preview framing must resolve by photo identity rather than one strip-level value");
 assert.match(preview, /editor_tool_used/, "Photo adjustment preview must expose bounded tool reach");
 assert.match(styles, /touch-action:\s*none/, "Active edit surface must own drag/pinch gestures without page-scroll fights inside the surface");
 assert.match(styles, /review-stage__control-grid/, "Editor IA must expose a dedicated fine-tune control grid");
@@ -71,22 +73,34 @@ assert.match(styles, /\.review-stage__photo::after\s*\{[\s\S]*?box-shadow:[\s\S]
 assert.match(styles, /\.review-stage\s*\{[\s\S]*?overflow:\s*hidden;/, "Editor stage must bound extreme zoom/context without clipping at the crop frame itself");
 
 for (const ratio of ["auto", "1:1", "4:3", "3:4"]) {
-  assert.match(composition, new RegExp(ratio.replace(":", "\\:")), `Composition state must support ${ratio}`);
+  assert.match(framing, new RegExp(ratio.replace(":", "\\:")), `Per-photo framing must support ${ratio}`);
 }
-assert.match(composition, /stickers:\s*StickerInstance\[\]/, "Composition state must own sticker instances");
+assert.match(framing, /Map<string, PhotoRatio>/, "Framing must stay attached to photo identity");
+assert.match(framingController, /Per-photo/, "Review must explicitly explain that framing is per-photo");
+assert.match(framingController, />Framing</, "Framing control must live in the photo editor");
+assert.match(framingController, /Only this photo changes/, "Framing scope must be clear to the user");
+assert.match(framingController, /setPhotoFramingRatio\(activePhotoUrl, ratio\)/, "Framing choice must update only the active photo");
+assert.match(framingController, /editor_tool_used/, "Per-photo framing must retain bounded ratio-tool measurement");
+assert.match(framingController, /result-strip__photo\.has-photo/, "Result preview geometry must follow per-photo framing");
+assert.match(framingStyles, /photo-framing-control__options/, "Per-photo framing must have a mobile-safe option group");
+assert.match(framingStyles, /result-strip--layout-grid-4/, "Mixed grid framing must retain stable grid alignment");
+assert.match(page, /<PhotoFramingController/, "Booth must mount the per-photo framing companion");
+
+assert.doesNotMatch(composition, /photoRatio|setCompositionPhotoRatio/, "Strip-level composition state must no longer own photo ratio");
+assert.doesNotMatch(compositionEditor, /Photo ratio|setCompositionPhotoRatio|ratio-picker/, "Style/Frame editor must no longer expose one global ratio control");
+assert.match(composition, /stickers:\s*StickerInstance\[\]/, "Composition state must continue to own sticker instances");
 assert.match(composition, /setCompositionPreset/, "Preset changes must have an explicit sticker lifecycle rule");
-assert.match(compositor, /getEditorCompositionSnapshot/, "Final Canvas must consume canonical composition state");
-assert.match(compositor, /layoutGeometry\([^\)]*photoRatio/, "Ratio must drive real compositor geometry");
+assert.match(compositor, /getEditorCompositionSnapshot/, "Final Canvas must continue consuming strip-level sticker composition state");
+assert.match(compositor, /getPhotoFramingRatio\(url\)/, "Final Canvas must resolve ratio per exported photo URL");
+assert.match(compositor, /layoutGeometry\(input\.layoutId, images\.length, photoRatios\)/, "Per-photo ratios must drive real compositor geometry");
+assert.match(compositor, /rowHeights/, "Mixed-ratio grid output must preserve coherent row geometry");
 assert.match(compositor, /drawSticker/, "Final PNG compositor must draw stickers");
-assert.match(framePicker, /<CompositionEditor/, "Style workspace must mount the canonical composition editor");
-assert.match(compositionEditor, /Photo ratio/, "Ratio control must be visible");
-assert.match(compositionEditor, /Stickers/, "Preset-aware sticker control must be visible where supported");
+assert.match(framePicker, /<CompositionEditor/, "Style workspace must retain the strip-level sticker editor");
+assert.match(compositionEditor, /Stickers/, "Preset-aware sticker control must remain visible where supported");
 assert.match(compositionEditor, /setCompositionStickers/, "Sticker controls must update canonical composition state");
 assert.match(compositionEditor, /onPointerMove/, "Sticker V1 must support drag reposition");
 assert.match(compositionEditor, /Delete sticker/, "Sticker V1 must support individual delete");
 assert.match(compositionEditor, />Clear</, "Sticker V1 must support clear all");
-assert.match(compositionStyles, /data-pictofu-photo-ratio/, "Selected ratio must affect DOM preview geometry");
-assert.match(compositionStyles, /\.result-strip\s*\{\s*position:\s*relative/, "Sticker overlay must have a stable positioned strip owner");
 
 for (const pack of ["korean-date", "couple-date", "y2k-summer", "best-friends"]) {
   assert.match(stickers, new RegExp(pack), `Sticker registry must include ${pack}`);
@@ -105,4 +119,4 @@ assert.match(growth, /capture_source/, "Growth payload must retain bounded camer
 assert.match(growth, /edit_profile/, "Growth payload must retain bounded editor profile");
 assert.doesNotMatch(growth, /stickerId|rotation|panX|panY|filename|blob|base64/i, "First-party growth payload must not include media or transform coordinates/content");
 
-console.log("Photo Editor V2 composition, stickers, transforms, full-photo context, mobile and measurement contract checks passed.");
+console.log("Photo Editor V2 per-photo framing, stickers, transforms, full-photo context, mobile and measurement contract checks passed.");
