@@ -32,6 +32,14 @@ function selectedReviewIndex() {
   return match ? Math.max(0, Number(match[1]) - 1) : 0;
 }
 
+function liveVideoState() {
+  const video = document.querySelector<HTMLVideoElement>(".booth-video");
+  return {
+    live: Boolean(video?.srcObject && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA),
+    mirrored: video?.classList.contains("is-mirrored") ?? true,
+  };
+}
+
 export function PoseGuideController({ initialPresetId }: { initialPresetId: string }) {
   const [surface, setSurface] = useState<HTMLElement | null>(null);
   const [presetId, setPresetId] = useState(initialPresetId);
@@ -65,6 +73,13 @@ export function PoseGuideController({ initialPresetId }: { initialPresetId: stri
       setPoseOffset(0);
     };
 
+    const activateFromExistingCamera = (nextShotIndex: number) => {
+      const state = liveVideoState();
+      setShotIndex(nextShotIndex);
+      setMirrored(state.mirrored);
+      setCameraLive(state.live);
+    };
+
     const onChange = (event: Event) => {
       const target = event.target;
       if (target instanceof HTMLSelectElement && target.id === "preset") applyPreset(target.value);
@@ -77,14 +92,12 @@ export function PoseGuideController({ initialPresetId }: { initialPresetId: stri
 
       const retake = target?.closest<HTMLButtonElement>(".review-workspace__retake-one");
       if (retake && /^Retake photo/i.test(retake.textContent ?? "")) {
-        setShotIndex(selectedReviewIndex());
-        setCameraLive(true);
+        activateFromExistingCamera(selectedReviewIndex());
       }
 
       if (target?.closest<HTMLButtonElement>(".review-workspace__retake-all")) {
-        setShotIndex(0);
         setPoseOffset(0);
-        setCameraLive(true);
+        activateFromExistingCamera(0);
       }
     };
 
@@ -115,7 +128,9 @@ export function PoseGuideController({ initialPresetId }: { initialPresetId: stri
         setShotIndex(0);
       }
       if (detail.event_name === "capture_started" && detail.capture_source === "camera") {
-        setCameraLive(true);
+        const state = liveVideoState();
+        setMirrored(state.mirrored);
+        setCameraLive(state.live);
         setShotIndex(0);
       }
       if (detail.event_name === "photo_captured" && typeof detail.shot_index === "number") {
