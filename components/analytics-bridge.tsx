@@ -58,8 +58,15 @@ export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
       const eventName = detail.event_name;
       if (typeof eventName !== "string" || !enabled || !window.gtag) return;
 
-      const { event_name: _eventName, ...parameters } = detail;
+      const {
+        event_name: _eventName,
+        session_id: _sessionId,
+        timestamp: _timestamp,
+        ...parameters
+      } = detail;
       void _eventName;
+      void _sessionId;
+      void _timestamp;
       window.gtag("event", eventName, parameters);
     }
 
@@ -73,7 +80,7 @@ export function AnalyticsBridge({ enabled }: { enabled: boolean }) {
     if (enabled && window.gtag) {
       window.gtag("event", "page_view", {
         page_path: pathname,
-        page_location: window.location.href,
+        page_location: `${window.location.origin}${pathname}`,
         page_title: document.title,
       });
     }
