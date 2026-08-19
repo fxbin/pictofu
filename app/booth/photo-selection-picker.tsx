@@ -60,8 +60,6 @@ export function PhotoSelectionPicker({
   const [draggingPhotoIndex, setDraggingPhotoIndex] = useState<number | null>(null);
   const [dragTargetPosition, setDragTargetPosition] = useState<number | null>(null);
 
-  if (photos.length <= 1 || targetCount < 1) return null;
-
   const selectedPhotos = selectedIndexes
     .map((index) => photos.find((photo) => photo.index === index))
     .filter((photo): photo is PhotoSelectionChoice => Boolean(photo));
@@ -100,6 +98,8 @@ export function PhotoSelectionPicker({
 
     previousOrderRectsRef.current = nextRects;
   }, [orderKey, draggingPhotoIndex]);
+
+  if (photos.length <= 1 || targetCount < 1) return null;
 
   function togglePhoto(index: number) {
     const selectedPosition = selectedIndexes.indexOf(index);
