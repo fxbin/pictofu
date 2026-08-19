@@ -7,13 +7,10 @@ import { emitProductEvent } from "@/lib/analytics";
 import {
   getEditorCompositionServerSnapshot,
   getEditorCompositionSnapshot,
-  ratioValue,
   resetEditorComposition,
-  setCompositionPhotoRatio,
   setCompositionPreset,
   setCompositionStickers,
   subscribeEditorComposition,
-  type PhotoRatio,
 } from "@/lib/editor-composition";
 import {
   getStickerDefinition,
@@ -34,13 +31,6 @@ type StickerDrag = {
   startStickerX: number;
   startStickerY: number;
 };
-
-const RATIOS: Array<{ id: PhotoRatio; label: string }> = [
-  { id: "auto", label: "Auto" },
-  { id: "1:1", label: "1:1" },
-  { id: "4:3", label: "4:3" },
-  { id: "3:4", label: "3:4" },
-];
 
 function stickerKey() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
@@ -70,30 +60,12 @@ export function CompositionEditor({ presetId, disabled = false }: CompositionEdi
     dragRef.current = null;
   }, [presetId]);
 
-  useEffect(() => {
-    const root = document.documentElement;
-    const ratio = ratioValue(composition.photoRatio);
-    if (ratio) {
-      root.dataset.pictofuPhotoRatio = composition.photoRatio;
-      root.style.setProperty("--pictofu-editor-ratio", String(ratio));
-    } else {
-      delete root.dataset.pictofuPhotoRatio;
-      root.style.removeProperty("--pictofu-editor-ratio");
-    }
-  }, [composition.photoRatio]);
-
   const activeSticker = activeStickerId
     ? composition.stickers.find((sticker) => sticker.id === activeStickerId) ?? null
     : null;
 
-  function markTool(tool: "sticker" | "ratio") {
-    emitProductEvent("editor_tool_used", { edit_tool: tool, preset_id: presetId });
-  }
-
-  function chooseRatio(photoRatio: PhotoRatio) {
-    if (disabled || composition.photoRatio === photoRatio) return;
-    setCompositionPhotoRatio(photoRatio);
-    markTool("ratio");
+  function markStickerTool() {
+    emitProductEvent("editor_tool_used", { edit_tool: "sticker", preset_id: presetId });
   }
 
   function updateSticker(id: string, partial: Partial<StickerInstance>) {
@@ -117,7 +89,7 @@ export function CompositionEditor({ presetId, disabled = false }: CompositionEdi
     });
     setCompositionStickers([...composition.stickers, next]);
     setActiveStickerId(next.id);
-    markTool("sticker");
+    markStickerTool();
   }
 
   function removeSticker(id: string) {
@@ -199,59 +171,39 @@ export function CompositionEditor({ presetId, disabled = false }: CompositionEdi
     overlayTarget,
   ) : null;
 
-  if (!hasPhotos) return null;
+  if (!hasPhotos || pack.length === 0) return null;
 
   return (
     <div className="composition-editor">
       {overlay}
-      <section className="composition-editor__section" aria-labelledby="photo-ratio-title">
+      <section className="composition-editor__section" aria-labelledby="stickers-title">
         <div className="composition-editor__heading">
-          <div><h3 id="photo-ratio-title">Photo ratio</h3><p>Apply one crop window to every active photo.</p></div>
+          <div><h3 id="stickers-title">Stickers</h3><p>Curated for {presetId.replaceAll("-", " ")} · tap to add, then drag on your strip.</p></div>
+          {composition.stickers.length > 0 && <button type="button" onClick={clearStickers} disabled={disabled}>Clear</button>}
         </div>
-        <div className="ratio-picker">
-          {RATIOS.map((ratio) => (
-            <button
-              type="button"
-              key={ratio.id}
-              className={composition.photoRatio === ratio.id ? "is-selected" : ""}
-              onClick={() => chooseRatio(ratio.id)}
-              disabled={disabled}
-              aria-pressed={composition.photoRatio === ratio.id}
-            >{ratio.label}</button>
+        <div className="sticker-pack">
+          {pack.map((sticker) => (
+            <button type="button" key={sticker.id} onClick={() => addSticker(sticker.id)} disabled={disabled} aria-label={`Add ${sticker.label} sticker`}>
+              <strong style={{ color: sticker.tone }}>{sticker.glyph}</strong>
+              <span>{sticker.label}</span>
+            </button>
           ))}
         </div>
+
+        {activeSticker && (
+          <div className="sticker-editor__active" aria-label="Adjust selected sticker">
+            <label>
+              <span>Size <strong>{activeSticker.scale.toFixed(2)}×</strong></span>
+              <input type="range" min="0.55" max="2" step="0.05" value={activeSticker.scale} onChange={(event) => updateSticker(activeSticker.id, { scale: Number(event.target.value) })} disabled={disabled} />
+            </label>
+            <label>
+              <span>Rotate <strong>{Math.round(activeSticker.rotation)}°</strong></span>
+              <input type="range" min="-45" max="45" step="1" value={activeSticker.rotation} onChange={(event) => updateSticker(activeSticker.id, { rotation: Number(event.target.value) })} disabled={disabled} />
+            </label>
+            <button type="button" className="sticker-editor__delete" onClick={() => removeSticker(activeSticker.id)} disabled={disabled}>Delete sticker</button>
+          </div>
+        )}
       </section>
-
-      {pack.length > 0 && (
-        <section className="composition-editor__section" aria-labelledby="stickers-title">
-          <div className="composition-editor__heading">
-            <div><h3 id="stickers-title">Stickers</h3><p>Curated for {presetId.replaceAll("-", " ")} · tap to add, then drag on your strip.</p></div>
-            {composition.stickers.length > 0 && <button type="button" onClick={clearStickers} disabled={disabled}>Clear</button>}
-          </div>
-          <div className="sticker-pack">
-            {pack.map((sticker) => (
-              <button type="button" key={sticker.id} onClick={() => addSticker(sticker.id)} disabled={disabled} aria-label={`Add ${sticker.label} sticker`}>
-                <strong style={{ color: sticker.tone }}>{sticker.glyph}</strong>
-                <span>{sticker.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {activeSticker && (
-            <div className="sticker-editor__active" aria-label="Adjust selected sticker">
-              <label>
-                <span>Size <strong>{activeSticker.scale.toFixed(2)}×</strong></span>
-                <input type="range" min="0.55" max="2" step="0.05" value={activeSticker.scale} onChange={(event) => updateSticker(activeSticker.id, { scale: Number(event.target.value) })} disabled={disabled} />
-              </label>
-              <label>
-                <span>Rotate <strong>{Math.round(activeSticker.rotation)}°</strong></span>
-                <input type="range" min="-45" max="45" step="1" value={activeSticker.rotation} onChange={(event) => updateSticker(activeSticker.id, { rotation: Number(event.target.value) })} disabled={disabled} />
-              </label>
-              <button type="button" className="sticker-editor__delete" onClick={() => removeSticker(activeSticker.id)} disabled={disabled}>Delete sticker</button>
-            </div>
-          )}
-        </section>
-      )}
     </div>
   );
 }
