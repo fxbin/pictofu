@@ -1,0 +1,9 @@
+slice: pose-guide-v1
+state: implementation
+lead: world-class-product-architect
+verifier_issue: 193
+epic_issue: 188
+branch: feat/pose-guide-v1
+runtime: soft_orchestration_only
+known_shortcut: no isolated Worker/Verifier runtime in this chat; verifier evidence is enforced by separate acceptance checklist and executable release gates
+release_target: dev_then_main

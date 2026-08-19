@@ -10,6 +10,7 @@ const consentGate = read("components/analytics-consent-gate.tsx");
 const analyticsConsent = read("lib/analytics-consent.ts");
 const analytics = read("lib/analytics.ts");
 const growth = read("lib/growth-measurement.ts");
+const poseProfile = read("lib/pose-guide-measurement.ts");
 const retention = read("lib/retention-measurement.ts");
 const safety = read("lib/analytics-safety.ts");
 const privacy = read("app/privacy/page.tsx");
@@ -48,6 +49,27 @@ for (const dimension of [
   "device_class",
 ]) {
   assert.ok(growth.includes(`"${dimension}"`), `Growth aggregate must retain bounded dimension ${dimension}.`);
+}
+
+assert.ok(
+  growth.includes("pose_guide_profile") &&
+    growth.includes("readPoseGuideProfile()") &&
+    growth.includes('payload.capture_source === "upload"'),
+  "Camera outcomes must carry bounded Pose Guide attribution while upload-only outcomes remain none.",
+);
+for (const value of ["none", "guided", "customized", "disabled"]) {
+  assert.ok(poseProfile.includes(`"${value}"`), `Pose Guide profile must stay bounded to ${value}.`);
+}
+for (const forbiddenPoseField of [
+  "body_landmark",
+  "pose_coordinates",
+  "raw_pose",
+  "camera_frame",
+  "base64",
+  "filename",
+  "free_text",
+]) {
+  assert.ok(!poseProfile.includes(forbiddenPoseField), `Pose Guide attribution must not contain ${forbiddenPoseField}.`);
 }
 
 assert.ok(!growth.includes("detail.session_id"), "Growth payload must never copy the analytics session id.");
@@ -193,4 +215,4 @@ assert.ok(
   "Privacy policy must accurately distinguish local photo processing, aggregate growth counters, optional retention, and optional GA4.",
 );
 
-console.log("Growth aggregate observability, consent, local upload, and retention privacy contracts passed.");
+console.log("Growth aggregate observability, consent, local upload, Pose Guide attribution, and retention privacy contracts passed.");
