@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-type StyleTool = "template" | "filter" | "frame" | null;
+type StyleTool = "template" | "filter" | "frame" | "layout" | "photos" | null;
 
 type TemplateOption = {
   key: string;
@@ -103,10 +103,30 @@ function clickSource(selector: string, index: number) {
   button.click();
 }
 
+function structuralPanel() {
+  return document.querySelector<HTMLDetailsElement>(".booth-page--style .style-disclosure--more");
+}
+
+function syncStructuralPanel(tool: StyleTool, active: boolean) {
+  const details = structuralPanel();
+  if (!details) return;
+
+  if (active && (tool === "layout" || tool === "photos")) {
+    details.open = true;
+    details.dataset.mobileStyleTool = tool;
+    return;
+  }
+
+  details.open = false;
+  delete details.dataset.mobileStyleTool;
+}
+
 function toolLabel(tool: StyleTool) {
   if (tool === "template") return "Template";
   if (tool === "filter") return "Filter";
   if (tool === "frame") return "Frame";
+  if (tool === "layout") return "Layout";
+  if (tool === "photos") return "Photos";
   return "Style";
 }
 
@@ -171,20 +191,27 @@ export function MobileStyleDock() {
     if (!snapshot.active) setTool(null);
   }, [snapshot.active]);
 
+  useEffect(() => {
+    syncStructuralPanel(tool, isMobile && snapshot.active);
+  }, [isMobile, snapshot.active, tool]);
+
+  useEffect(() => () => syncStructuralPanel(null, false), []);
+
   function chooseTool(next: Exclude<StyleTool, null>) {
     setTool((current) => current === next ? null : next);
   }
 
   if (!isMobile || !snapshot.active || typeof document === "undefined") return null;
 
-  const panel = tool ? (
-    <div className="mobile-style-dock__panel" aria-label={`${toolLabel(tool)} options`}>
+  const proxyTool = tool === "template" || tool === "filter" || tool === "frame" ? tool : null;
+  const panel = proxyTool ? (
+    <div className="mobile-style-dock__panel" aria-label={`${toolLabel(proxyTool)} options`}>
       <div className="mobile-style-dock__panel-heading">
-        <strong>{toolLabel(tool)}</strong>
+        <strong>{toolLabel(proxyTool)}</strong>
         <span>Tap to preview instantly</span>
       </div>
 
-      {tool === "template" && (
+      {proxyTool === "template" && (
         <div className="mobile-style-dock__rail mobile-style-dock__rail--template" role="listbox" aria-label="Choose template">
           {snapshot.templates.map((option) => (
             <button
@@ -204,7 +231,7 @@ export function MobileStyleDock() {
         </div>
       )}
 
-      {tool === "filter" && (
+      {proxyTool === "filter" && (
         <div className="mobile-style-dock__rail mobile-style-dock__rail--filter" role="listbox" aria-label="Choose filter">
           {snapshot.filters.map((option) => (
             <button
@@ -224,7 +251,7 @@ export function MobileStyleDock() {
         </div>
       )}
 
-      {tool === "frame" && (
+      {proxyTool === "frame" && (
         <div className="mobile-style-dock__rail mobile-style-dock__rail--frame" role="listbox" aria-label="Choose frame">
           {snapshot.frames.map((option) => (
             <button
@@ -251,6 +278,8 @@ export function MobileStyleDock() {
         <button type="button" className={tool === "template" ? "is-selected" : ""} aria-pressed={tool === "template"} onClick={() => chooseTool("template")}><span>▦</span><small>Template</small></button>
         <button type="button" className={tool === "filter" ? "is-selected" : ""} aria-pressed={tool === "filter"} onClick={() => chooseTool("filter")}><span>◐</span><small>Filter</small></button>
         <button type="button" className={tool === "frame" ? "is-selected" : ""} aria-pressed={tool === "frame"} onClick={() => chooseTool("frame")}><span>▣</span><small>Frame</small></button>
+        <button type="button" className={tool === "layout" ? "is-selected" : ""} aria-pressed={tool === "layout"} onClick={() => chooseTool("layout")}><span>⊞</span><small>Layout</small></button>
+        <button type="button" className={tool === "photos" ? "is-selected" : ""} aria-pressed={tool === "photos"} onClick={() => chooseTool("photos")}><span>▧</span><small>Photos</small></button>
       </div>
     </div>,
     document.body,

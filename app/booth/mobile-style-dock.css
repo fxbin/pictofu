@@ -3,7 +3,7 @@
 }
 
 @media (max-width: 720px) {
-  .booth-page--style .style-disclosure:not(.style-disclosure--more) {
+  .booth-page--style .style-disclosure {
     display: none;
   }
 
@@ -25,13 +25,7 @@
     box-shadow: 0 -18px 44px rgba(57, 39, 45, 0.16);
   }
 
-  /*
-   * Keep contextual Style controls separate from the bottom toolbar.
-   * The old in-flow panel increased the height of the entire fixed dock;
-   * short Android/browser viewports could then push part of Template controls
-   * outside the visible screen. Anchor the panel above the toolbar instead and
-   * cap both its width and height to the live viewport.
-   */
+  /* Template / Filter / Frame are lightweight proxy rails rendered by the dock. */
   .mobile-style-dock__panel {
     position: absolute;
     left: 50%;
@@ -206,10 +200,80 @@
     height: 34px;
   }
 
+  /*
+   * Layout / Photos reuse the real More options React controls. The details
+   * element leaves normal page flow on mobile and becomes the same viewport-
+   * contained bottom sheet above the dock. This preserves layout selection,
+   * photo selection and drag ordering without a second state model.
+   */
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool] {
+    position: fixed;
+    z-index: 89;
+    left: 50%;
+    bottom: calc(72px + max(9px, env(safe-area-inset-bottom)));
+    display: block;
+    width: min(calc(100vw - 16px), 720px);
+    max-height: min(56dvh, 480px);
+    margin: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+    border: 1px solid #eadde0;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.98);
+    transform: translateX(-50%);
+    box-shadow: 0 8px 24px rgba(75, 53, 58, 0.12);
+  }
+
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool="layout"] {
+    max-height: min(34dvh, 230px);
+  }
+
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool] > summary {
+    display: none;
+  }
+
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool] > .style-disclosure__content {
+    display: block;
+    max-height: inherit;
+    padding: 10px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-top: 0;
+    overscroll-behavior: contain;
+  }
+
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool] > .style-disclosure__content > * {
+    display: none;
+  }
+
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool="layout"] > .style-disclosure__content > .editor-control-group {
+    display: grid;
+    margin: 0;
+  }
+
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool="layout"] .choice-grid {
+    grid-template-columns: repeat(4, minmax(70px, 1fr));
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool="layout"] .choice-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool="photos"] > .style-disclosure__content > [aria-label="Choose and arrange photos for this layout"],
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool="photos"] > .style-disclosure__content > .style-disclosure__review-link {
+    display: grid;
+  }
+
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool="photos"] > .style-disclosure__content > .style-disclosure__review-link {
+    margin-top: 10px;
+  }
+
   .mobile-style-dock__tools {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 5px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 3px;
     width: min(100%, 720px);
     margin: 0 auto;
   }
@@ -218,8 +282,9 @@
     display: grid;
     place-items: center;
     gap: 2px;
+    min-width: 0;
     min-height: 54px;
-    padding: 5px 4px;
+    padding: 5px 2px;
     color: #76666a;
     background: transparent;
     border: 0;
@@ -227,12 +292,12 @@
   }
 
   .mobile-style-dock__tools > button span {
-    font-size: 19px;
+    font-size: 18px;
     line-height: 1;
   }
 
   .mobile-style-dock__tools > button small {
-    font-size: 9px;
+    font-size: 8.5px;
     font-weight: 800;
   }
 
@@ -247,18 +312,27 @@
     padding-inline: 7px;
   }
 
-  .mobile-style-dock__panel {
+  .mobile-style-dock__panel,
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool] {
     width: calc(100vw - 12px);
+  }
+
+  .mobile-style-dock__panel {
     padding-inline: 8px;
   }
 
   .mobile-style-dock__rail--template > button {
     width: 154px;
   }
+
+  .mobile-style-dock__tools > button small {
+    font-size: 8px;
+  }
 }
 
 @media (max-width: 720px) and (max-height: 520px) {
-  .mobile-style-dock__panel {
-    max-height: calc(100dvh - 92px - env(safe-area-inset-top));
+  .mobile-style-dock__panel,
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool] {
+    max-height: calc(100dvh - 98px - env(safe-area-inset-top));
   }
 }
