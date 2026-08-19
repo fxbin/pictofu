@@ -13,7 +13,7 @@ import {
   subscribePhotoFraming,
   type PhotoRatio,
 } from "@/lib/photo-framing";
-import type { BoothPreset } from "@/lib/presets";
+import { PRESETS, type BoothPreset } from "@/lib/presets";
 
 type LayoutId = BoothPreset["layoutId"];
 
@@ -24,12 +24,20 @@ const FRAMING_OPTIONS: readonly { id: PhotoRatio; label: string; detail: string 
   { id: "3:4", label: "Portrait", detail: "3:4" },
 ];
 
-function selectedLayoutFromDom(): LayoutId {
+function layoutForPreset(presetId: string | null | undefined): LayoutId | null {
+  return PRESETS.find((preset) => preset.id === presetId)?.layoutId ?? null;
+}
+
+function selectedLayoutFromDom(fallback: LayoutId): LayoutId {
   const selected = document.querySelector<HTMLElement>(".choice-grid button.is-selected .layout-icon");
   if (selected?.classList.contains("layout-icon--strip-3")) return "strip-3";
   if (selected?.classList.contains("layout-icon--grid-4")) return "grid-4";
   if (selected?.classList.contains("layout-icon--polaroid")) return "polaroid";
-  return "strip-4";
+  if (selected?.classList.contains("layout-icon--strip-4")) return "strip-4";
+
+  const presetCard = document.querySelector<HTMLElement>("[data-preset-id].is-selected");
+  const presetSelect = document.querySelector<HTMLSelectElement>("#preset");
+  return layoutForPreset(presetCard?.dataset.presetId ?? presetSelect?.value) ?? fallback;
 }
 
 function photoUrlIn(element: Element | null) {
@@ -42,8 +50,7 @@ function ratioForPhoto(url: string | null, layoutId: LayoutId) {
   return custom ?? cellAspectRatioForLayout(layoutId);
 }
 
-function applyFramingGeometry() {
-  const layoutId = selectedLayoutFromDom();
+function applyFramingGeometry(layoutId: LayoutId) {
   const reviewFrame = document.querySelector<HTMLElement>(".review-stage__photo");
   if (reviewFrame) reviewFrame.style.aspectRatio = String(ratioForPhoto(photoUrlIn(reviewFrame), layoutId));
 
@@ -52,22 +59,26 @@ function applyFramingGeometry() {
   });
 }
 
-export function PhotoFramingController() {
-  useSyncExternalStore(subscribePhotoFraming, getPhotoFramingVersion, getPhotoFramingServerVersion);
+export function PhotoFramingController({ initialPresetId }: { initialPresetId: string }) {
+  const framingVersion = useSyncExternalStore(subscribePhotoFraming, getPhotoFramingVersion, getPhotoFramingServerVersion);
   const [mount, setMount] = useState<HTMLElement | null>(null);
   const [activePhotoUrl, setActivePhotoUrl] = useState<string | null>(null);
+  const [layoutId, setLayoutId] = useState<LayoutId>(() => layoutForPreset(initialPresetId) ?? "strip-4");
 
   useEffect(() => {
     let scheduled = 0;
 
     const sync = () => {
+      const nextLayout = selectedLayoutFromDom(layoutId);
+      if (nextLayout !== layoutId) setLayoutId(nextLayout);
+
       const stage = document.querySelector<HTMLElement>(".review-stage");
       const activeFrame = stage?.querySelector<HTMLElement>(".review-stage__photo") ?? null;
       setActivePhotoUrl(photoUrlIn(activeFrame));
 
       if (!stage) {
         setMount(null);
-        applyFramingGeometry();
+        applyFramingGeometry(nextLayout);
         return;
       }
 
@@ -79,7 +90,7 @@ export function PhotoFramingController() {
         stage.insertBefore(nextMount, transformTools);
       }
       setMount(nextMount);
-      applyFramingGeometry();
+      applyFramingGeometry(nextLayout);
     };
 
     const scheduleSync = () => {
@@ -100,11 +111,11 @@ export function PhotoFramingController() {
       document.removeEventListener("change", scheduleSync, true);
       window.removeEventListener("resize", scheduleSync);
     };
-  }, []);
+  }, [layoutId]);
 
   useEffect(() => {
-    applyFramingGeometry();
-  });
+    applyFramingGeometry(layoutId);
+  }, [framingVersion, layoutId]);
 
   if (!mount || !activePhotoUrl) return null;
   const selected = getPhotoFramingRatio(activePhotoUrl);
