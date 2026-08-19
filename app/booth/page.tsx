@@ -4,7 +4,6 @@ import { PhotoFramingController } from "./photo-framing-controller";
 import "./booth-foundation.css";
 import "./booth-shell.css";
 import "./camera.css";
-import "./camera-framing-fix.css";
 import "./photo-framing.css";
 import "./export.css";
 import "./filter-picker.css";
@@ -12,6 +11,7 @@ import "./workspace-modes.css";
 import "./progressive-disclosure.css";
 import "./sticker-editor.css";
 import "./mobile-viewport.css";
+import "./camera-framing-fix.css";
 import { getPreset } from "@/lib/presets";
 
 export const metadata: Metadata = {
