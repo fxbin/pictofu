@@ -41,6 +41,12 @@ assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?width:\s*min\(100%,\s
 assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?margin:\s*0 auto/, "Review photo must not carry artificial 80–138px crop-context margins");
 assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?overflow:\s*hidden/, "The photo frame itself must clip pan/zoom transforms");
 assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?touch-action:\s*pan-y/, "Full-size mobile Review must preserve native vertical page scrolling over the photo");
+assert.match(cameraFix, /--review-photo-surface:\s*#eee7e4/, "Review must define one stable neutral photo surface for rotation states");
+assert.match(
+  cameraFix,
+  /\.review-stage__photo \.photo-preview,\s*\.review-stage__photo \.photo-preview__transform,\s*\.review-stage__photo \.photo-preview__pan\s*\{[\s\S]*?background-color:\s*var\(--review-photo-surface\)/,
+  "Review root/transform/pan compositor layers must share the same opaque background so rotation cannot expose a black backing layer",
+);
 assert.doesNotMatch(cameraFix, /touch-action:\s*none/, "The final Review override must not reintroduce an all-axis mobile scroll lock");
 assert.match(cameraFix, /label\[data-pan-unavailable="true"\]/, "Unavailable pan sliders must have a visible muted state");
 assert.match(cameraFix, /Zoom in to move left \/ right/, "Horizontal no-op state must explain the prerequisite");
@@ -53,4 +59,4 @@ assert.ok(
   "Framing truth overrides must load after legacy Review crop styles",
 );
 
-console.log("Camera-to-editor source geometry, full-size Review, mobile-scroll and pan-control truth contract checks passed.");
+console.log("Camera-to-editor source geometry, full-size Review, stable rotation background, mobile-scroll and pan-control truth contract checks passed.");
