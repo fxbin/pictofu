@@ -17,6 +17,7 @@ import "./camera-framing-fix.css";
 import "./result-frame-cell-fix.css";
 import "./mobile-review-dock.css";
 import "./mobile-style-dock.css";
+import "./mobile-layout-sheet-fix.css";
 import { getPreset } from "@/lib/presets";
 
 export const metadata: Metadata = {
