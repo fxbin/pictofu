@@ -29,10 +29,12 @@ assert.match(
   /Release for final position \$\{dragTargetPosition \+ 1\}/,
   "The reorder hint must announce the live final position.",
 );
+assert.match(picker, /useLayoutEffect\(/, "Live reorder must retain its layout-transition hook.");
+assert.match(picker, /data-photo-index=\{photo\.index\}/, "Order cards must expose stable photo ids for FLIP measurement.");
 assert.match(
   picker,
-  /useLayoutEffect\([\s\S]*data-photo-index[\s\S]*card\.animate\(/,
-  "Non-dragging cards must use a FLIP-style transition when live ordering changes their slots.",
+  /card\.animate\([\s\S]*duration: 180[\s\S]*cubic-bezier\(\.2,\.8,\.2,1\)/,
+  "Non-dragging cards must visibly transition into their new slots.",
 );
 assert.match(
   picker,
