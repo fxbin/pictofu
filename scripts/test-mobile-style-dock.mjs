@@ -21,6 +21,11 @@ assert.doesNotMatch(dock, /setPresetId|setFilterId|setFrameId|composePhotoStrip/
 
 assert.match(css, /@media \(max-width: 720px\)/);
 assert.match(css, /\.mobile-style-dock\s*\{[\s\S]*position: fixed/);
+assert.match(css, /\.mobile-style-dock__panel\s*\{[\s\S]*position: absolute[\s\S]*bottom: calc\(100% \+ 8px\)/);
+assert.match(css, /\.mobile-style-dock__panel\s*\{[\s\S]*width: min\(calc\(100vw - 16px\), 720px\)/);
+assert.match(css, /\.mobile-style-dock__panel\s*\{[\s\S]*max-height: min\(42dvh, 280px\)/);
+assert.match(css, /\.mobile-style-dock__panel\s*\{[\s\S]*overflow-y: auto/);
+assert.match(css, /\.mobile-style-dock__rail\s*\{[\s\S]*max-width: 100%[\s\S]*overflow-x: auto/);
 assert.match(css, /\.booth-page--style \.style-disclosure:not\(\.style-disclosure--more\)\s*\{[\s\S]*display: none/);
 assert.doesNotMatch(css, /\.style-disclosure--more\s*\{[\s\S]*display:\s*none/);
 

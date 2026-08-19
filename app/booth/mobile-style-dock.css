@@ -17,8 +17,7 @@
     right: 0;
     bottom: 0;
     left: 0;
-    display: grid;
-    gap: 8px;
+    display: block;
     padding: 9px 10px max(9px, env(safe-area-inset-bottom));
     border-top: 1px solid rgba(226, 207, 213, 0.95);
     background: rgba(255, 252, 251, 0.97);
@@ -26,13 +25,29 @@
     box-shadow: 0 -18px 44px rgba(57, 39, 45, 0.16);
   }
 
+  /*
+   * Keep contextual Style controls separate from the bottom toolbar.
+   * The old in-flow panel increased the height of the entire fixed dock;
+   * short Android/browser viewports could then push part of Template controls
+   * outside the visible screen. Anchor the panel above the toolbar instead and
+   * cap both its width and height to the live viewport.
+   */
   .mobile-style-dock__panel {
-    width: min(100%, 720px);
-    margin: 0 auto;
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    width: min(calc(100vw - 16px), 720px);
+    max-height: min(42dvh, 280px);
+    margin: 0;
     padding: 9px 10px 10px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-sizing: border-box;
     border: 1px solid #eadde0;
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.97);
+    transform: translateX(-50%);
+    overscroll-behavior: contain;
     box-shadow: 0 8px 24px rgba(75, 53, 58, 0.09);
   }
 
@@ -58,7 +73,12 @@
   .mobile-style-dock__rail {
     display: flex;
     gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding-bottom: 2px;
     overflow-x: auto;
+    overflow-y: hidden;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
@@ -228,10 +248,17 @@
   }
 
   .mobile-style-dock__panel {
+    width: calc(100vw - 12px);
     padding-inline: 8px;
   }
 
   .mobile-style-dock__rail--template > button {
     width: 154px;
+  }
+}
+
+@media (max-width: 720px) and (max-height: 520px) {
+  .mobile-style-dock__panel {
+    max-height: calc(100dvh - 92px - env(safe-area-inset-top));
   }
 }
