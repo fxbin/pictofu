@@ -1,5 +1,3 @@
-import { readPoseGuideProfile } from "@/lib/pose-guide-measurement";
-
 const GROWTH_ENDPOINT =
   "https://swzddvprnyjrrgpzcsgp.supabase.co/functions/v1/pictofu-growth-ingest";
 
@@ -40,13 +38,6 @@ const GROWTH_DIMENSION_KEYS = [
   "edit_profile",
 ] as const;
 
-const POSE_PROFILE_EVENTS = new Set([
-  "capture_completed",
-  "export_completed",
-  "download_clicked",
-  "share_clicked",
-]);
-
 const SOURCE_SCOPED_EVENTS = new Set([
   "capture_completed",
   "export_completed",
@@ -61,7 +52,7 @@ function growthDedupeKey(payload: Record<string, string>) {
     return `pictofu:growth-reached:editor_tool_used:${payload.edit_tool}`;
   }
   if (SOURCE_SCOPED_EVENTS.has(payload.event_name) && payload.capture_source) {
-    return `pictofu:growth-reached:${payload.event_name}:${payload.capture_source}:${payload.pose_guide_profile || "none"}`;
+    return `pictofu:growth-reached:${payload.event_name}:${payload.capture_source}`;
   }
   return `pictofu:growth-reached:${payload.event_name}`;
 }
@@ -86,12 +77,6 @@ function growthPayload(detail: GrowthDetail) {
   for (const key of GROWTH_DIMENSION_KEYS) {
     const value = detail[key];
     if (typeof value === "string" && value) payload[key] = value;
-  }
-
-  if (POSE_PROFILE_EVENTS.has(eventName)) {
-    payload.pose_guide_profile = payload.capture_source === "upload"
-      ? "none"
-      : readPoseGuideProfile();
   }
   return payload;
 }
