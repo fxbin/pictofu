@@ -126,7 +126,12 @@ export function AnalyticsConsentGate({ configured, measurementId }: AnalyticsCon
   }, [configured, measurementId]);
 
   useEffect(() => {
-    if (!configured || !initializedRef.current || !window.gtag) return;
+    if (
+      consent === "unknown" ||
+      !configured ||
+      !initializedRef.current ||
+      !window.gtag
+    ) return;
     window.gtag(
       "consent",
       "update",
