@@ -11,11 +11,15 @@
  *
  * Keep the source-owned aspect ratio from PhotoPreview, but let that frame use
  * the available editor width and clip transforms directly at its own edge.
+ * `pan-y` is intentional: once the photo fills most of the mobile viewport,
+ * vertical one-finger swipes must remain native page scrolling. Horizontal
+ * pointer movement and two-pointer pinch still flow to the editor handlers.
  */
 .review-stage__photo {
   width: min(100%, 780px);
   margin: 0 auto;
   overflow: hidden;
+  touch-action: pan-y;
   border-radius: 14px;
   background: #eee7e4;
   box-shadow: 0 0 0 1px rgba(221, 198, 203, 0.95), 0 12px 30px rgba(75, 53, 58, 0.12);
