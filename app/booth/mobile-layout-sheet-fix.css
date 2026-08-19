@@ -1,0 +1,31 @@
+/*
+ * Keep the mobile Layout structural sheet complete and viewport-safe.
+ * The legacy mobile Style dock constrained Layout to 34dvh / 230px and kept
+ * all four layout choices in one hidden-scroll row. On narrow or short mobile
+ * viewports that made the sheet look clipped even though the choices existed.
+ */
+@media (max-width: 720px) {
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool="layout"] {
+    max-height: min(
+      320px,
+      calc(100dvh - 104px - env(safe-area-inset-top) - env(safe-area-inset-bottom))
+    );
+  }
+
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool="layout"] > .style-disclosure__content {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool="layout"] .choice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    overflow-x: visible;
+    overflow-y: visible;
+  }
+
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool="layout"] .choice-grid button {
+    min-width: 0;
+    min-height: 64px;
+  }
+}
