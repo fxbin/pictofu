@@ -58,10 +58,31 @@ assert.match(
 );
 assert.match(
   layoutFix,
+  /data-mobile-style-tool="layout"\][^\{]*> \.style-disclosure__content > \.editor-control-group\s*\{[\s\S]*?display: none/,
+  "Layout must reset the legacy rule that exposed every editor-control-group",
+);
+assert.match(
+  layoutFix,
+  /data-mobile-style-tool="layout"\][^\{]*> \.style-disclosure__content > \.editor-control-group:has\(> \.choice-grid\)\s*\{[\s\S]*?display: grid/,
+  "Layout must reveal only the editor group that owns the layout choice grid",
+);
+assert.match(
+  layoutFix,
   /data-mobile-style-tool="layout"\][\s\S]*\.choice-grid\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/,
   "All four mobile Layout choices must use a complete 2x2 grid instead of hidden horizontal overflow",
 );
 assert.match(layoutFix, /\.choice-grid button\s*\{[\s\S]*min-width: 0[\s\S]*min-height: 64px/);
 assert.doesNotMatch(layoutFix, /repeat\(4, minmax\(70px, 1fr\)\)/);
 
-console.log("Mobile Style dock, complete Layout sheet and viewport contract checks passed.");
+assert.match(
+  layoutFix,
+  /data-mobile-style-tool="photos"\][^\{]*> \.style-disclosure__content > \.editor-control-group\s*\{[\s\S]*?display: none/,
+  "Photos must not inherit the Layout editor group",
+);
+assert.match(
+  layoutFix,
+  /data-mobile-style-tool="photos"\][^\{]*> \.style-disclosure__content > \.editor-control-group:has\(> \[aria-label="Choose and arrange photos for this layout"\]\)\s*\{[\s\S]*?display: grid/,
+  "Photos must reveal only the PhotoSelectionPicker editor group",
+);
+
+console.log("Mobile Style dock, isolated Layout/Photos sheets and viewport contract checks passed.");

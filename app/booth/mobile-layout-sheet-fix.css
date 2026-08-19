@@ -1,8 +1,7 @@
 /*
- * Keep the mobile Layout structural sheet complete and viewport-safe.
- * The legacy mobile Style dock constrained Layout to 34dvh / 230px and kept
- * all four layout choices in one hidden-scroll row. On narrow or short mobile
- * viewports that made the sheet look clipped even though the choices existed.
+ * Keep the mobile Layout structural sheet complete, viewport-safe and scoped
+ * to layout choices only. Layout answers "how are photos arranged?"; Photos
+ * owns photo selection and reordering through the separate bottom-dock button.
  */
 @media (max-width: 720px) {
   .booth-page--style .style-disclosure--more[data-mobile-style-tool="layout"] {
@@ -17,6 +16,20 @@
     overflow-y: auto;
   }
 
+  /*
+   * The shared desktop More-options disclosure contains both Layout and Photos
+   * editor groups. Reset the legacy mobile rule that exposed every generic
+   * editor-control-group, then reveal only the group that owns .choice-grid.
+   */
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool="layout"] > .style-disclosure__content > .editor-control-group {
+    display: none;
+  }
+
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool="layout"] > .style-disclosure__content > .editor-control-group:has(> .choice-grid) {
+    display: grid;
+    margin: 0;
+  }
+
   .booth-page--style .style-disclosure--more[data-mobile-style-tool="layout"] .choice-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
@@ -27,5 +40,19 @@
   .booth-page--style .style-disclosure--more[data-mobile-style-tool="layout"] .choice-grid button {
     min-width: 0;
     min-height: 64px;
+  }
+
+  /*
+   * Photos is a distinct mobile tool. Reveal only the editor group containing
+   * PhotoSelectionPicker; the existing Photo Editor link remains owned by the
+   * Photos sheet through the base dock rule.
+   */
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool="photos"] > .style-disclosure__content > .editor-control-group {
+    display: none;
+  }
+
+  .booth-page--style .style-disclosure--more[data-mobile-style-tool="photos"] > .style-disclosure__content > .editor-control-group:has(> [aria-label="Choose and arrange photos for this layout"]) {
+    display: grid;
+    margin: 0;
   }
 }
