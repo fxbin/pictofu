@@ -187,41 +187,52 @@
   pointer-events: none;
 }
 
-.dragHandle,
-.overlayGrip {
+.dragHandle {
   position: absolute;
-  top: 6px;
-  left: 6px;
+  top: 2px;
+  left: 2px;
   z-index: 4;
   width: 30px;
   height: 30px;
   display: grid;
   place-items: center;
   padding: 0;
-  border: 1px solid rgba(229, 203, 210, .94);
-  border-radius: 9px;
-  background: rgba(255,255,255,.96);
-  color: #8f5062;
-  font: inherit;
-  font-size: 16px;
-  font-weight: 900;
-  line-height: 1;
-  box-shadow: 0 3px 10px rgba(55, 39, 45, .16);
-  backdrop-filter: blur(8px);
-}
-
-.dragHandle {
+  border: 0;
+  background: transparent;
+  color: transparent;
   cursor: grab;
+  font-size: 0;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+.dragHandle::before {
+  content: "⠿";
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(229, 203, 210, .82);
+  border-radius: 6px;
+  background: rgba(255,255,255,.9);
+  color: #8f5062;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 1px 5px rgba(55, 39, 45, .12);
+  backdrop-filter: blur(5px);
+  pointer-events: none;
   transition: transform 90ms ease, box-shadow 90ms ease, background 90ms ease;
 }
 
 .dragHandle:active {
   cursor: grabbing;
-  background: #fff0f4;
+}
+
+.dragHandle:active::before {
+  background: rgba(255,240,244,.94);
   transform: scale(.94);
-  box-shadow: 0 2px 7px rgba(55, 39, 45, .18);
+  box-shadow: 0 1px 4px rgba(55, 39, 45, .14);
 }
 
 .dragHandle:disabled {
@@ -230,6 +241,24 @@
 }
 
 .overlayGrip {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 4;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(229, 203, 210, .82);
+  border-radius: 6px;
+  background: rgba(255,255,255,.9);
+  color: #8f5062;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 1px 5px rgba(55, 39, 45, .12);
+  backdrop-filter: blur(5px);
   pointer-events: none;
 }
 
@@ -330,7 +359,7 @@
 @media (prefers-reduced-motion: reduce) {
   .photoCard,
   .photoCard > strong,
-  .dragHandle,
+  .dragHandle::before,
   .dragHint {
     transition: none;
   }
@@ -366,11 +395,17 @@
     font-size: 9px;
   }
 
-  .dragHandle,
+  .dragHandle {
+    width: 30px;
+    height: 30px;
+  }
+
+  .dragHandle::before,
   .overlayGrip {
-    width: 28px;
-    height: 28px;
-    font-size: 14px;
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    font-size: 10px;
   }
 
   .removeButton {
