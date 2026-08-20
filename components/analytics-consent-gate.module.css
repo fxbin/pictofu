@@ -108,9 +108,19 @@
   backdrop-filter: blur(12px);
 }
 
+/*
+ * Booth is a focused camera/editor workflow. Keep the collapsed privacy control
+ * reachable near the top, but let it scroll away instead of following the user
+ * over Review/Style photos. Opening it still uses the full fixed settings panel.
+ */
 :global(body:has(.booth-page)) .settingsButton {
+  position: absolute;
   top: calc(80px + env(safe-area-inset-top));
   bottom: auto;
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: 10px;
+  box-shadow: 0 6px 18px rgba(73, 53, 48, .08);
 }
 
 @media (max-width: 520px) {
@@ -151,7 +161,12 @@
   }
 
   :global(body:has(.booth-page)) .settingsButton {
-    top: calc(74px + env(safe-area-inset-top));
+    position: absolute;
+    right: 8px;
+    top: calc(68px + env(safe-area-inset-top));
     bottom: auto;
+    min-height: 34px;
+    padding: 0 9px;
+    font-size: 9px;
   }
 }
