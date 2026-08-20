@@ -3,6 +3,7 @@ import type {
   KeyboardEvent as ReactKeyboardEvent,
   PointerEvent as ReactPointerEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import { PhotoPreview } from "./photo-preview";
 import type { PhotoAdjustment } from "@/lib/compositor";
 import styles from "./photo-selection-picker.module.css";
@@ -32,8 +33,18 @@ type OrderDrag = {
   currentPosition: number;
   startX: number;
   startY: number;
+  grabOffsetX: number;
+  grabOffsetY: number;
+  width: number;
+  height: number;
   activated: boolean;
-  indexes: number[];
+  previewIndexes: number[];
+};
+
+type DragOverlay = {
+  photoIndex: number;
+  width: number;
+  height: number;
 };
 
 function moveItem(indexes: number[], from: number, to: number) {
@@ -53,24 +64,35 @@ export function PhotoSelectionPicker({
   disabled,
   onChange,
 }: PhotoSelectionPickerProps) {
-  const orderRailRef = useRef<HTMLDivElement | null>(null);
+  const photoGridRef = useRef<HTMLDivElement | null>(null);
   const orderDragRef = useRef<OrderDrag | null>(null);
-  const previousOrderRectsRef = useRef(new Map<number, DOMRect>());
+  const dragOverlayRef = useRef<HTMLDivElement | null>(null);
+  const previousRectsRef = useRef(new Map<number, DOMRect>());
+  const overlayFrameRef = useRef<number | null>(null);
   const [pressedPhotoIndex, setPressedPhotoIndex] = useState<number | null>(null);
   const [draggingPhotoIndex, setDraggingPhotoIndex] = useState<number | null>(null);
   const [dragTargetPosition, setDragTargetPosition] = useState<number | null>(null);
+  const [previewIndexes, setPreviewIndexes] = useState<number[] | null>(null);
+  const [dragOverlay, setDragOverlay] = useState<DragOverlay | null>(null);
 
-  const selectedPhotos = selectedIndexes
+  const effectiveIndexes = previewIndexes ?? selectedIndexes;
+  const effectiveSelectedPhotos = effectiveIndexes
     .map((index) => photos.find((photo) => photo.index === index))
     .filter((photo): photo is PhotoSelectionChoice => Boolean(photo));
-  const complete = selectedPhotos.length === targetCount;
-  const orderKey = selectedIndexes.join(",");
+  const selectedSet = new Set(effectiveIndexes);
+  const unselectedPhotos = photos.filter((photo) => !selectedSet.has(photo.index));
+  const displayPhotos = [...effectiveSelectedPhotos, ...unselectedPhotos];
+  const complete = selectedIndexes.length === targetCount;
+  const displayOrderKey = displayPhotos.map((photo) => photo.index).join(",");
+  const draggingPhoto = dragOverlay
+    ? photos.find((photo) => photo.index === dragOverlay.photoIndex) ?? null
+    : null;
 
   useLayoutEffect(() => {
-    const rail = orderRailRef.current;
-    if (!rail) return;
+    const grid = photoGridRef.current;
+    if (!grid) return;
 
-    const cards = Array.from(rail.querySelectorAll<HTMLElement>("[data-photo-index]"));
+    const cards = Array.from(grid.querySelectorAll<HTMLElement>("[data-photo-index]"));
     const nextRects = new Map<number, DOMRect>();
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -78,7 +100,7 @@ export function PhotoSelectionPicker({
       const photoIndex = Number(card.dataset.photoIndex);
       if (!Number.isInteger(photoIndex)) return;
       const nextRect = card.getBoundingClientRect();
-      const previousRect = previousOrderRectsRef.current.get(photoIndex);
+      const previousRect = previousRectsRef.current.get(photoIndex);
       nextRects.set(photoIndex, nextRect);
 
       if (!previousRect || reduceMotion || photoIndex === draggingPhotoIndex) return;
@@ -92,12 +114,12 @@ export function PhotoSelectionPicker({
           { transform: `translate(${deltaX}px, ${deltaY}px)` },
           { transform: "translate(0, 0)" },
         ],
-        { duration: 180, easing: "cubic-bezier(.2,.8,.2,1)" },
+        { duration: 190, easing: "cubic-bezier(.2,.8,.2,1)" },
       );
     });
 
-    previousOrderRectsRef.current = nextRects;
-  }, [orderKey, draggingPhotoIndex]);
+    previousRectsRef.current = nextRects;
+  }, [displayOrderKey, draggingPhotoIndex]);
 
   if (photos.length <= 1 || targetCount < 1) return null;
 
@@ -118,22 +140,15 @@ export function PhotoSelectionPicker({
     onChange([...selectedIndexes, index]);
   }
 
-  function moveSelected(indexes: number[], position: number, nextPosition: number) {
-    const next = moveItem(indexes, position, nextPosition);
-    if (next === indexes) return indexes;
-    onChange(next);
-    return next;
-  }
-
-  function closestOrderPosition(clientX: number, clientY: number) {
+  function closestSelectedPosition(clientX: number, clientY: number) {
     const cards = Array.from(
-      orderRailRef.current?.querySelectorAll<HTMLElement>("[data-order-position]") ?? [],
+      photoGridRef.current?.querySelectorAll<HTMLElement>("[data-selected-position]") ?? [],
     );
     let closestPosition = -1;
     let closestDistance = Number.POSITIVE_INFINITY;
 
     cards.forEach((card) => {
-      const position = Number(card.dataset.orderPosition);
+      const position = Number(card.dataset.selectedPosition);
       if (!Number.isInteger(position)) return;
       const rect = card.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
@@ -148,25 +163,41 @@ export function PhotoSelectionPicker({
     return closestPosition;
   }
 
+  function moveDragOverlay(clientX: number, clientY: number, drag: OrderDrag) {
+    if (overlayFrameRef.current !== null) cancelAnimationFrame(overlayFrameRef.current);
+    overlayFrameRef.current = requestAnimationFrame(() => {
+      overlayFrameRef.current = null;
+      const overlay = dragOverlayRef.current;
+      if (!overlay) return;
+      const left = clientX - drag.grabOffsetX;
+      const top = clientY - drag.grabOffsetY;
+      overlay.style.transform = `translate3d(${left}px, ${top}px, 0) rotate(1.2deg) scale(1.035)`;
+    });
+  }
+
   function beginOrderDrag(
     event: ReactPointerEvent<HTMLDivElement>,
     photoIndex: number,
     position: number,
   ) {
-    if (disabled || event.button !== 0) return;
+    if (disabled || event.button !== 0 || selectedIndexes.length <= 1) return;
     if ((event.target as HTMLElement).closest("button")) return;
 
+    const rect = event.currentTarget.getBoundingClientRect();
     event.currentTarget.setPointerCapture(event.pointerId);
     setPressedPhotoIndex(photoIndex);
-    setDragTargetPosition(position);
     orderDragRef.current = {
       pointerId: event.pointerId,
       photoIndex,
       currentPosition: position,
       startX: event.clientX,
       startY: event.clientY,
+      grabOffsetX: event.clientX - rect.left,
+      grabOffsetY: event.clientY - rect.top,
+      width: rect.width,
+      height: rect.height,
       activated: false,
-      indexes: [...selectedIndexes],
+      previewIndexes: [...selectedIndexes],
     };
   }
 
@@ -179,27 +210,48 @@ export function PhotoSelectionPicker({
       const deltaY = event.clientY - drag.startY;
       if (Math.hypot(deltaX, deltaY) < 6) return;
       if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+
       drag.activated = true;
       setDraggingPhotoIndex(drag.photoIndex);
       setDragTargetPosition(drag.currentPosition);
+      setPreviewIndexes([...drag.previewIndexes]);
+      setDragOverlay({
+        photoIndex: drag.photoIndex,
+        width: drag.width,
+        height: drag.height,
+      });
+      requestAnimationFrame(() => moveDragOverlay(event.clientX, event.clientY, drag));
     }
 
     event.preventDefault();
-    const nextPosition = closestOrderPosition(event.clientX, event.clientY);
+    moveDragOverlay(event.clientX, event.clientY, drag);
+
+    const nextPosition = closestSelectedPosition(event.clientX, event.clientY);
     if (nextPosition < 0 || nextPosition === drag.currentPosition) return;
 
-    setDragTargetPosition(nextPosition);
-    drag.indexes = moveSelected(drag.indexes, drag.currentPosition, nextPosition);
+    drag.previewIndexes = moveItem(drag.previewIndexes, drag.currentPosition, nextPosition);
     drag.currentPosition = nextPosition;
+    setDragTargetPosition(nextPosition);
+    setPreviewIndexes([...drag.previewIndexes]);
   }
 
-  function endOrderDrag(event: ReactPointerEvent<HTMLDivElement>) {
+  function finishOrderDrag(event: ReactPointerEvent<HTMLDivElement>, commit: boolean) {
     const drag = orderDragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
+
+    if (overlayFrameRef.current !== null) {
+      cancelAnimationFrame(overlayFrameRef.current);
+      overlayFrameRef.current = null;
+    }
+    if (commit && drag.activated) onChange(drag.previewIndexes);
+
     orderDragRef.current = null;
     setPressedPhotoIndex(null);
     setDraggingPhotoIndex(null);
     setDragTargetPosition(null);
+    setPreviewIndexes(null);
+    setDragOverlay(null);
+
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
@@ -215,7 +267,7 @@ export function PhotoSelectionPicker({
     if (event.key === "ArrowLeft") nextPosition = position - 1;
     if (event.key === "ArrowRight") nextPosition = position + 1;
     if (event.key === "Home") nextPosition = 0;
-    if (event.key === "End") nextPosition = selectedPhotos.length - 1;
+    if (event.key === "End") nextPosition = selectedIndexes.length - 1;
     if (nextPosition === position) return;
 
     const next = moveItem(selectedIndexes, position, nextPosition);
@@ -237,124 +289,122 @@ export function PhotoSelectionPicker({
     );
   }
 
+  const selectionHelp = targetCount === 1
+    ? "Tap the photo you want to use"
+    : complete
+      ? "Drag selected photos to reorder · × to replace"
+      : `Choose ${targetCount - selectedIndexes.length} more ${targetCount - selectedIndexes.length === 1 ? "photo" : "photos"}`;
+
   return (
     <div className={styles.picker} aria-label="Choose and arrange photos for this layout">
       <div className={styles.heading}>
         <div>
-          <strong>{targetCount === 1 ? "Choose your photo" : "Choose & arrange photos"}</strong>
-          <span>
-            {targetCount === 1
-              ? `Photo ${(selectedIndexes[0] ?? 0) + 1} will be used`
-              : complete
-                ? `${targetCount} selected · order matches the final layout`
-                : `Choose ${targetCount - selectedPhotos.length} more ${targetCount - selectedPhotos.length === 1 ? "photo" : "photos"}`}
-          </span>
+          <strong>Photos</strong>
+          <span>{selectionHelp}</span>
         </div>
         <em className={complete ? styles.statusComplete : styles.statusIncomplete}>
-          {selectedPhotos.length}/{targetCount}
+          {selectedIndexes.length}/{targetCount}
         </em>
       </div>
 
-      {targetCount > 1 && (
-        <div className={styles.orderSection}>
-          <div className={styles.sectionLabel}>
-            <strong>Final order</strong>
-            <span>Hold and drag a photo to reorder</span>
-          </div>
-          <div className={styles.orderRail} ref={orderRailRef} role="list">
-            {Array.from({ length: targetCount }).map((_, position) => {
-              const photo = selectedPhotos[position];
-              if (!photo) {
-                return (
-                  <div className={styles.emptySlot} key={`empty-${position}`} aria-label={`Final position ${position + 1} is empty`}>
-                    <span>{position + 1}</span>
-                    <small>Choose</small>
-                  </div>
-                );
-              }
+      <div className={styles.photoGrid} ref={photoGridRef} role="list">
+        {displayPhotos.map((photo) => {
+          const selectedPosition = effectiveIndexes.indexOf(photo.index);
+          const selected = selectedPosition >= 0;
+          const pressed = pressedPhotoIndex === photo.index;
+          const dragging = draggingPhotoIndex === photo.index;
+          const dropTarget = draggingPhotoIndex !== null && selected && dragTargetPosition === selectedPosition;
+          const blocked = !selected && targetCount > 1 && selectedIndexes.length >= targetCount;
 
-              const pressed = pressedPhotoIndex === photo.index;
-              const dragging = draggingPhotoIndex === photo.index;
-              const dropTarget = draggingPhotoIndex !== null && dragTargetPosition === position;
-              return (
-                <div
-                  className={`${styles.orderCard} ${pressed ? styles.orderCardPressed : ""} ${dragging ? styles.orderCardDragging : ""} ${dropTarget ? styles.orderCardDropTarget : ""}`}
-                  key={photo.id}
-                  data-order-position={position}
-                  data-photo-index={photo.index}
-                  role="listitem"
-                  tabIndex={disabled ? -1 : 0}
-                  aria-label={`Photo ${photo.index + 1}, final position ${position + 1}. Hold and drag to reorder or use left and right arrow keys.`}
-                  aria-keyshortcuts="ArrowLeft ArrowRight Home End"
-                  onPointerDown={(event) => beginOrderDrag(event, photo.index, position)}
-                  onPointerMove={continueOrderDrag}
-                  onPointerUp={endOrderDrag}
-                  onPointerCancel={endOrderDrag}
-                  onLostPointerCapture={endOrderDrag}
-                  onKeyDown={(event) => handleOrderKeyDown(event, position)}
-                >
-                  <div className={styles.orderPreview} style={{ aspectRatio: String(targetRatio) }}>
-                    {preview(photo)}
-                    <span className={styles.dragHandle} aria-hidden="true"><b>⠿</b><small>Drag</small></span>
-                    <span className={styles.positionBadge}>{position + 1}</span>
-                    {dragging && dragTargetPosition !== null && (
-                      <span className={styles.dropTargetBadge} aria-hidden="true">Release · #{dragTargetPosition + 1}</span>
-                    )}
-                    <button
-                      type="button"
-                      className={styles.removeButton}
-                      onClick={() => togglePhoto(photo.index)}
-                      disabled={disabled}
-                      aria-label={`Remove photo ${photo.index + 1} from the final layout`}
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <strong>Photo {photo.index + 1}</strong>
-                </div>
-              );
-            })}
-          </div>
-          <p className={`${styles.orderHint} ${draggingPhotoIndex !== null ? styles.orderHintActive : ""}`} aria-live="polite">
-            {draggingPhotoIndex !== null && dragTargetPosition !== null
-              ? `Release for final position ${dragTargetPosition + 1}`
-              : "Hold the Drag handle and move left or right · keyboard: ← →"}
-          </p>
-        </div>
-      )}
-
-      <div className={styles.captureSection}>
-        {targetCount > 1 && (
-          <div className={styles.sectionLabel}>
-            <strong>All captures</strong>
-            <span>{selectedPhotos.length >= targetCount ? "Remove one above to replace it" : "Tap to add"}</span>
-          </div>
-        )}
-        <div className={styles.captureRail}>
-          {photos.map((photo) => {
-            const selectedPosition = selectedIndexes.indexOf(photo.index);
-            const selected = selectedPosition >= 0;
-            const blocked = !selected && targetCount > 1 && selectedIndexes.length >= targetCount;
+          if (!selected) {
             return (
               <button
-                className={`${styles.choice} ${selected ? styles.choiceSelected : ""}`}
+                className={`${styles.photoCard} ${styles.photoCardUnselected}`}
                 type="button"
                 key={photo.id}
+                data-photo-index={photo.index}
                 onClick={() => togglePhoto(photo.index)}
                 disabled={disabled || blocked}
-                aria-pressed={selected}
-                aria-label={`${selected ? "Remove" : "Use"} photo ${photo.index + 1}${selected ? ` in position ${selectedPosition + 1}` : ""}`}
+                aria-label={blocked
+                  ? `Photo ${photo.index + 1}. Remove a selected photo before using this capture.`
+                  : `Use photo ${photo.index + 1}`}
               >
-                <span style={{ display: "block", position: "relative", overflow: "hidden", aspectRatio: String(targetRatio), borderRadius: 8 }}>
+                <span className={styles.photoPreview} style={{ aspectRatio: String(targetRatio) }}>
                   {preview(photo)}
+                  <span className={styles.useBadge} aria-hidden="true">+</span>
                 </span>
-                <span>Photo {photo.index + 1}</span>
-                {selected && <b aria-hidden="true">{selectedPosition + 1}</b>}
+                <strong>Photo {photo.index + 1}</strong>
               </button>
             );
-          })}
-        </div>
+          }
+
+          return (
+            <div
+              className={`${styles.photoCard} ${styles.photoCardSelected} ${pressed ? styles.photoCardPressed : ""} ${dragging ? styles.photoCardDragging : ""} ${dropTarget ? styles.photoCardDropTarget : ""}`}
+              key={photo.id}
+              data-photo-index={photo.index}
+              data-selected-position={selectedPosition}
+              role="listitem"
+              tabIndex={disabled ? -1 : 0}
+              aria-label={`Photo ${photo.index + 1}, final position ${selectedPosition + 1}.${targetCount > 1 ? " Drag to reorder or use left and right arrow keys." : ""}`}
+              aria-keyshortcuts={targetCount > 1 ? "ArrowLeft ArrowRight Home End" : undefined}
+              onPointerDown={(event) => beginOrderDrag(event, photo.index, selectedPosition)}
+              onPointerMove={continueOrderDrag}
+              onPointerUp={(event) => finishOrderDrag(event, true)}
+              onPointerCancel={(event) => finishOrderDrag(event, false)}
+              onLostPointerCapture={(event) => finishOrderDrag(event, false)}
+              onKeyDown={(event) => handleOrderKeyDown(event, selectedPosition)}
+            >
+              <div className={styles.photoPreview} style={{ aspectRatio: String(targetRatio) }}>
+                {preview(photo)}
+                {targetCount > 1 && selectedIndexes.length > 1 && (
+                  <span className={styles.dragCue} aria-hidden="true">⠿</span>
+                )}
+                <span className={styles.positionBadge}>{selectedPosition + 1}</span>
+                {targetCount > 1 && (
+                  <button
+                    type="button"
+                    className={styles.removeButton}
+                    onClick={() => togglePhoto(photo.index)}
+                    disabled={disabled}
+                    aria-label={`Remove photo ${photo.index + 1} from the layout`}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+              <strong>Photo {photo.index + 1}</strong>
+            </div>
+          );
+        })}
       </div>
+
+      {targetCount > 1 && (
+        <p className={`${styles.dragHint} ${draggingPhotoIndex !== null ? styles.dragHintActive : ""}`} aria-live="polite">
+          {draggingPhotoIndex !== null && dragTargetPosition !== null
+            ? `Position ${dragTargetPosition + 1} of ${selectedIndexes.length} · release to place`
+            : "Drag a selected photo left or right to change the final order"}
+        </p>
+      )}
+
+      {dragOverlay && draggingPhoto && typeof document !== "undefined" && createPortal(
+        <div
+          ref={dragOverlayRef}
+          className={styles.dragOverlay}
+          style={{ width: dragOverlay.width, height: dragOverlay.height }}
+          aria-hidden="true"
+        >
+          <div className={styles.photoPreview} style={{ aspectRatio: String(targetRatio) }}>
+            {preview(draggingPhoto)}
+            <span className={styles.overlayGrip}>⠿</span>
+            {dragTargetPosition !== null && (
+              <span className={styles.positionBadge}>{dragTargetPosition + 1}</span>
+            )}
+          </div>
+          <strong>Photo {draggingPhoto.index + 1}</strong>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }
