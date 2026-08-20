@@ -138,8 +138,23 @@ assert.match(picker, /prefers-reduced-motion: reduce/, "JS layout motion must re
 assert.match(styles, /\.photoCardSelected\s*\{[\s\S]*touch-action: pan-y/);
 assert.match(
   styles,
-  /\.dragHandle\s*\{[\s\S]*touch-action: none/,
-  "The dedicated handle must claim its touch gesture immediately while the rest of the card stays scroll-friendly.",
+  /\.dragHandle\s*\{[\s\S]*width: 30px;[\s\S]*height: 30px;[\s\S]*background: transparent;[\s\S]*touch-action: none/,
+  "The handle must keep a generous 30px transparent touch target even when its visible chip is smaller.",
+);
+assert.match(
+  styles,
+  /\.dragHandle::before\s*\{[\s\S]*content: "⠿";[\s\S]*width: 20px;[\s\S]*height: 20px;/,
+  "The visible drag chip should be only 20px so it does not cover the thumbnail.",
+);
+assert.match(
+  styles,
+  /\.overlayGrip\s*\{[\s\S]*width: 20px;[\s\S]*height: 20px;/,
+  "The floating preview grip must match the reduced visible footprint.",
+);
+assert.match(
+  styles,
+  /@media \(max-width: 390px\)[\s\S]*\.dragHandle\s*\{[\s\S]*width: 30px;[\s\S]*height: 30px;[\s\S]*\.dragHandle::before,[\s\S]*\.overlayGrip\s*\{[\s\S]*width: 18px;[\s\S]*height: 18px;/,
+  "Very narrow screens may shrink the visible chip further without shrinking the touch target.",
 );
 assert.match(
   styles,
@@ -164,8 +179,8 @@ assert.match(
 assert.doesNotMatch(styles, /\.orderRail|\.captureRail/, "Legacy duplicated rails must stay removed.");
 assert.match(
   styles,
-  /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.photoCard,[\s\S]*\.photoCard > strong,[\s\S]*\.dragHandle,[\s\S]*\.dragHint[\s\S]*transition: none/,
+  /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.photoCard,[\s\S]*\.photoCard > strong,[\s\S]*\.dragHandle::before,[\s\S]*\.dragHint[\s\S]*transition: none/,
   "CSS feedback must also honor reduced motion.",
 );
 
-console.log("Unified Photos selection, immediate handle drag, frozen-slot targeting, and natural floating-drag contracts passed.");
+console.log("Unified Photos selection, immediate stable drag, and compact visual-handle contracts passed.");
