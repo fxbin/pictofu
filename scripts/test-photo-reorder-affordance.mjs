@@ -19,8 +19,8 @@ assert.match(
 );
 assert.match(
   picker,
-  /Drag selected photos to reorder · × to replace/,
-  "The unified surface must explain reorder and replacement without a second gallery.",
+  /Drag from ⠿ to reorder · × to replace/,
+  "The unified surface must point users to the dedicated drag handle.",
 );
 
 assert.match(picker, /createPortal\(/, "Natural drag must render a viewport-level floating preview.");
@@ -33,31 +33,64 @@ assert.match(
 assert.match(
   picker,
   /transform: `translate3d\(\$\{dragOverlay\.left\}px, \$\{dragOverlay\.top\}px, 0\) rotate\(1\.2deg\) scale\(1\.035\)`/,
-  "The first floating-preview render must already be positioned under the pointer instead of flashing at the viewport origin.",
+  "The first floating-preview render must already be positioned under the pointer.",
 );
 assert.match(
   picker,
-  /setPreviewIndexes\(\[\.\.\.drag\.previewIndexes\]\)/,
-  "Dragging must maintain a local preview order before committing.",
+  /setDraggingPhotoIndex\(photoIndex\)[\s\S]*setDragOverlay\(\{/,
+  "Pressing the drag handle must activate lift feedback immediately without a movement threshold.",
 );
-assert.match(
+assert.doesNotMatch(
   picker,
-  /if \(commit && drag\.activated\) onChange\(\[\.\.\.drag\.previewIndexes\]\)/,
-  "The final selectedIndexes order must commit once when the drag ends.",
+  /Math\.hypot\(deltaX, deltaY\) <|Math\.abs\(deltaY\) > Math\.abs\(deltaX\)/,
+  "Dedicated-handle dragging must not wait for movement or direction thresholds.",
 );
 
+assert.match(
+  picker,
+  /function snapshotSelectedSlots\(\)[\s\S]*getBoundingClientRect\(\)[\s\S]*centerX:[\s\S]*centerY:/,
+  "Selected destination slots must be frozen before preview reordering begins.",
+);
+assert.match(
+  picker,
+  /function stableTargetPosition\(clientX: number, clientY: number, drag: OrderDrag\)/,
+  "Pointer hit-testing must use the frozen drag slots.",
+);
+assert.match(
+  picker,
+  /const hysteresis = 10;/,
+  "Frozen-slot targeting must include hysteresis so pointer jitter cannot rapidly toggle adjacent positions.",
+);
+const stableTargetStart = picker.indexOf("function stableTargetPosition");
+const moveOverlayStart = picker.indexOf("function moveDragOverlay");
+assert.ok(stableTargetStart >= 0 && moveOverlayStart > stableTargetStart);
+assert.ok(
+  !picker.slice(stableTargetStart, moveOverlayStart).includes("getBoundingClientRect"),
+  "Destination hit-testing must never read live card geometry after the drag starts.",
+);
+assert.match(
+  picker,
+  /const slots = snapshotSelectedSlots\(\);[\s\S]*slots,/,
+  "The drag session must retain one frozen set of slot centers for the full gesture.",
+);
+
+assert.match(
+  picker,
+  /if \(commit && drag\.currentPosition !== drag\.initialPosition\) \{[\s\S]*onChange\(\[\.\.\.drag\.previewIndexes\]\)/,
+  "The final selectedIndexes order must commit once, and only when its position actually changed.",
+);
 const continueStart = picker.indexOf("function continueOrderDrag");
 const installStart = picker.indexOf("function installWindowDragListeners");
 assert.ok(continueStart >= 0 && installStart > continueStart, "Drag movement and window-listener lifecycle functions must remain present.");
 assert.ok(
   !picker.slice(continueStart, installStart).includes("onChange("),
-  "Pointer-move must not live-commit selectedIndexes; doing so makes the dragged card jump with React reflow.",
+  "Pointer-move must not live-commit selectedIndexes.",
 );
 
 assert.match(
   picker,
   /window\.addEventListener\("pointermove", listeners\.move, \{ passive: false \}\)/,
-  "Once a drag begins, window must own pointer movement so card reflow cannot terminate the gesture.",
+  "Window must own pointer movement so card reflow cannot terminate the gesture.",
 );
 assert.match(
   picker,
@@ -72,27 +105,27 @@ assert.match(
 assert.match(
   picker,
   /window\.removeEventListener\("pointermove", listeners\.move\)[\s\S]*window\.removeEventListener\("pointerup", listeners\.up\)[\s\S]*window\.removeEventListener\("pointercancel", listeners\.cancel\)/,
-  "Global drag listeners must always be removable to prevent leaked gesture handlers.",
+  "Global drag listeners must always be removable.",
 );
 assert.doesNotMatch(
   picker,
   /setPointerCapture|releasePointerCapture|onLostPointerCapture/,
-  "Reorder must not depend on pointer capture owned by a card whose DOM position changes during preview reordering.",
+  "Reorder must not depend on pointer capture owned by a card whose DOM position changes.",
 );
 assert.match(
   picker,
-  /if \(Math\.abs\(deltaY\) > Math\.abs\(deltaX\)\) \{[\s\S]*finishOrderDrag\(event\.pointerId, false\)/,
-  "Vertical intent must cancel the pending reorder without blocking normal pan-y scrolling.",
+  /className=\{styles\.dragHandle\}[\s\S]*onPointerDown=\{\(event\) => beginOrderDrag\(event, photo\.index, selectedPosition\)\}/,
+  "Only the explicit drag handle should start pointer reordering.",
+);
+assert.doesNotMatch(
+  picker,
+  /aria-keyshortcuts[\s\S]{0,300}onPointerDown=/,
+  "The selected card itself must not own drag pointerdown; card body remains scroll-friendly.",
 );
 assert.match(
   picker,
   /aria-keyshortcuts=\{targetCount > 1 \? "ArrowLeft ArrowRight Home End" : undefined\}/,
   "Keyboard ordering must remain available for multi-photo layouts.",
-);
-assert.match(
-  picker,
-  /if \(\(event\.target as HTMLElement\)\.closest\("button"\)\) return;/,
-  "Remove-photo controls must never accidentally start a drag.",
 );
 assert.match(picker, /useLayoutEffect\(/, "Preview reordering must retain FLIP-style layout motion.");
 assert.match(
@@ -105,8 +138,13 @@ assert.match(picker, /prefers-reduced-motion: reduce/, "JS layout motion must re
 assert.match(styles, /\.photoCardSelected\s*\{[\s\S]*touch-action: pan-y/);
 assert.match(
   styles,
+  /\.dragHandle\s*\{[\s\S]*touch-action: none/,
+  "The dedicated handle must claim its touch gesture immediately while the rest of the card stays scroll-friendly.",
+);
+assert.match(
+  styles,
   /\.photoCardDragging\s*\{[\s\S]*border: 1px dashed[\s\S]*transform: none/,
-  "The in-grid source must become a stable placeholder instead of pretending to be the dragged object.",
+  "The in-grid source must become a stable placeholder.",
 );
 assert.match(
   styles,
@@ -126,8 +164,8 @@ assert.match(
 assert.doesNotMatch(styles, /\.orderRail|\.captureRail/, "Legacy duplicated rails must stay removed.");
 assert.match(
   styles,
-  /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.photoCard,[\s\S]*\.photoCard > strong,[\s\S]*\.dragHint[\s\S]*transition: none/,
+  /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.photoCard,[\s\S]*\.photoCard > strong,[\s\S]*\.dragHandle,[\s\S]*\.dragHint[\s\S]*transition: none/,
   "CSS feedback must also honor reduced motion.",
 );
 
-console.log("Unified Photos selection, stable window-owned drag lifecycle, and natural floating-drag contracts passed.");
+console.log("Unified Photos selection, immediate handle drag, frozen-slot targeting, and natural floating-drag contracts passed.");
