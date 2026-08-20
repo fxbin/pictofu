@@ -45,6 +45,8 @@ type DragOverlay = {
   photoIndex: number;
   width: number;
   height: number;
+  left: number;
+  top: number;
 };
 
 type WindowDragListeners = {
@@ -193,7 +195,6 @@ export function PhotoSelectionPicker({
       const left = clientX - drag.grabOffsetX;
       const top = clientY - drag.grabOffsetY;
       overlay.style.transform = `translate3d(${left}px, ${top}px, 0) rotate(1.2deg) scale(1.035)`;
-      overlay.style.opacity = "1";
     });
   }
 
@@ -247,8 +248,9 @@ export function PhotoSelectionPicker({
         photoIndex: drag.photoIndex,
         width: drag.width,
         height: drag.height,
+        left: event.clientX - drag.grabOffsetX,
+        top: event.clientY - drag.grabOffsetY,
       });
-      requestAnimationFrame(() => moveDragOverlay(event.clientX, event.clientY, drag));
     }
 
     event.preventDefault();
@@ -432,7 +434,12 @@ export function PhotoSelectionPicker({
         <div
           ref={dragOverlayRef}
           className={styles.dragOverlay}
-          style={{ width: dragOverlay.width, height: dragOverlay.height }}
+          style={{
+            width: dragOverlay.width,
+            height: dragOverlay.height,
+            opacity: 1,
+            transform: `translate3d(${dragOverlay.left}px, ${dragOverlay.top}px, 0) rotate(1.2deg) scale(1.035)`,
+          }}
           aria-hidden="true"
         >
           <div className={styles.photoPreview} style={{ aspectRatio: String(targetRatio) }}>
