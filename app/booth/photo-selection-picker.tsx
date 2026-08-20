@@ -27,18 +27,23 @@ type PhotoSelectionPickerProps = {
   onChange: (indexes: number[]) => void;
 };
 
+type DragSlot = {
+  position: number;
+  centerX: number;
+  centerY: number;
+};
+
 type OrderDrag = {
   pointerId: number;
   photoIndex: number;
+  initialPosition: number;
   currentPosition: number;
-  startX: number;
-  startY: number;
   grabOffsetX: number;
   grabOffsetY: number;
   width: number;
   height: number;
-  activated: boolean;
   previewIndexes: number[];
+  slots: DragSlot[];
 };
 
 type DragOverlay = {
@@ -163,27 +168,55 @@ export function PhotoSelectionPicker({
     onChange([...selectedIndexes, index]);
   }
 
-  function closestSelectedPosition(clientX: number, clientY: number) {
+  function snapshotSelectedSlots() {
     const cards = Array.from(
       photoGridRef.current?.querySelectorAll<HTMLElement>("[data-selected-position]") ?? [],
     );
-    let closestPosition = -1;
-    let closestDistance = Number.POSITIVE_INFINITY;
 
-    cards.forEach((card) => {
-      const position = Number(card.dataset.selectedPosition);
-      if (!Number.isInteger(position)) return;
-      const rect = card.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      const distance = Math.hypot(clientX - centerX, clientY - centerY);
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestPosition = position;
+    return cards
+      .map((card): DragSlot | null => {
+        const position = Number(card.dataset.selectedPosition);
+        if (!Number.isInteger(position)) return null;
+        card.getAnimations().forEach((animation) => animation.cancel());
+        const rect = card.getBoundingClientRect();
+        return {
+          position,
+          centerX: rect.left + rect.width / 2,
+          centerY: rect.top + rect.height / 2,
+        };
+      })
+      .filter((slot): slot is DragSlot => Boolean(slot))
+      .sort((a, b) => a.position - b.position);
+  }
+
+  function stableTargetPosition(clientX: number, clientY: number, drag: OrderDrag) {
+    const currentSlot = drag.slots.find((slot) => slot.position === drag.currentPosition);
+    if (!currentSlot) return drag.currentPosition;
+
+    let candidate = currentSlot;
+    let candidateDistance = Math.hypot(
+      clientX - currentSlot.centerX,
+      clientY - currentSlot.centerY,
+    );
+
+    drag.slots.forEach((slot) => {
+      const distance = Math.hypot(clientX - slot.centerX, clientY - slot.centerY);
+      if (distance < candidateDistance) {
+        candidate = slot;
+        candidateDistance = distance;
       }
     });
 
-    return closestPosition;
+    if (candidate.position === drag.currentPosition) return drag.currentPosition;
+
+    const currentDistance = Math.hypot(
+      clientX - currentSlot.centerX,
+      clientY - currentSlot.centerY,
+    );
+    const hysteresis = 10;
+    return candidateDistance + hysteresis < currentDistance
+      ? candidate.position
+      : drag.currentPosition;
   }
 
   function moveDragOverlay(clientX: number, clientY: number, drag: OrderDrag) {
@@ -216,7 +249,9 @@ export function PhotoSelectionPicker({
       cancelAnimationFrame(overlayFrameRef.current);
       overlayFrameRef.current = null;
     }
-    if (commit && drag.activated) onChange([...drag.previewIndexes]);
+    if (commit && drag.currentPosition !== drag.initialPosition) {
+      onChange([...drag.previewIndexes]);
+    }
 
     orderDragRef.current = null;
     setPressedPhotoIndex(null);
@@ -230,34 +265,11 @@ export function PhotoSelectionPicker({
     const drag = orderDragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
 
-    if (!drag.activated) {
-      const deltaX = event.clientX - drag.startX;
-      const deltaY = event.clientY - drag.startY;
-      if (Math.hypot(deltaX, deltaY) < 6) return;
-
-      if (Math.abs(deltaY) > Math.abs(deltaX)) {
-        finishOrderDrag(event.pointerId, false);
-        return;
-      }
-
-      drag.activated = true;
-      setDraggingPhotoIndex(drag.photoIndex);
-      setDragTargetPosition(drag.currentPosition);
-      setPreviewIndexes([...drag.previewIndexes]);
-      setDragOverlay({
-        photoIndex: drag.photoIndex,
-        width: drag.width,
-        height: drag.height,
-        left: event.clientX - drag.grabOffsetX,
-        top: event.clientY - drag.grabOffsetY,
-      });
-    }
-
     event.preventDefault();
     moveDragOverlay(event.clientX, event.clientY, drag);
 
-    const nextPosition = closestSelectedPosition(event.clientX, event.clientY);
-    if (nextPosition < 0 || nextPosition === drag.currentPosition) return;
+    const nextPosition = stableTargetPosition(event.clientX, event.clientY, drag);
+    if (nextPosition === drag.currentPosition) return;
 
     drag.previewIndexes = moveItem(drag.previewIndexes, drag.currentPosition, nextPosition);
     drag.currentPosition = nextPosition;
@@ -279,28 +291,46 @@ export function PhotoSelectionPicker({
   }
 
   function beginOrderDrag(
-    event: ReactPointerEvent<HTMLDivElement>,
+    event: ReactPointerEvent<HTMLButtonElement>,
     photoIndex: number,
     position: number,
   ) {
     if (disabled || event.button !== 0 || selectedIndexes.length <= 1) return;
-    if ((event.target as HTMLElement).closest("button")) return;
 
-    const rect = event.currentTarget.getBoundingClientRect();
-    setPressedPhotoIndex(photoIndex);
-    orderDragRef.current = {
+    const card = event.currentTarget.closest("[data-photo-index]") as HTMLDivElement | null;
+    if (!card) return;
+    const slots = snapshotSelectedSlots();
+    if (slots.length !== selectedIndexes.length) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const rect = card.getBoundingClientRect();
+    const drag: OrderDrag = {
       pointerId: event.pointerId,
       photoIndex,
+      initialPosition: position,
       currentPosition: position,
-      startX: event.clientX,
-      startY: event.clientY,
       grabOffsetX: event.clientX - rect.left,
       grabOffsetY: event.clientY - rect.top,
       width: rect.width,
       height: rect.height,
-      activated: false,
       previewIndexes: [...selectedIndexes],
+      slots,
     };
+
+    orderDragRef.current = drag;
+    setPressedPhotoIndex(photoIndex);
+    setDraggingPhotoIndex(photoIndex);
+    setDragTargetPosition(position);
+    setPreviewIndexes([...drag.previewIndexes]);
+    setDragOverlay({
+      photoIndex,
+      width: rect.width,
+      height: rect.height,
+      left: event.clientX - drag.grabOffsetX,
+      top: event.clientY - drag.grabOffsetY,
+    });
     installWindowDragListeners();
   }
 
@@ -339,7 +369,7 @@ export function PhotoSelectionPicker({
   const selectionHelp = targetCount === 1
     ? "Tap the photo you want to use"
     : complete
-      ? "Drag selected photos to reorder · × to replace"
+      ? "Drag from ⠿ to reorder · × to replace"
       : `Choose ${targetCount - selectedIndexes.length} more ${targetCount - selectedIndexes.length === 1 ? "photo" : "photos"}`;
 
   return (
@@ -393,15 +423,22 @@ export function PhotoSelectionPicker({
               data-selected-position={selectedPosition}
               role="listitem"
               tabIndex={disabled ? -1 : 0}
-              aria-label={`Photo ${photo.index + 1}, final position ${selectedPosition + 1}.${targetCount > 1 ? " Drag to reorder or use left and right arrow keys." : ""}`}
+              aria-label={`Photo ${photo.index + 1}, final position ${selectedPosition + 1}.${targetCount > 1 ? " Use the drag handle to reorder or use left and right arrow keys." : ""}`}
               aria-keyshortcuts={targetCount > 1 ? "ArrowLeft ArrowRight Home End" : undefined}
-              onPointerDown={(event) => beginOrderDrag(event, photo.index, selectedPosition)}
               onKeyDown={(event) => handleOrderKeyDown(event, selectedPosition)}
             >
               <div className={styles.photoPreview} style={{ aspectRatio: String(targetRatio) }}>
                 {preview(photo)}
                 {targetCount > 1 && selectedIndexes.length > 1 && (
-                  <span className={styles.dragCue} aria-hidden="true">⠿</span>
+                  <button
+                    type="button"
+                    className={styles.dragHandle}
+                    onPointerDown={(event) => beginOrderDrag(event, photo.index, selectedPosition)}
+                    disabled={disabled}
+                    aria-label={`Drag photo ${photo.index + 1} from final position ${selectedPosition + 1}`}
+                  >
+                    ⠿
+                  </button>
                 )}
                 <span className={styles.positionBadge}>{selectedPosition + 1}</span>
                 {targetCount > 1 && (
@@ -426,7 +463,7 @@ export function PhotoSelectionPicker({
         <p className={`${styles.dragHint} ${draggingPhotoIndex !== null ? styles.dragHintActive : ""}`} aria-live="polite">
           {draggingPhotoIndex !== null && dragTargetPosition !== null
             ? `Position ${dragTargetPosition + 1} of ${selectedIndexes.length} · release to place`
-            : "Drag a selected photo left or right to change the final order"}
+            : "Press ⠿ and drag a selected photo to change the final order"}
         </p>
       )}
 

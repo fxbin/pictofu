@@ -172,9 +172,10 @@ assert.ok(
 assert.ok(
   photoSelectionPicker.includes("beginOrderDrag") &&
     photoSelectionPicker.includes("continueOrderDrag") &&
-    photoSelectionPicker.includes("closestSelectedPosition") &&
+    photoSelectionPicker.includes("stableTargetPosition") &&
+    photoSelectionPicker.includes("snapshotSelectedSlots") &&
     photoSelectionPicker.includes("createPortal"),
-  "Photos must support direct pointer reorder with a viewport-level drag preview.",
+  "Photos must support immediate handle-based pointer reorder with stable frozen-slot targeting.",
 );
 assert.ok(
   photoSelectionPicker.includes('"ArrowLeft ArrowRight Home End"') &&
@@ -183,29 +184,38 @@ assert.ok(
   "Drag reorder must retain a keyboard sorting fallback without visible arrow controls.",
 );
 assert.ok(
-  photoSelectionPicker.includes("Drag selected photos to reorder · × to replace") &&
+  photoSelectionPicker.includes("Drag from ⠿ to reorder · × to replace") &&
     photoSelectionPicker.includes("const displayPhotos = [...effectiveSelectedPhotos, ...unselectedPhotos]") &&
     !photoSelectionPicker.includes(">Final order<") &&
     !photoSelectionPicker.includes(">All captures<"),
   "Photo selection and final ordering must share one surface instead of duplicate Final order / All captures galleries.",
 );
 assert.ok(
-  photoSelectionPicker.includes('if ((event.target as HTMLElement).closest("button")) return;'),
-  "Remove-photo controls must not accidentally start a reorder drag.",
+  photoSelectionPicker.includes("className={styles.dragHandle}") &&
+    photoSelectionPicker.includes("onPointerDown={(event) => beginOrderDrag(event, photo.index, selectedPosition)}"),
+  "Only the explicit drag handle should start pointer reorder so the card body remains scroll-friendly.",
+);
+assert.ok(
+  photoSelectionPicker.includes("const slots = snapshotSelectedSlots();") &&
+    photoSelectionPicker.includes("const hysteresis = 10;") &&
+    !photoSelectionPicker.includes("closestSelectedPosition"),
+  "Reorder targeting must use frozen slot geometry with hysteresis instead of live animated-card hit testing.",
 );
 assert.ok(
   photoSelectionStyles.includes("touch-action: pan-y") &&
+    photoSelectionStyles.includes(".dragHandle") &&
+    photoSelectionStyles.includes("touch-action: none") &&
     photoSelectionStyles.includes(".dragOverlay") &&
     photoSelectionStyles.includes("position: fixed"),
-  "Mobile reorder must preserve vertical scrolling while the dragged photo uses an independent floating layer.",
+  "Mobile reorder must preserve page scrolling outside the dedicated handle while the dragged photo uses an independent floating layer.",
 );
 assert.ok(
   photoSelectionStyles.includes("cursor: grab") && photoSelectionStyles.includes("cursor: grabbing"),
-  "Desktop reorder affordance must communicate direct drag behavior.",
+  "Desktop reorder affordance must communicate direct drag behavior on the handle.",
 );
 assert.ok(
   boothClient.includes("selectedPhotoIndexes.map") && boothClient.includes("exportSlots"),
   "Final export must continue to derive photo order from the selectedIndexes ordering contract.",
 );
 
-console.log("P1 product truth, progressive disclosure, reduced-motion, unified natural photo reorder, upload input, and P2 copy contracts passed.");
+console.log("P1 product truth, progressive disclosure, reduced-motion, immediate stable photo reorder, upload input, and P2 copy contracts passed.");
