@@ -28,7 +28,12 @@ assert.match(picker, /dragOverlayRef/, "The floating drag preview needs a stable
 assert.match(
   picker,
   /translate3d\(\$\{left\}px, \$\{top\}px, 0\) rotate\(1\.2deg\) scale\(1\.035\)/,
-  "The floating preview must follow the pointer with compositor-friendly translate3d motion.",
+  "Pointer moves must update the floating preview with compositor-friendly translate3d motion.",
+);
+assert.match(
+  picker,
+  /transform: `translate3d\(\$\{dragOverlay\.left\}px, \$\{dragOverlay\.top\}px, 0\) rotate\(1\.2deg\) scale\(1\.035\)`/,
+  "The first floating-preview render must already be positioned under the pointer instead of flashing at the viewport origin.",
 );
 assert.match(
   picker,
@@ -37,22 +42,47 @@ assert.match(
 );
 assert.match(
   picker,
-  /if \(commit && drag\.activated\) onChange\(drag\.previewIndexes\)/,
+  /if \(commit && drag\.activated\) onChange\(\[\.\.\.drag\.previewIndexes\]\)/,
   "The final selectedIndexes order must commit once when the drag ends.",
 );
 
 const continueStart = picker.indexOf("function continueOrderDrag");
-const finishStart = picker.indexOf("function finishOrderDrag");
-assert.ok(continueStart >= 0 && finishStart > continueStart, "Drag lifecycle functions must remain present.");
+const installStart = picker.indexOf("function installWindowDragListeners");
+assert.ok(continueStart >= 0 && installStart > continueStart, "Drag movement and window-listener lifecycle functions must remain present.");
 assert.ok(
-  !picker.slice(continueStart, finishStart).includes("onChange("),
+  !picker.slice(continueStart, installStart).includes("onChange("),
   "Pointer-move must not live-commit selectedIndexes; doing so makes the dragged card jump with React reflow.",
 );
 
 assert.match(
   picker,
-  /onPointerCancel=\{\(event\) => finishOrderDrag\(event, false\)\}/,
-  "Cancelled drags must restore the committed order rather than applying the preview.",
+  /window\.addEventListener\("pointermove", listeners\.move, \{ passive: false \}\)/,
+  "Once a drag begins, window must own pointer movement so card reflow cannot terminate the gesture.",
+);
+assert.match(
+  picker,
+  /window\.addEventListener\("pointerup", listeners\.up\)/,
+  "Window must own pointerup so the final order commits even after the source card moves in the DOM.",
+);
+assert.match(
+  picker,
+  /window\.addEventListener\("pointercancel", listeners\.cancel\)/,
+  "Browser pointer cancellation must restore committed order.",
+);
+assert.match(
+  picker,
+  /window\.removeEventListener\("pointermove", listeners\.move\)[\s\S]*window\.removeEventListener\("pointerup", listeners\.up\)[\s\S]*window\.removeEventListener\("pointercancel", listeners\.cancel\)/,
+  "Global drag listeners must always be removable to prevent leaked gesture handlers.",
+);
+assert.doesNotMatch(
+  picker,
+  /setPointerCapture|releasePointerCapture|onLostPointerCapture/,
+  "Reorder must not depend on pointer capture owned by a card whose DOM position changes during preview reordering.",
+);
+assert.match(
+  picker,
+  /if \(Math\.abs\(deltaY\) > Math\.abs\(deltaX\)\) \{[\s\S]*finishOrderDrag\(event\.pointerId, false\)/,
+  "Vertical intent must cancel the pending reorder without blocking normal pan-y scrolling.",
 );
 assert.match(
   picker,
@@ -100,4 +130,4 @@ assert.match(
   "CSS feedback must also honor reduced motion.",
 );
 
-console.log("Unified Photos selection and natural floating-drag contracts passed.");
+console.log("Unified Photos selection, stable window-owned drag lifecycle, and natural floating-drag contracts passed.");
