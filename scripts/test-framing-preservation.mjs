@@ -48,7 +48,9 @@ assert.match(controller, /Zoom in or choose a crop with horizontal overflow/, "U
 assert.match(controller, /Zoom in or choose a crop with vertical overflow/, "Unavailable vertical movement must explain how to make it effective");
 
 assert.match(cameraFix, /object-fit:\s*contain/, "Live camera preview must not hide source-frame edges");
-assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?width:\s*min\(100%,\s*780px\)/, "Review photo must use the available editor width instead of a 62–68% crop window");
+assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?width:\s*100%/, "Review photo must consume the full available editor width");
+assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?max-width:\s*none/, "Review photo must not keep a hidden desktop max-width cap");
+assert.doesNotMatch(cameraFix, /width:\s*min\(100%,\s*780px\)/, "The old 780px Review width cap must not return");
 assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?margin:\s*0 auto/, "Review photo must not carry artificial 80–138px crop-context margins");
 assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?overflow:\s*hidden/, "The photo frame itself must clip pan/zoom transforms");
 assert.match(cameraFix, /\.review-stage__photo\s*\{[\s\S]*?touch-action:\s*pan-y/, "Full-size mobile Review must preserve native vertical page scrolling over the photo");
@@ -92,4 +94,4 @@ assert.ok(
   "Result Frame-cell surfaces must load after the legacy result-strip photo background",
 );
 
-console.log("Camera-to-editor source geometry, stable Review rotation background, Frame-cell result surfaces, export backing, mobile-scroll and pan-control truth contract checks passed.");
+console.log("Camera-to-editor source geometry, full-width Review canvas, stable rotation background, Frame-cell result surfaces, export backing, mobile-scroll and pan-control truth contract checks passed.");
