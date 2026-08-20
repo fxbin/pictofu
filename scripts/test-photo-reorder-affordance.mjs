@@ -4,88 +4,100 @@ import { readFileSync } from "node:fs";
 const picker = readFileSync("app/booth/photo-selection-picker.tsx", "utf8");
 const styles = readFileSync("app/booth/photo-selection-picker.module.css", "utf8");
 
+assert.match(picker, /<strong>Photos<\/strong>/, "The Photos tool must use one unified photo surface.");
+assert.doesNotMatch(picker, />Final order</, "The duplicate Final order section must stay removed.");
+assert.doesNotMatch(picker, />All captures</, "The duplicate All captures section must stay removed.");
 assert.match(
   picker,
-  /Hold and drag a photo to reorder/,
-  "Final-order guidance must explicitly teach the drag gesture.",
+  /const displayPhotos = \[\.\.\.effectiveSelectedPhotos, \.\.\.unselectedPhotos\]/,
+  "Selected final-order photos and extra captures must share one grid.",
 );
 assert.match(
   picker,
-  /<b>⠿<\/b><small>Drag<\/small>/,
-  "Every draggable final-order card must expose a visible Drag handle label.",
+  /className=\{styles\.photoGrid\}[\s\S]*displayPhotos\.map/,
+  "Selection and ordering must render through the same photo grid.",
 );
 assert.match(
   picker,
-  /pressedPhotoIndex[\s\S]*draggingPhotoIndex[\s\S]*dragTargetPosition/,
-  "Reorder interaction must distinguish press, active drag, and destination feedback states.",
+  /Drag selected photos to reorder · × to replace/,
+  "The unified surface must explain reorder and replacement without a second gallery.",
+);
+
+assert.match(picker, /createPortal\(/, "Natural drag must render a viewport-level floating preview.");
+assert.match(picker, /dragOverlayRef/, "The floating drag preview needs a stable DOM ref for pointer-follow motion.");
+assert.match(
+  picker,
+  /translate3d\(\$\{left\}px, \$\{top\}px, 0\) rotate\(1\.2deg\) scale\(1\.035\)/,
+  "The floating preview must follow the pointer with compositor-friendly translate3d motion.",
 );
 assert.match(
   picker,
-  /Release · #\{dragTargetPosition \+ 1\}/,
-  "The dragged card must show the live final position before release.",
+  /setPreviewIndexes\(\[\.\.\.drag\.previewIndexes\]\)/,
+  "Dragging must maintain a local preview order before committing.",
 );
 assert.match(
   picker,
-  /Release for final position \$\{dragTargetPosition \+ 1\}/,
-  "The reorder hint must announce the live final position.",
+  /if \(commit && drag\.activated\) onChange\(drag\.previewIndexes\)/,
+  "The final selectedIndexes order must commit once when the drag ends.",
 );
-assert.match(picker, /useLayoutEffect\(/, "Live reorder must retain its layout-transition hook.");
-assert.match(picker, /data-photo-index=\{photo\.index\}/, "Order cards must expose stable photo ids for FLIP measurement.");
-assert.match(
-  picker,
-  /card\.animate\([\s\S]*duration: 180[\s\S]*cubic-bezier\(\.2,\.8,\.2,1\)/,
-  "Non-dragging cards must visibly transition into their new slots.",
-);
-assert.match(
-  picker,
-  /prefers-reduced-motion: reduce/,
-  "FLIP reordering must respect the user's reduced-motion preference.",
-);
-assert.match(
-  picker,
-  /if \(photos\.length <= 1 \|\| targetCount < 1\) return null;/,
-  "Single-photo layouts may still skip the reorder surface.",
-);
+
+const continueStart = picker.indexOf("function continueOrderDrag");
+const finishStart = picker.indexOf("function finishOrderDrag");
+assert.ok(continueStart >= 0 && finishStart > continueStart, "Drag lifecycle functions must remain present.");
 assert.ok(
-  picker.indexOf("useLayoutEffect(() =>") < picker.indexOf("if (photos.length <= 1 || targetCount < 1) return null;"),
-  "Reorder animation hooks must remain unconditional before the early return.",
+  !picker.slice(continueStart, finishStart).includes("onChange("),
+  "Pointer-move must not live-commit selectedIndexes; doing so makes the dragged card jump with React reflow.",
 );
 
 assert.match(
+  picker,
+  /onPointerCancel=\{\(event\) => finishOrderDrag\(event, false\)\}/,
+  "Cancelled drags must restore the committed order rather than applying the preview.",
+);
+assert.match(
+  picker,
+  /aria-keyshortcuts=\{targetCount > 1 \? "ArrowLeft ArrowRight Home End" : undefined\}/,
+  "Keyboard ordering must remain available for multi-photo layouts.",
+);
+assert.match(
+  picker,
+  /if \(\(event\.target as HTMLElement\)\.closest\("button"\)\) return;/,
+  "Remove-photo controls must never accidentally start a drag.",
+);
+assert.match(picker, /useLayoutEffect\(/, "Preview reordering must retain FLIP-style layout motion.");
+assert.match(
+  picker,
+  /card\.animate\([\s\S]*duration: 190[\s\S]*cubic-bezier\(\.2,\.8,\.2,1\)/,
+  "Other photo cards must glide into preview positions while the floating card stays under the pointer.",
+);
+assert.match(picker, /prefers-reduced-motion: reduce/, "JS layout motion must respect reduced motion.");
+
+assert.match(styles, /\.photoCardSelected\s*\{[\s\S]*touch-action: pan-y/);
+assert.match(
   styles,
-  /\.orderCardPressed\s*\{[\s\S]*translateY\(-2px\) scale\(1\.025\)/,
-  "Pointer down must immediately lift the photo before drag activation.",
+  /\.photoCardDragging\s*\{[\s\S]*border: 1px dashed[\s\S]*transform: none/,
+  "The in-grid source must become a stable placeholder instead of pretending to be the dragged object.",
 );
 assert.match(
   styles,
-  /\.orderCardDragging\s*\{[\s\S]*opacity: 1[\s\S]*outline: 2px[\s\S]*translateY\(-6px\) scale\(1\.06\)/,
-  "Active drag must stay fully opaque and use a stronger lift/outline state.",
-);
-assert.doesNotMatch(
-  styles,
-  /\.orderCardDragging\s*\{[\s\S]*?opacity:\s*\.78/,
-  "Dragging must not fade the object the user is trying to follow.",
+  /\.photoCardDragging \.photoPreview::after\s*\{[\s\S]*content: "Drop here"/,
+  "The preview destination must be visible inside the unified grid.",
 );
 assert.match(
   styles,
-  /\.orderCardDropTarget \.orderPreview\s*\{[\s\S]*inset 0 0 0 3px/,
-  "The current destination must receive a visible target outline.",
+  /\.dragOverlay\s*\{[\s\S]*position: fixed[\s\S]*z-index: 1000[\s\S]*pointer-events: none[\s\S]*will-change: transform/,
+  "The dragged photo must be an independent viewport overlay optimized for smooth transforms.",
 );
 assert.match(
   styles,
-  /\.dragHandle\s*\{[\s\S]*min-width: 52px[\s\S]*height: 28px/,
-  "The Drag affordance must be substantially larger than the legacy icon-only handle.",
+  /\.photoCardUnselected\s*\{[\s\S]*cursor: pointer/,
+  "Extra captures must remain selectable in the same surface.",
 );
+assert.doesNotMatch(styles, /\.orderRail|\.captureRail/, "Legacy duplicated rails must stay removed.");
 assert.match(
   styles,
-  /\.removeButton\s*\{[\s\S]*right: 5px[\s\S]*bottom: 5px/,
-  "The remove control must stay clear of the enlarged top-left Drag handle.",
-);
-assert.match(styles, /touch-action: pan-y/);
-assert.match(
-  styles,
-  /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.orderCard,[\s\S]*\.orderPreview,[\s\S]*\.orderHint[\s\S]*transition: none/,
-  "CSS reorder feedback must also honor reduced motion.",
+  /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.photoCard,[\s\S]*\.photoCard > strong,[\s\S]*\.dragHint[\s\S]*transition: none/,
+  "CSS feedback must also honor reduced motion.",
 );
 
-console.log("Photo reorder drag affordance and motion feedback contracts passed.");
+console.log("Unified Photos selection and natural floating-drag contracts passed.");
