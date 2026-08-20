@@ -26,9 +26,29 @@
   box-shadow: 0 0 0 1px rgba(221, 198, 203, 0.95), 0 12px 30px rgba(75, 53, 58, 0.12);
 }
 
-.review-stage__photo .photo-preview {
-  overflow: hidden;
+/*
+ * camera.css predates PhotoPreview and styles every direct child <span> of the
+ * active-photo host as the floating "Drag · pinch" hint. PhotoPreview itself is
+ * now also a direct <span>, so that legacy selector can overwrite `inset: 0`
+ * with `left: 50%` + `translateX(-50%)`, collapsing the real preview to roughly
+ * half width. Reassert the preview root geometry here with higher specificity.
+ *
+ * The host owns the adaptive aspect ratio; the preview root must simply fill it.
+ */
+.review-stage__photo > .photo-preview {
+  inset: 0;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  transform: none;
   border-radius: inherit;
+  overflow: hidden;
+  white-space: normal;
 }
 
 /*
