@@ -172,6 +172,7 @@ export function PhotoSelectionPicker({
       const left = clientX - drag.grabOffsetX;
       const top = clientY - drag.grabOffsetY;
       overlay.style.transform = `translate3d(${left}px, ${top}px, 0) rotate(1.2deg) scale(1.035)`;
+      overlay.style.opacity = "1";
     });
   }
 
