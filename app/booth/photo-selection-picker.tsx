@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type {
   KeyboardEvent as ReactKeyboardEvent,
   PointerEvent as ReactPointerEvent,
@@ -45,6 +45,14 @@ type DragOverlay = {
   photoIndex: number;
   width: number;
   height: number;
+  left: number;
+  top: number;
+};
+
+type WindowDragListeners = {
+  move: (event: PointerEvent) => void;
+  up: (event: PointerEvent) => void;
+  cancel: (event: PointerEvent) => void;
 };
 
 function moveItem(indexes: number[], from: number, to: number) {
@@ -69,6 +77,7 @@ export function PhotoSelectionPicker({
   const dragOverlayRef = useRef<HTMLDivElement | null>(null);
   const previousRectsRef = useRef(new Map<number, DOMRect>());
   const overlayFrameRef = useRef<number | null>(null);
+  const windowDragListenersRef = useRef<WindowDragListeners | null>(null);
   const [pressedPhotoIndex, setPressedPhotoIndex] = useState<number | null>(null);
   const [draggingPhotoIndex, setDraggingPhotoIndex] = useState<number | null>(null);
   const [dragTargetPosition, setDragTargetPosition] = useState<number | null>(null);
@@ -121,6 +130,20 @@ export function PhotoSelectionPicker({
     previousRectsRef.current = nextRects;
   }, [displayOrderKey, draggingPhotoIndex]);
 
+  useEffect(() => () => {
+    const listeners = windowDragListenersRef.current;
+    if (listeners) {
+      window.removeEventListener("pointermove", listeners.move);
+      window.removeEventListener("pointerup", listeners.up);
+      window.removeEventListener("pointercancel", listeners.cancel);
+      windowDragListenersRef.current = null;
+    }
+    if (overlayFrameRef.current !== null) {
+      cancelAnimationFrame(overlayFrameRef.current);
+      overlayFrameRef.current = null;
+    }
+  }, []);
+
   if (photos.length <= 1 || targetCount < 1) return null;
 
   function togglePhoto(index: number) {
@@ -172,37 +195,38 @@ export function PhotoSelectionPicker({
       const left = clientX - drag.grabOffsetX;
       const top = clientY - drag.grabOffsetY;
       overlay.style.transform = `translate3d(${left}px, ${top}px, 0) rotate(1.2deg) scale(1.035)`;
-      overlay.style.opacity = "1";
     });
   }
 
-  function beginOrderDrag(
-    event: ReactPointerEvent<HTMLDivElement>,
-    photoIndex: number,
-    position: number,
-  ) {
-    if (disabled || event.button !== 0 || selectedIndexes.length <= 1) return;
-    if ((event.target as HTMLElement).closest("button")) return;
-
-    const rect = event.currentTarget.getBoundingClientRect();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setPressedPhotoIndex(photoIndex);
-    orderDragRef.current = {
-      pointerId: event.pointerId,
-      photoIndex,
-      currentPosition: position,
-      startX: event.clientX,
-      startY: event.clientY,
-      grabOffsetX: event.clientX - rect.left,
-      grabOffsetY: event.clientY - rect.top,
-      width: rect.width,
-      height: rect.height,
-      activated: false,
-      previewIndexes: [...selectedIndexes],
-    };
+  function removeWindowDragListeners() {
+    const listeners = windowDragListenersRef.current;
+    if (!listeners) return;
+    window.removeEventListener("pointermove", listeners.move);
+    window.removeEventListener("pointerup", listeners.up);
+    window.removeEventListener("pointercancel", listeners.cancel);
+    windowDragListenersRef.current = null;
   }
 
-  function continueOrderDrag(event: ReactPointerEvent<HTMLDivElement>) {
+  function finishOrderDrag(pointerId: number, commit: boolean) {
+    const drag = orderDragRef.current;
+    if (!drag || drag.pointerId !== pointerId) return;
+
+    removeWindowDragListeners();
+    if (overlayFrameRef.current !== null) {
+      cancelAnimationFrame(overlayFrameRef.current);
+      overlayFrameRef.current = null;
+    }
+    if (commit && drag.activated) onChange([...drag.previewIndexes]);
+
+    orderDragRef.current = null;
+    setPressedPhotoIndex(null);
+    setDraggingPhotoIndex(null);
+    setDragTargetPosition(null);
+    setPreviewIndexes(null);
+    setDragOverlay(null);
+  }
+
+  function continueOrderDrag(event: PointerEvent) {
     const drag = orderDragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
 
@@ -210,7 +234,11 @@ export function PhotoSelectionPicker({
       const deltaX = event.clientX - drag.startX;
       const deltaY = event.clientY - drag.startY;
       if (Math.hypot(deltaX, deltaY) < 6) return;
-      if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+
+      if (Math.abs(deltaY) > Math.abs(deltaX)) {
+        finishOrderDrag(event.pointerId, false);
+        return;
+      }
 
       drag.activated = true;
       setDraggingPhotoIndex(drag.photoIndex);
@@ -220,8 +248,9 @@ export function PhotoSelectionPicker({
         photoIndex: drag.photoIndex,
         width: drag.width,
         height: drag.height,
+        left: event.clientX - drag.grabOffsetX,
+        top: event.clientY - drag.grabOffsetY,
       });
-      requestAnimationFrame(() => moveDragOverlay(event.clientX, event.clientY, drag));
     }
 
     event.preventDefault();
@@ -236,26 +265,43 @@ export function PhotoSelectionPicker({
     setPreviewIndexes([...drag.previewIndexes]);
   }
 
-  function finishOrderDrag(event: ReactPointerEvent<HTMLDivElement>, commit: boolean) {
-    const drag = orderDragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
+  function installWindowDragListeners() {
+    removeWindowDragListeners();
+    const listeners: WindowDragListeners = {
+      move: (event) => continueOrderDrag(event),
+      up: (event) => finishOrderDrag(event.pointerId, true),
+      cancel: (event) => finishOrderDrag(event.pointerId, false),
+    };
+    window.addEventListener("pointermove", listeners.move, { passive: false });
+    window.addEventListener("pointerup", listeners.up);
+    window.addEventListener("pointercancel", listeners.cancel);
+    windowDragListenersRef.current = listeners;
+  }
 
-    if (overlayFrameRef.current !== null) {
-      cancelAnimationFrame(overlayFrameRef.current);
-      overlayFrameRef.current = null;
-    }
-    if (commit && drag.activated) onChange(drag.previewIndexes);
+  function beginOrderDrag(
+    event: ReactPointerEvent<HTMLDivElement>,
+    photoIndex: number,
+    position: number,
+  ) {
+    if (disabled || event.button !== 0 || selectedIndexes.length <= 1) return;
+    if ((event.target as HTMLElement).closest("button")) return;
 
-    orderDragRef.current = null;
-    setPressedPhotoIndex(null);
-    setDraggingPhotoIndex(null);
-    setDragTargetPosition(null);
-    setPreviewIndexes(null);
-    setDragOverlay(null);
-
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    setPressedPhotoIndex(photoIndex);
+    orderDragRef.current = {
+      pointerId: event.pointerId,
+      photoIndex,
+      currentPosition: position,
+      startX: event.clientX,
+      startY: event.clientY,
+      grabOffsetX: event.clientX - rect.left,
+      grabOffsetY: event.clientY - rect.top,
+      width: rect.width,
+      height: rect.height,
+      activated: false,
+      previewIndexes: [...selectedIndexes],
+    };
+    installWindowDragListeners();
   }
 
   function handleOrderKeyDown(
@@ -350,10 +396,6 @@ export function PhotoSelectionPicker({
               aria-label={`Photo ${photo.index + 1}, final position ${selectedPosition + 1}.${targetCount > 1 ? " Drag to reorder or use left and right arrow keys." : ""}`}
               aria-keyshortcuts={targetCount > 1 ? "ArrowLeft ArrowRight Home End" : undefined}
               onPointerDown={(event) => beginOrderDrag(event, photo.index, selectedPosition)}
-              onPointerMove={continueOrderDrag}
-              onPointerUp={(event) => finishOrderDrag(event, true)}
-              onPointerCancel={(event) => finishOrderDrag(event, false)}
-              onLostPointerCapture={(event) => finishOrderDrag(event, false)}
               onKeyDown={(event) => handleOrderKeyDown(event, selectedPosition)}
             >
               <div className={styles.photoPreview} style={{ aspectRatio: String(targetRatio) }}>
@@ -392,7 +434,12 @@ export function PhotoSelectionPicker({
         <div
           ref={dragOverlayRef}
           className={styles.dragOverlay}
-          style={{ width: dragOverlay.width, height: dragOverlay.height }}
+          style={{
+            width: dragOverlay.width,
+            height: dragOverlay.height,
+            opacity: 1,
+            transform: `translate3d(${dragOverlay.left}px, ${dragOverlay.top}px, 0) rotate(1.2deg) scale(1.035)`,
+          }}
           aria-hidden="true"
         >
           <div className={styles.photoPreview} style={{ aspectRatio: String(targetRatio) }}>
