@@ -177,6 +177,7 @@ export function PhotoSelectionPicker({
       .map((card): DragSlot | null => {
         const position = Number(card.dataset.selectedPosition);
         if (!Number.isInteger(position)) return null;
+        card.getAnimations().forEach((animation) => animation.cancel());
         const rect = card.getBoundingClientRect();
         return {
           position,
