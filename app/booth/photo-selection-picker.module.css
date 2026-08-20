@@ -1,40 +1,33 @@
 .picker {
   display: grid;
-  gap: 14px;
+  gap: 10px;
   padding: 14px;
   border: 1px solid #eadde1;
   border-radius: 16px;
   background: linear-gradient(145deg, rgba(255,255,255,.94), rgba(255,247,250,.88));
 }
 
-.heading,
-.sectionLabel {
+.heading {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
 }
 
-.heading > div,
-.sectionLabel {
+.heading > div {
+  display: grid;
+  gap: 2px;
   min-width: 0;
 }
 
-.heading strong,
-.sectionLabel strong {
+.heading strong {
   color: #514348;
   font-size: 12px;
 }
 
-.heading span,
-.sectionLabel span {
+.heading span {
   color: #9a7c86;
   font-size: 10px;
-}
-
-.heading > div {
-  display: grid;
-  gap: 2px;
 }
 
 .heading em {
@@ -58,88 +51,122 @@
   color: #a75d70;
 }
 
-.orderSection,
-.captureSection {
-  display: grid;
-  gap: 8px;
-}
-
-.orderRail {
+.photoGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-}
-
-.orderCard,
-.emptySlot {
   min-width: 0;
 }
 
-.orderCard {
+.photoCard {
   position: relative;
-  display: grid;
-  gap: 5px;
+  min-width: 0;
+  margin: 0;
   padding: 3px;
+  border: 1px solid transparent;
   border-radius: 12px;
+  background: transparent;
+  color: #65555a;
+  font: inherit;
+  text-align: center;
+  user-select: none;
+  transition: transform 140ms cubic-bezier(.2,.8,.2,1), background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+}
+
+.photoCardSelected {
   cursor: grab;
   touch-action: pan-y;
-  user-select: none;
-  transition: transform 150ms cubic-bezier(.2,.8,.2,1), background 150ms ease, box-shadow 150ms ease, outline-color 150ms ease;
 }
 
-.orderCard:hover {
-  background: rgba(255, 242, 246, .7);
+.photoCardSelected:hover {
+  background: rgba(255, 242, 246, .72);
 }
 
-.orderCard:active {
+.photoCardSelected:active {
   cursor: grabbing;
 }
 
-.orderCardPressed {
+.photoCardPressed {
   z-index: 2;
   background: #fff8fa;
-  box-shadow: 0 9px 22px rgba(109, 65, 80, .16);
-  transform: translateY(-2px) scale(1.025);
+  border-color: rgba(239, 120, 148, .32);
+  transform: translateY(-2px) scale(1.018);
+  box-shadow: 0 8px 18px rgba(109, 65, 80, .14);
 }
 
-.orderCardDragging {
-  z-index: 5;
+.photoCardDragging {
+  z-index: 1;
+  cursor: grabbing;
+  background: rgba(255, 240, 245, .72);
+  border: 1px dashed rgba(219, 91, 124, .72);
+  transform: none;
+  box-shadow: inset 0 0 0 2px rgba(255, 111, 143, .12);
+}
+
+.photoCardDragging .photoPreview > *,
+.photoCardDragging > strong {
+  opacity: 0;
+}
+
+.photoCardDragging .photoPreview::after {
+  content: "Drop here";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #a64f68;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .02em;
+  pointer-events: none;
+}
+
+.photoCardDropTarget {
+  border-color: rgba(219, 91, 124, .86);
+  background: #fff0f4;
+}
+
+.photoCardUnselected {
+  cursor: pointer;
+  opacity: .76;
+}
+
+.photoCardUnselected:hover:not(:disabled),
+.photoCardUnselected:focus-visible:not(:disabled) {
   opacity: 1;
-  background: #fff7fa;
-  outline: 2px solid rgba(255, 111, 143, .58);
-  outline-offset: 2px;
-  box-shadow: 0 18px 38px rgba(109, 65, 80, .28), 0 6px 14px rgba(255, 111, 143, .22);
-  transform: translateY(-6px) scale(1.06);
+  background: rgba(255, 248, 250, .88);
+  border-color: #ead2d9;
 }
 
-.orderCardDropTarget .orderPreview {
-  box-shadow: inset 0 0 0 3px rgba(255, 111, 143, .88), 0 10px 24px rgba(109, 65, 80, .2);
+.photoCardUnselected:disabled {
+  cursor: not-allowed;
+  opacity: .38;
 }
 
-.orderCard > strong {
+.photoCard > strong,
+.dragOverlay > strong {
+  display: block;
   overflow: hidden;
+  margin-top: 5px;
   color: #65555a;
   font-size: 9px;
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: opacity 120ms ease;
 }
 
-.orderPreview,
-.emptySlot {
+.photoPreview {
   position: relative;
-  aspect-ratio: 3 / 4;
+  display: block;
   overflow: hidden;
+  width: 100%;
   border-radius: 10px;
-}
-
-.orderPreview {
   background: #f3e9e7;
   box-shadow: 0 5px 14px rgba(78, 52, 62, .1);
-  transition: box-shadow 150ms ease;
 }
 
-.orderPreview img {
+.photoPreview img {
   width: 100%;
   height: 100%;
   display: block;
@@ -151,6 +178,7 @@
   position: absolute;
   left: 6px;
   bottom: 6px;
+  z-index: 3;
   width: 23px;
   height: 23px;
   display: grid;
@@ -160,69 +188,58 @@
   color: #fff;
   font-size: 10px;
   font-weight: 900;
-  box-shadow: 0 3px 10px rgba(255,111,143,.3);
+  box-shadow: 0 3px 10px rgba(255,111,143,.32);
   pointer-events: none;
 }
 
-.dragHandle {
+.dragCue,
+.overlayGrip {
   position: absolute;
   top: 6px;
   left: 6px;
-  min-width: 52px;
+  z-index: 3;
+  width: 28px;
   height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 0 8px;
-  border: 1px solid rgba(229, 203, 210, .92);
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(229, 203, 210, .94);
   border-radius: 9px;
   background: rgba(255,255,255,.94);
   color: #8f5062;
+  font-size: 15px;
   font-weight: 900;
   line-height: 1;
-  box-shadow: 0 3px 10px rgba(55, 39, 45, .18);
+  box-shadow: 0 3px 10px rgba(55, 39, 45, .16);
   backdrop-filter: blur(8px);
   pointer-events: none;
 }
 
-.dragHandle b {
-  font-size: 15px;
-  line-height: 1;
-}
-
-.dragHandle small {
-  font-size: 8px;
-  font-weight: 900;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-}
-
-.dropTargetBadge {
+.useBadge {
   position: absolute;
   top: 50%;
   left: 50%;
   z-index: 3;
-  min-width: max-content;
-  padding: 6px 8px;
-  border: 1px solid rgba(255, 255, 255, .75);
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.9);
   border-radius: 999px;
-  background: rgba(113, 58, 76, .9);
+  background: rgba(65, 49, 55, .72);
   color: #fff;
-  font-size: 8px;
-  font-weight: 900;
+  font-size: 19px;
+  font-weight: 500;
   line-height: 1;
-  letter-spacing: .01em;
   pointer-events: none;
   transform: translate(-50%, -50%);
-  box-shadow: 0 6px 18px rgba(63, 35, 44, .25);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(7px);
 }
 
 .removeButton {
   position: absolute;
   right: 5px;
   bottom: 5px;
+  z-index: 4;
   width: 24px;
   height: 24px;
   display: grid;
@@ -230,7 +247,7 @@
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: rgba(35, 27, 31, .72);
+  background: rgba(35, 27, 31, .74);
   color: #fff;
   cursor: pointer;
   font-size: 15px;
@@ -238,158 +255,77 @@
   backdrop-filter: blur(6px);
 }
 
-.emptySlot {
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 4px;
-  border: 1px dashed #ddcbd1;
-  background: rgba(255,255,255,.52);
-  color: #aa9098;
-}
-
-.emptySlot span {
-  width: 24px;
-  height: 24px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  background: #f7e9ed;
-  color: #a26777;
-  font-size: 10px;
-  font-weight: 900;
-}
-
-.emptySlot small {
-  font-size: 9px;
-}
-
-.orderHint {
-  margin: 0;
-  padding: 6px 8px;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, .58);
-  color: #8f717a;
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 1.4;
-  text-align: center;
-  transition: background 150ms ease, color 150ms ease, transform 150ms ease;
-}
-
-.orderHintActive {
-  background: #fff0f4;
-  color: #a54f67;
-  transform: translateY(-1px);
-}
-
 .removeButton:disabled {
   cursor: not-allowed;
   opacity: .35;
 }
 
-.captureRail {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+.dragHint {
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 9px;
+  background: rgba(255,255,255,.56);
+  color: #8f717a;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
 }
 
-.choice {
-  position: relative;
-  aspect-ratio: 3 / 4;
-  overflow: hidden;
-  padding: 0;
-  border: 2px solid transparent;
-  border-radius: 11px;
-  background: #f3e9e7;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(78, 52, 62, .08);
+.dragHintActive {
+  background: #fff0f4;
+  color: #a54f67;
+  transform: translateY(-1px);
 }
 
-.choice img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
+.dragOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 3px;
+  border: 1px solid rgba(239, 120, 148, .46);
+  border-radius: 12px;
+  background: #fff8fa;
+  opacity: 0;
   pointer-events: none;
+  transform-origin: center;
+  will-change: transform;
+  box-shadow: 0 24px 48px rgba(83, 47, 60, .28), 0 8px 20px rgba(255, 111, 143, .18);
 }
 
-.choice > span {
-  position: absolute;
-  left: 6px;
-  bottom: 6px;
-  max-width: calc(100% - 12px);
-  padding: 4px 7px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgba(35, 27, 31, .72);
-  color: #fff;
-  font-size: 8px;
-  font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  backdrop-filter: blur(6px);
+.dragOverlay .photoPreview {
+  box-shadow: 0 8px 20px rgba(78, 52, 62, .18);
 }
 
-.choice > b {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 23px;
-  height: 23px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  background: #ff6f8f;
-  color: #fff;
-  font-size: 10px;
-  box-shadow: 0 3px 10px rgba(255, 111, 143, .35);
-}
-
-.choiceSelected {
-  border-color: #ff7796;
-  box-shadow: 0 0 0 2px rgba(255,119,150,.13), 0 8px 18px rgba(109,65,80,.13);
-}
-
-.choice:disabled {
-  cursor: not-allowed;
-  opacity: .42;
-}
-
-.choiceSelected:disabled {
-  opacity: .72;
-}
-
-.choice:focus-visible,
-.orderCard:focus-visible,
+.photoCard:focus-visible,
 .removeButton:focus-visible {
   outline: 3px solid rgba(117, 91, 191, .32);
   outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .orderCard,
-  .orderPreview,
-  .orderHint {
+  .photoCard,
+  .photoCard > strong,
+  .dragHint {
     transition: none;
   }
 }
 
 @media (max-width: 390px) {
   .picker {
-    gap: 12px;
+    gap: 9px;
     padding: 11px;
-  }
-
-  .heading,
-  .sectionLabel {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 3px;
   }
 
   .heading {
     position: relative;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
     padding-right: 44px;
   }
 
@@ -399,38 +335,36 @@
     right: 0;
   }
 
-  .orderRail,
-  .captureRail {
+  .photoGrid {
     gap: 6px;
   }
 
-  .positionBadge,
-  .choice > b {
+  .positionBadge {
     width: 20px;
     height: 20px;
     font-size: 9px;
   }
 
-  .dragHandle {
-    min-width: 48px;
-    height: 26px;
-    padding-inline: 6px;
+  .dragCue,
+  .overlayGrip {
+    width: 25px;
+    height: 25px;
+    font-size: 13px;
   }
 
-  .dragHandle b {
+  .removeButton {
+    width: 22px;
+    height: 22px;
     font-size: 14px;
   }
 
-  .dragHandle small {
-    font-size: 7px;
+  .useBadge {
+    width: 28px;
+    height: 28px;
+    font-size: 17px;
   }
 
-  .dropTargetBadge {
-    padding: 5px 7px;
-    font-size: 7px;
-  }
-
-  .orderHint {
+  .dragHint {
     text-align: left;
   }
 }
