@@ -172,28 +172,32 @@ assert.ok(
 assert.ok(
   photoSelectionPicker.includes("beginOrderDrag") &&
     photoSelectionPicker.includes("continueOrderDrag") &&
-    photoSelectionPicker.includes("closestOrderPosition"),
-  "Photo final-order rail must support direct pointer drag reordering.",
+    photoSelectionPicker.includes("closestSelectedPosition") &&
+    photoSelectionPicker.includes("createPortal"),
+  "Photos must support direct pointer reorder with a viewport-level drag preview.",
 );
 assert.ok(
-  photoSelectionPicker.includes('aria-keyshortcuts="ArrowLeft ArrowRight Home End"') &&
+  photoSelectionPicker.includes('"ArrowLeft ArrowRight Home End"') &&
     photoSelectionPicker.includes('event.key === "ArrowLeft"') &&
     photoSelectionPicker.includes('event.key === "ArrowRight"'),
   "Drag reorder must retain a keyboard sorting fallback without visible arrow controls.",
 );
 assert.ok(
-  photoSelectionPicker.includes("Hold and drag a photo to reorder") &&
-    !photoSelectionPicker.includes("Move photos left or right") &&
-    !photoSelectionPicker.includes("orderControls"),
-  "Direct manipulation must remain the primary ordering UI with explicit drag guidance and no visible left/right controls.",
+  photoSelectionPicker.includes("Drag selected photos to reorder · × to replace") &&
+    photoSelectionPicker.includes("const displayPhotos = [...effectiveSelectedPhotos, ...unselectedPhotos]") &&
+    !photoSelectionPicker.includes(">Final order<") &&
+    !photoSelectionPicker.includes(">All captures<"),
+  "Photo selection and final ordering must share one surface instead of duplicate Final order / All captures galleries.",
 );
 assert.ok(
   photoSelectionPicker.includes('if ((event.target as HTMLElement).closest("button")) return;'),
   "Remove-photo controls must not accidentally start a reorder drag.",
 );
 assert.ok(
-  photoSelectionStyles.includes("touch-action: pan-y"),
-  "Mobile reorder cards must reserve horizontal drag while preserving normal vertical page scrolling.",
+  photoSelectionStyles.includes("touch-action: pan-y") &&
+    photoSelectionStyles.includes(".dragOverlay") &&
+    photoSelectionStyles.includes("position: fixed"),
+  "Mobile reorder must preserve vertical scrolling while the dragged photo uses an independent floating layer.",
 );
 assert.ok(
   photoSelectionStyles.includes("cursor: grab") && photoSelectionStyles.includes("cursor: grabbing"),
@@ -204,4 +208,4 @@ assert.ok(
   "Final export must continue to derive photo order from the selectedIndexes ordering contract.",
 );
 
-console.log("P1 product truth, progressive disclosure, reduced-motion, direct photo reorder, upload input, and P2 copy contracts passed.");
+console.log("P1 product truth, progressive disclosure, reduced-motion, unified natural photo reorder, upload input, and P2 copy contracts passed.");
