@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "verify:release-policy": "node scripts/verify-release-boundary.mjs",
     "test:p0": "node scripts/test-p0-contracts.mjs",
-    "test:p1": "node scripts/test-p1-product-truth.mjs && node scripts/test-photo-reorder-affordance.mjs",
+    "test:p1": "node scripts/test-p1-product-truth.mjs && node scripts/test-photo-reorder-affordance.mjs && node scripts/test-mobile-capture-first-screen.mjs",
     "test:growth": "node scripts/test-growth-measurement.mjs",
     "test:upload": "node scripts/test-upload-flow.mjs",
     "test:editor": "node scripts/test-editor-v2.mjs && node scripts/test-framing-preservation.mjs && node scripts/test-review-preview-root-geometry.mjs && node scripts/test-mobile-review-dock.mjs && node scripts/test-mobile-style-dock.mjs",
