@@ -1,13 +1,6 @@
 "use client";
 
-const themes = [
-  "Classic Booth",
-  "Korean 4Cut",
-  "Film Camera",
-  "Couple Date",
-  "Friendship",
-  "Vintage",
-];
+import { photoStripThemes } from "@/lib/photo-strip-themes";
 
 const shots = [1, 2, 3, 4];
 
@@ -21,14 +14,16 @@ export function DesktopPhotoStripStudio() {
 
         <h2>Themes</h2>
         <div className="studio-themes">
-          {themes.map((theme) => (
-            <button key={theme}>{theme}</button>
+          {photoStripThemes.map((theme) => (
+            <button key={theme.id}>
+              {theme.name}
+            </button>
           ))}
         </div>
       </aside>
 
       <section className="studio-canvas-panel">
-        <div className="studio-step">Upload → Design → Export</div>
+        <div className="studio-step">Choose style → Create strip → Export</div>
         <div className="photo-strip-preview">
           {shots.map((shot) => (
             <div className="photo-slot" key={shot}>
