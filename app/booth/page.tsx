@@ -3,6 +3,7 @@ import { BoothClient } from "./booth-client";
 import { MobileReviewDock } from "./mobile-review-dock";
 import { MobileStyleDock } from "./mobile-style-dock";
 import { PhotoFramingController } from "./photo-framing-controller";
+import { DesktopPhotoStripStudio } from "./desktop-photostrip-studio";
 import "./booth-foundation.css";
 import "./booth-shell.css";
 import "./camera.css";
@@ -18,6 +19,7 @@ import "./result-frame-cell-fix.css";
 import "./mobile-review-dock.css";
 import "./mobile-style-dock.css";
 import "./mobile-layout-sheet-fix.css";
+import "./desktop-photostrip-studio.css";
 import { getPreset } from "@/lib/presets";
 
 export const metadata: Metadata = {
@@ -38,6 +40,7 @@ export default async function BoothPage({ searchParams }: BoothPageProps) {
 
   return (
     <>
+      <DesktopPhotoStripStudio />
       <BoothClient initialPreset={preset} />
       <PhotoFramingController />
       <MobileReviewDock />
