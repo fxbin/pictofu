@@ -1,34 +1,22 @@
 .desktop-photo-strip-studio {
-  min-height: 100vh;
   display: grid;
-  grid-template-columns: 280px minmax(420px, 1fr) 320px;
+  grid-template-columns: 280px minmax(420px, 1fr) 260px;
   gap: 24px;
+  min-height: 760px;
   padding: 32px;
-  background: #fffaf7;
 }
 
 .studio-theme-panel,
-.studio-control-panel,
-.studio-canvas-panel {
+.studio-control-panel {
   border-radius: 24px;
-  background: white;
   padding: 24px;
+  background: var(--background, #fff);
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .studio-theme-panel h1 {
-  font-size: 36px;
+  font-size: 28px;
   margin-bottom: 12px;
-}
-
-.studio-upload,
-.studio-export {
-  width: 100%;
-  border: 0;
-  border-radius: 999px;
-  padding: 14px;
-  cursor: pointer;
-  background: #ff5b85;
-  color: white;
 }
 
 .studio-themes,
@@ -41,36 +29,46 @@
 
 .studio-themes button,
 .layout-options button,
-.frame-options button {
-  padding: 12px;
+.frame-options button,
+.studio-upload,
+.studio-export {
   border-radius: 14px;
-  border: 1px solid #eee;
-  background: white;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.studio-canvas-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 32px;
+  background: #f7f4ef;
 }
 
 .photo-strip-preview {
-  width: 260px;
-  margin: 40px auto;
+  width: 280px;
   padding: 18px;
-  background: #111;
-  border-radius: 12px;
+  border-radius: 20px;
+  background: #fff;
 }
 
 .photo-slot {
   aspect-ratio: 3 / 4;
-  margin-bottom: 12px;
   display: grid;
   place-items: center;
-  background: #ddd;
-  color: #777;
+  margin-bottom: 12px;
+  background: #eee;
+  border-radius: 8px;
 }
 
 .photo-strip-brand {
-  color: white;
-  font-size: 12px;
+  display: block;
+  text-align: center;
+  letter-spacing: 0.3em;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .desktop-photo-strip-studio {
     grid-template-columns: 1fr;
   }
