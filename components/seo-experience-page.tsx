@@ -22,6 +22,7 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
   const filter = getFilterStyle(preset.filterId);
   const frame = getFrameStyle(preset.frameId);
   const demoAsset = getReadyPresetDemoAsset(preset.id);
+  const boothHref = `/booth?preset=${preset.id}`;
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -42,8 +43,17 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
           <Link href="/photo-strip-maker">Photo Strip</Link>
           <Link href="/guides">Guides</Link>
         </nav>
-        <Link className="seo-header__cta" href={`/booth?preset=${preset.id}`}>Start Booth ✦</Link>
+        <Link className="seo-header__cta" href={boothHref}>Start Booth ✦</Link>
       </header>
+
+      <aside className="seo-share-context" aria-label="Shared PicToFu preset">
+        <div>
+          <span>Shared with you</span>
+          <strong>Someone made this with PicToFu.</strong>
+          <p>Use the same {preset.name} starting look, then make the strip your own.</p>
+        </div>
+        <Link href={boothHref}>Make yours with {preset.name} →</Link>
+      </aside>
 
       <section className="seo-hero">
         <div className="seo-hero__copy">
@@ -51,7 +61,7 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
           <h1>{experience.h1}</h1>
           <p className="seo-intro">{experience.intro}</p>
           <div className="seo-actions">
-            <Link className="seo-primary" href={`/booth?preset=${preset.id}`}>{experience.cta}</Link>
+            <Link className="seo-primary" href={boothHref}>{experience.cta}</Link>
             <Link className="seo-secondary" href="/photo-strip-maker">See strip styles</Link>
           </div>
           <p className="seo-privacy">▣ Photos are processed in your browser and stay out of a PicToFu cloud photo gallery.</p>
@@ -141,7 +151,7 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
         <span aria-hidden="true">♡ ✦ ♡</span>
         <h2>Ready when you are.</h2>
         <p>No install, no account — open the preset and make the strip.</p>
-        <Link className="seo-primary" href={`/booth?preset=${preset.id}`}>{experience.cta}</Link>
+        <Link className="seo-primary" href={boothHref}>{experience.cta}</Link>
       </section>
 
       <SiteFooter />
