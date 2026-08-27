@@ -13,6 +13,7 @@ const GROWTH_EVENT_NAMES = new Set([
   "camera_permission_denied",
   "camera_error",
   "capture_completed",
+  "retake_single",
   "edit_started",
   "editor_tool_used",
   "export_completed",
@@ -40,6 +41,7 @@ const GROWTH_DIMENSION_KEYS = [
 
 const SOURCE_SCOPED_EVENTS = new Set([
   "capture_completed",
+  "retake_single",
   "export_completed",
   "download_clicked",
   "share_clicked",
