@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { emitProductEvent } from "@/lib/analytics";
+import { SEO_EXPERIENCES } from "@/lib/seo-pages";
 
 declare global {
   interface Window {
@@ -10,17 +11,10 @@ declare global {
   }
 }
 
-const LANDING_PRESET_BY_PATH: Record<string, string> = {
-  "/": "classic-booth",
-  "/online-photobooth": "classic-booth",
-  "/photo-strip-maker": "classic-booth",
-  "/korean-photobooth": "korean-date",
-  "/y2k-photobooth": "y2k-summer",
-  "/vintage-photobooth": "vintage-film",
-  "/couple-photobooth": "couple-date",
-  "/best-friend-photobooth": "best-friends",
-  "/graduation-photobooth": "graduation",
-};
+const LANDING_PRESET_BY_PATH: Record<string, string> = Object.fromEntries([
+  ["/", "classic-booth"],
+  ...SEO_EXPERIENCES.map((experience) => [`/${experience.slug}`, experience.presetId]),
+]);
 
 const MAX_PENDING_GOOGLE_EVENTS = 32;
 
@@ -115,6 +109,12 @@ export function AnalyticsBridge({
 
   useEffect(() => {
     const pathname = window.location.pathname;
+    const acquisition = acquisitionParameters();
+    const entryPreset = LANDING_PRESET_BY_PATH[pathname];
+    const isShareLanding = acquisition.share_marker === "share" && Boolean(entryPreset);
+
+    if (isShareLanding) document.documentElement.dataset.pictofuShareLanding = "true";
+    else delete document.documentElement.dataset.pictofuShareLanding;
 
     if (enabled && window.gtag) {
       window.gtag("event", "page_view", {
@@ -124,14 +124,20 @@ export function AnalyticsBridge({
       });
     }
 
-    if (pathname in LANDING_PRESET_BY_PATH && lastLandingPath.current !== pathname) {
+    if (entryPreset && lastLandingPath.current !== pathname) {
       lastLandingPath.current = pathname;
       emitProductEvent("landing_view", {
         landing_type: pathname === "/" ? "home" : "seo_intent",
-        entry_preset: LANDING_PRESET_BY_PATH[pathname],
+        entry_preset: entryPreset,
         referrer_class: referrerClass(),
-        ...acquisitionParameters(),
+        ...acquisition,
       });
+      if (isShareLanding) {
+        emitProductEvent("share_landing_view", {
+          entry_preset: entryPreset,
+          share_marker: "share",
+        });
+      }
     }
 
     function handleBoothClick(event: MouseEvent) {
@@ -144,14 +150,24 @@ export function AnalyticsBridge({
       const url = new URL(anchor.href, window.location.href);
       if (url.origin !== window.location.origin || url.pathname !== "/booth") return;
 
+      const targetPreset = url.searchParams.get("preset") ?? entryPreset ?? "classic-booth";
       emitProductEvent("start_booth", {
         cta_location: pathname === "/" ? "home" : "landing_to_booth",
-        entry_preset: url.searchParams.get("preset") ?? LANDING_PRESET_BY_PATH[pathname] ?? "classic-booth",
+        entry_preset: targetPreset,
       });
+      if (isShareLanding) {
+        emitProductEvent("share_to_booth", {
+          entry_preset: targetPreset,
+          share_marker: "share",
+        });
+      }
     }
 
     document.addEventListener("click", handleBoothClick, true);
-    return () => document.removeEventListener("click", handleBoothClick, true);
+    return () => {
+      document.removeEventListener("click", handleBoothClick, true);
+      delete document.documentElement.dataset.pictofuShareLanding;
+    };
   }, [enabled]);
 
   return null;
