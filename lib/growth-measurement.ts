@@ -9,6 +9,8 @@ const GROWTH_ANON_KEY =
 const GROWTH_EVENT_NAMES = new Set([
   "landing_view",
   "start_booth",
+  "share_landing_view",
+  "share_to_booth",
   "camera_permission_granted",
   "camera_permission_denied",
   "camera_error",
