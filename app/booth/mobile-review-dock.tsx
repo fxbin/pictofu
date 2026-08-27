@@ -151,7 +151,9 @@ export function MobileReviewDock() {
   }, [tool]);
 
   useEffect(() => {
-    if (!snapshot.active) setTool(null);
+    if (snapshot.active) return;
+    const frame = window.requestAnimationFrame(() => setTool(null));
+    return () => window.cancelAnimationFrame(frame);
   }, [snapshot.active]);
 
   const selectedCrop = useMemo(
