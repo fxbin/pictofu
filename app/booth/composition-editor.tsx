@@ -50,14 +50,17 @@ export function CompositionEditor({ presetId, disabled = false }: CompositionEdi
   const dragRef = useRef<StickerDrag | null>(null);
 
   useEffect(() => {
-    const strip = document.querySelector<HTMLElement>(".result-strip");
-    const nextHasPhotos = Boolean(strip?.querySelector(".result-strip__photo.has-photo"));
-    setHasPhotos(nextHasPhotos);
-    setOverlayTarget(nextHasPhotos ? strip : null);
-    if (!nextHasPhotos) resetEditorComposition();
-    setCompositionPreset(presetId);
-    setActiveStickerId(null);
-    dragRef.current = null;
+    const frame = window.requestAnimationFrame(() => {
+      const strip = document.querySelector<HTMLElement>(".result-strip");
+      const nextHasPhotos = Boolean(strip?.querySelector(".result-strip__photo.has-photo"));
+      setHasPhotos(nextHasPhotos);
+      setOverlayTarget(nextHasPhotos ? strip : null);
+      if (!nextHasPhotos) resetEditorComposition();
+      setCompositionPreset(presetId);
+      setActiveStickerId(null);
+      dragRef.current = null;
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [presetId]);
 
   const activeSticker = activeStickerId
