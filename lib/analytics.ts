@@ -282,7 +282,7 @@ function dispatchEventDetail(detail: ReturnType<typeof buildEventDetail>) {
 
 export function emitProductEvent(name: ProductEventName, properties: SafeEventProperties = {}) {
   if (typeof window === "undefined") return;
-  if (name === "start_booth" && !shouldEmitStartBooth()) return;
+  if (name === "start_booth" && (window.location.pathname === "/booth" || !shouldEmitStartBooth())) return;
 
   storeAcquisitionContext(name, properties);
   trackCaptureSource(name, properties);
