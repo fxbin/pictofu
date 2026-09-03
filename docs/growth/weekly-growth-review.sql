@@ -1,12 +1,14 @@
 -- PicToFu weekly growth review query pack
 -- PostgreSQL / Supabase
 --
--- Default window: latest 7 available UTC dates including current_date.
+-- Default window: latest 7 available UTC dates including the current UTC date.
 -- Change the params CTE when producing a fixed Day 7 / Day 14 snapshot.
 
 -- 1) Daily core funnel
 WITH params AS (
-  SELECT current_date - 6 AS start_date, current_date AS end_date
+  SELECT
+    ((now() AT TIME ZONE 'UTC')::date - 6) AS start_date,
+    (now() AT TIME ZONE 'UTC')::date AS end_date
 )
 SELECT
   event_date,
@@ -24,8 +26,13 @@ GROUP BY event_date
 ORDER BY event_date;
 
 -- 2) Acquisition funnel by referrer class
+-- The `(missing)` row is intentionally visible because older direct-to-Booth
+-- sessions may not have acquisition context and must not be silently merged
+-- into a known source.
 WITH params AS (
-  SELECT current_date - 6 AS start_date, current_date AS end_date
+  SELECT
+    ((now() AT TIME ZONE 'UTC')::date - 6) AS start_date,
+    (now() AT TIME ZONE 'UTC')::date AS end_date
 )
 SELECT
   COALESCE(NULLIF(referrer_class, ''), '(missing)') AS referrer_class,
@@ -41,7 +48,9 @@ ORDER BY landing DESC NULLS LAST;
 
 -- 3) Known UTM / owner-assistant contamination watch
 WITH params AS (
-  SELECT current_date - 6 AS start_date, current_date AS end_date
+  SELECT
+    ((now() AT TIME ZONE 'UTC')::date - 6) AS start_date,
+    (now() AT TIME ZONE 'UTC')::date AS end_date
 )
 SELECT
   event_date,
@@ -55,27 +64,34 @@ WHERE event_date BETWEEN params.start_date AND params.end_date
 GROUP BY 1,2,3,4
 ORDER BY event_date, landing DESC;
 
--- 4) Clean directional acquisition view
--- Excludes the explicitly known ChatGPT UTM source. This is not a perfect
--- unique-user filter; direct/referral can still include owner activity.
+-- 4) Context-attributed directional acquisition view
+-- Requires stored landing acquisition context and excludes the explicitly
+-- known ChatGPT UTM source. This still is not a unique-user or perfect
+-- owner-exclusion view; direct/referral can contain unidentified owner activity.
 WITH params AS (
-  SELECT current_date - 6 AS start_date, current_date AS end_date
+  SELECT
+    ((now() AT TIME ZONE 'UTC')::date - 6) AS start_date,
+    (now() AT TIME ZONE 'UTC')::date AS end_date
 )
 SELECT
-  COALESCE(NULLIF(referrer_class, ''), '(missing)') AS referrer_class,
+  referrer_class,
   SUM(event_count) FILTER (WHERE event_name = 'landing_view') AS landing,
   SUM(event_count) FILTER (WHERE event_name = 'start_booth') AS starts,
   SUM(event_count) FILTER (WHERE event_name = 'capture_completed') AS captures,
   SUM(event_count) FILTER (WHERE event_name = 'export_completed') AS exports
 FROM public.pictofu_growth_daily, params
 WHERE event_date BETWEEN params.start_date AND params.end_date
+  AND COALESCE(entry_path, '') <> ''
+  AND COALESCE(referrer_class, '') <> ''
   AND COALESCE(utm_source, '') <> 'chatgpt.com'
-GROUP BY 1
+GROUP BY referrer_class
 ORDER BY landing DESC NULLS LAST;
 
 -- 5) Capture source completion watch
 WITH params AS (
-  SELECT current_date - 6 AS start_date, current_date AS end_date
+  SELECT
+    ((now() AT TIME ZONE 'UTC')::date - 6) AS start_date,
+    (now() AT TIME ZONE 'UTC')::date AS end_date
 )
 SELECT
   COALESCE(NULLIF(capture_source, ''), '(missing)') AS capture_source,
@@ -91,7 +107,9 @@ ORDER BY captures DESC NULLS LAST;
 
 -- 6) Editor tool adoption
 WITH params AS (
-  SELECT current_date - 6 AS start_date, current_date AS end_date
+  SELECT
+    ((now() AT TIME ZONE 'UTC')::date - 6) AS start_date,
+    (now() AT TIME ZONE 'UTC')::date AS end_date
 )
 SELECT
   edit_tool,
@@ -105,7 +123,9 @@ ORDER BY uses DESC, edit_tool;
 
 -- 7) Search daily trend
 WITH params AS (
-  SELECT current_date - 13 AS start_date, current_date AS end_date
+  SELECT
+    ((now() AT TIME ZONE 'UTC')::date - 13) AS start_date,
+    (now() AT TIME ZONE 'UTC')::date AS end_date
 )
 SELECT
   event_date,
@@ -123,7 +143,9 @@ ORDER BY event_date;
 -- Consent-dependent browser cohorts. Do not report product-wide retention
 -- percentages when this table is sparse.
 WITH params AS (
-  SELECT current_date - 30 AS start_date, current_date AS end_date
+  SELECT
+    ((now() AT TIME ZONE 'UTC')::date - 30) AS start_date,
+    (now() AT TIME ZONE 'UTC')::date AS end_date
 )
 SELECT
   retention_bucket,
