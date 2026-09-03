@@ -152,6 +152,13 @@ function emptyCaptureSlots(count: number): Array<CaptureSlot | null> {
   return Array.from({ length: count }, () => null);
 }
 
+function captureSourceForSlots(slots: CaptureSlot[]) {
+  if (!slots.length) return null;
+  const sources = new Set(slots.map((slot) => slot.source));
+  if (sources.size > 1) return "mixed" as const;
+  return slots[0].source;
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
@@ -181,6 +188,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
   const photoUrlsRef = useRef<string[]>([]);
   const savePreviewUrlRef = useRef<string | null>(null);
   const editStartedRef = useRef(false);
+  const captureCompletedRef = useRef(false);
   const adjustDragRef = useRef<AdjustDrag | null>(null);
   const adjustPointersRef = useRef(new Map<number, { x: number; y: number }>());
   const pinchGestureRef = useRef<PinchGesture | null>(null);
@@ -307,6 +315,23 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     setExportStatus("idle");
     setExportMessage(null);
     editStartedRef.current = false;
+    captureCompletedRef.current = false;
+  }
+
+  function markCaptureCompletedIfReady(slots: Array<CaptureSlot | null>, targetLayout: LayoutId) {
+    if (captureCompletedRef.current) return;
+    const required = shotTargetForLayout(targetLayout);
+    const readySlots = slots.filter((slot): slot is CaptureSlot => slot !== null).slice(0, required);
+    if (readySlots.length !== required) return;
+    const captureSource = captureSourceForSlots(readySlots);
+    if (!captureSource) return;
+
+    captureCompletedRef.current = true;
+    emitProductEvent("capture_completed", {
+      shot_count: readySlots.length,
+      layout_id: targetLayout,
+      capture_source: captureSource,
+    });
   }
 
   function stopCurrentStream() {
@@ -340,6 +365,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
 
     if (capturedCount > 0) {
       const required = shotTargetForLayout(next.layoutId);
+      markCaptureCompletedIfReady(captureSlots, next.layoutId);
       setCameraStatus("review");
       setReviewMessage(
         capturedCount >= required
@@ -385,6 +411,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
 
   function chooseLayout(nextLayout: LayoutId) {
     if (shotTargetForLayout(nextLayout) > preset.shotCount) return;
+    markCaptureCompletedIfReady(captureSlots, nextLayout);
     setLayoutId(nextLayout);
     markStyleChange("layout", nextLayout);
   }
@@ -700,11 +727,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       shot_target: preset.shotCount,
       capture_source: "upload",
     });
-    emitProductEvent("capture_completed", {
-      shot_count: prepared.length,
-      layout_id: layoutId,
-      capture_source: "upload",
-    });
+    markCaptureCompletedIfReady(nextSlots, layoutId);
   }
 
   async function captureFrame(slotId: string): Promise<CaptureSlot> {
@@ -757,10 +780,12 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
     emitProductEvent("capture_started", { layout_id: layoutId, shot_target: preset.shotCount, capture_source: "camera" });
     try {
       const shotIndexes = Array.from({ length: preset.shotCount }, (_, index) => index);
+      const completedSlots = emptyCaptureSlots(preset.shotCount);
       for (const shotIndex of shotIndexes) {
         await runCountdown();
         setCameraStatus("capturing");
         const slot = await captureFrame(`slot-${shotIndex + 1}`);
+        completedSlots[shotIndex] = slot;
         setCaptureSlots((current) => {
           const next = current.length === preset.shotCount ? [...current] : emptyCaptureSlots(preset.shotCount);
           next[shotIndex] = slot;
@@ -773,7 +798,7 @@ export function BoothClient({ initialPreset }: { initialPreset: BoothPreset }) {
       setActiveAdjustIndex(0);
       setWorkspaceMode("review");
       setReviewMessage("Your photos are ready. Drag to reposition, pinch to zoom, then rotate or straighten if needed.");
-      emitProductEvent("capture_completed", { shot_count: preset.shotCount, layout_id: layoutId, capture_source: "camera" });
+      markCaptureCompletedIfReady(completedSlots, layoutId);
     } catch {
       setCountdown(null);
       setCameraError("camera_start_failed");
