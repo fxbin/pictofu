@@ -33,7 +33,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <head>
-        <link rel="describedby" href="/llms.txt" type="text/markdown" />
+        <link rel="describedby" href="/llms.txt" />
       </head>
       <body>
         {children}
