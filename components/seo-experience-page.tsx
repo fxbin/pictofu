@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { getReadyPresetDemoAsset } from "@/lib/demo-assets";
 import { getFilterStyle } from "@/lib/filter-styles";
 import { getFrameStyle } from "@/lib/frame-styles";
+import { PICTOFU_GEO_FACTS, PICTOFU_SITE_URL } from "@/lib/geo";
 import type { SeoExperience } from "@/lib/seo-pages";
 import { getSeoExperience } from "@/lib/seo-pages";
 import type { BoothPreset } from "@/lib/presets";
@@ -23,6 +24,7 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
   const frame = getFrameStyle(preset.frameId);
   const demoAsset = getReadyPresetDemoAsset(preset.id);
   const boothHref = `/booth?preset=${preset.id}`;
+  const canonicalUrl = `${PICTOFU_SITE_URL}/${experience.slug}`;
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -31,6 +33,18 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
       name: item.question,
       acceptedAnswer: { "@type": "Answer", text: item.answer },
     })),
+  };
+  const pageJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${canonicalUrl}#webpage`,
+    url: canonicalUrl,
+    name: experience.title,
+    description: experience.description,
+    inLanguage: "en",
+    isPartOf: { "@id": `${PICTOFU_SITE_URL}/#website` },
+    about: { "@id": `${PICTOFU_SITE_URL}/#app` },
+    mainEntity: { "@id": `${PICTOFU_SITE_URL}/#app` },
   };
 
   return (
@@ -97,6 +111,22 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
         </div>
       </section>
 
+      <section className="seo-answer" aria-labelledby="quick-answer-title">
+        <div>
+          <p className="seo-section-kicker">Quick answer</p>
+          <h2 id="quick-answer-title">What can you do on this page?</h2>
+          <p>{experience.description}</p>
+        </div>
+        <dl>
+          {PICTOFU_GEO_FACTS.facts.map((fact) => (
+            <div key={fact.label}>
+              <dt>{fact.label}</dt>
+              <dd>{fact.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
       <section className="seo-highlights" aria-label="Experience highlights">
         {experience.highlights.map((highlight, index) => (
           <article key={highlight}>
@@ -155,6 +185,7 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
       </section>
 
       <SiteFooter />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(pageJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
     </main>
   );

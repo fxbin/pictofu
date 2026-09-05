@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AnalyticsConsentGate } from "@/components/analytics-consent-gate";
+import { pictofuSiteJsonLd } from "@/lib/geo";
 import "./globals.css";
 
 const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "";
@@ -27,11 +28,20 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const siteJsonLd = pictofuSiteJsonLd();
+
   return (
     <html lang="en">
+      <head>
+        <link rel="describedby" href="/llms.txt" />
+      </head>
       <body>
         {children}
         <AnalyticsConsentGate configured={analyticsConfigured} measurementId={measurementId} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: "window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};",
