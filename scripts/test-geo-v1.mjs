@@ -11,7 +11,8 @@ const geoCss = fs.readFileSync("app/geo.css", "utf8");
 assert.match(robots, /userAgent:\s*"OAI-SearchBot"[\s\S]*?allow:\s*"\/"/, "OAI-SearchBot must be explicitly allowed");
 assert.match(robots, /sitemap:\s*"https:\/\/pictofu\.com\/sitemap\.xml"/, "Canonical sitemap must remain published");
 
-assert.match(layout, /rel="describedby"\s+href="\/llms\.txt"\s+type="text\/markdown"/, "HTML must advertise the root llms.txt file");
+assert.match(layout, /rel="describedby"\s+href="\/llms\.txt"/, "HTML must advertise the root llms.txt file");
+assert.doesNotMatch(layout, /rel="describedby"[^>]*type=/, "describedby must not claim a MIME type that differs from the llms.txt response");
 assert.match(layout, /type="application\/ld\+json"/, "Root layout must publish structured data");
 assert.match(geo, /"@type":\s*"WebSite"/, "GEO entities must include a WebSite");
 assert.match(geo, /"@type":\s*"WebApplication"/, "GEO entities must include the PicToFu web application");
