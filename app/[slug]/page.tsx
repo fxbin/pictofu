@@ -4,6 +4,7 @@ import { SeoExperiencePage } from "@/components/seo-experience-page";
 import { getReadyPresetDemoAsset } from "@/lib/demo-assets";
 import { SEO_EXPERIENCES, getSeoExperience } from "@/lib/seo-pages";
 import "../seo.css";
+import "../geo.css";
 import "../share-loop.css";
 
 export const dynamicParams = false;
