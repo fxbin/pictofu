@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SeoExperiencePage } from "@/components/seo-experience-page";
+import { getReadyPresetDemoAsset } from "@/lib/demo-assets";
 import { SEO_EXPERIENCES, getSeoExperience } from "@/lib/seo-pages";
 import "../seo.css";
+import "../geo.css";
+import "../share-loop.css";
 
 export const dynamicParams = false;
 
@@ -18,6 +21,7 @@ export async function generateMetadata({ params }: SeoPageProps): Promise<Metada
   const { slug } = await params;
   const experience = getSeoExperience(slug);
   if (!experience) return {};
+  const demoAsset = getReadyPresetDemoAsset(experience.presetId);
 
   return {
     title: experience.title,
@@ -29,6 +33,12 @@ export async function generateMetadata({ params }: SeoPageProps): Promise<Metada
       url: `https://pictofu.com/${experience.slug}`,
       siteName: "PicToFu",
       type: "website",
+      images: demoAsset ? [{
+        url: demoAsset.src,
+        width: demoAsset.width,
+        height: demoAsset.height,
+        alt: demoAsset.alt,
+      }] : undefined,
     },
   };
 }

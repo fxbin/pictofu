@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { getReadyPresetDemoAsset } from "@/lib/demo-assets";
 import { getFilterStyle } from "@/lib/filter-styles";
 import { getFrameStyle } from "@/lib/frame-styles";
+import { PICTOFU_GEO_FACTS, PICTOFU_SITE_URL } from "@/lib/geo";
 import type { SeoExperience } from "@/lib/seo-pages";
 import { getSeoExperience } from "@/lib/seo-pages";
 import type { BoothPreset } from "@/lib/presets";
@@ -22,6 +23,8 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
   const filter = getFilterStyle(preset.filterId);
   const frame = getFrameStyle(preset.frameId);
   const demoAsset = getReadyPresetDemoAsset(preset.id);
+  const boothHref = `/booth?preset=${preset.id}`;
+  const canonicalUrl = `${PICTOFU_SITE_URL}/${experience.slug}`;
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -30,6 +33,18 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
       name: item.question,
       acceptedAnswer: { "@type": "Answer", text: item.answer },
     })),
+  };
+  const pageJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${canonicalUrl}#webpage`,
+    url: canonicalUrl,
+    name: experience.title,
+    description: experience.description,
+    inLanguage: "en",
+    isPartOf: { "@id": `${PICTOFU_SITE_URL}/#website` },
+    about: { "@id": `${PICTOFU_SITE_URL}/#app` },
+    mainEntity: { "@id": `${PICTOFU_SITE_URL}/#app` },
   };
 
   return (
@@ -42,8 +57,17 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
           <Link href="/photo-strip-maker">Photo Strip</Link>
           <Link href="/guides">Guides</Link>
         </nav>
-        <Link className="seo-header__cta" href={`/booth?preset=${preset.id}`}>Start Booth ✦</Link>
+        <Link className="seo-header__cta" href={boothHref}>Start Booth ✦</Link>
       </header>
+
+      <aside className="seo-share-context" aria-label="Shared PicToFu preset">
+        <div>
+          <span>Shared with you</span>
+          <strong>Someone made this with PicToFu.</strong>
+          <p>Use the same {preset.name} starting look, then make the strip your own.</p>
+        </div>
+        <Link href={boothHref}>Make yours with {preset.name} →</Link>
+      </aside>
 
       <section className="seo-hero">
         <div className="seo-hero__copy">
@@ -51,7 +75,7 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
           <h1>{experience.h1}</h1>
           <p className="seo-intro">{experience.intro}</p>
           <div className="seo-actions">
-            <Link className="seo-primary" href={`/booth?preset=${preset.id}`}>{experience.cta}</Link>
+            <Link className="seo-primary" href={boothHref}>{experience.cta}</Link>
             <Link className="seo-secondary" href="/photo-strip-maker">See strip styles</Link>
           </div>
           <p className="seo-privacy">▣ Photos are processed in your browser and stay out of a PicToFu cloud photo gallery.</p>
@@ -85,6 +109,22 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
             <span>{frame.label}</span>
           </div>
         </div>
+      </section>
+
+      <section className="seo-answer" aria-labelledby="quick-answer-title">
+        <div>
+          <p className="seo-section-kicker">Quick answer</p>
+          <h2 id="quick-answer-title">What can you do on this page?</h2>
+          <p>{experience.description}</p>
+        </div>
+        <dl>
+          {PICTOFU_GEO_FACTS.facts.map((fact) => (
+            <div key={fact.label}>
+              <dt>{fact.label}</dt>
+              <dd>{fact.value}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       <section className="seo-highlights" aria-label="Experience highlights">
@@ -141,10 +181,11 @@ export function SeoExperiencePage({ experience }: { experience: SeoExperience })
         <span aria-hidden="true">♡ ✦ ♡</span>
         <h2>Ready when you are.</h2>
         <p>No install, no account — open the preset and make the strip.</p>
-        <Link className="seo-primary" href={`/booth?preset=${preset.id}`}>{experience.cta}</Link>
+        <Link className="seo-primary" href={boothHref}>{experience.cta}</Link>
       </section>
 
       <SiteFooter />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(pageJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
     </main>
   );

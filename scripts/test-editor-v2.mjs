@@ -95,7 +95,7 @@ assert.match(composition, /stickers:\s*StickerInstance\[\]/, "Composition state 
 assert.match(composition, /setCompositionPreset/, "Preset changes must have an explicit sticker lifecycle rule");
 assert.match(compositor, /getEditorCompositionSnapshot/, "Final Canvas must continue consuming strip-level sticker composition state");
 assert.match(compositor, /getPhotoFramingRatio\(url\)/, "Final Canvas must resolve ratio per exported photo URL");
-assert.match(compositor, /layoutGeometry\(input\.layoutId, images\.length, photoRatios\)/, "Per-photo ratios must drive real compositor geometry");
+assert.match(compositor, /layoutGeometry\(input\.layoutId, images\.length, resolvedPhotoRatios\)/, "Per-photo ratios must drive real compositor geometry");
 assert.match(compositor, /rowHeights/, "Mixed-ratio grid output must preserve coherent row geometry");
 assert.match(compositor, /drawSticker/, "Final PNG compositor must draw stickers");
 assert.match(framePicker, /<CompositionEditor/, "Style workspace must retain the strip-level sticker editor");

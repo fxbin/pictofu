@@ -8,6 +8,8 @@ import { countGrowthStage } from "@/lib/growth-measurement";
 export type ProductEventName =
   | "landing_view"
   | "start_booth"
+  | "share_landing_view"
+  | "share_to_booth"
   | "camera_permission_requested"
   | "camera_permission_granted"
   | "camera_permission_denied"
@@ -282,7 +284,7 @@ function dispatchEventDetail(detail: ReturnType<typeof buildEventDetail>) {
 
 export function emitProductEvent(name: ProductEventName, properties: SafeEventProperties = {}) {
   if (typeof window === "undefined") return;
-  if (name === "start_booth" && !shouldEmitStartBooth()) return;
+  if (name === "start_booth" && (window.location.pathname === "/booth" || !shouldEmitStartBooth())) return;
 
   storeAcquisitionContext(name, properties);
   trackCaptureSource(name, properties);
